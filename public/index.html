@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beyond The Body — Mental Wellness & Healing</title>
+  <link rel="icon" href="/img/btb-logo.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Outfit:wght@300;400;500;600&family=Italiana&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- Custom Cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-follower" id="cursorFollower"></div>
+
+<!-- Loader -->
+<div class="loader" id="loader">
+  <div class="loader-inner">
+    <div class="loader-logo">
+      <img src="/img/btb-logo.png" alt="" class="loader-logo-img" />
+      <span class="logo-text loader-logo-text">Beyond <em>The Body</em></span>
+    </div>
+    <p class="loader-tagline">Healing begins within</p>
+    <div class="loader-progress-wrap">
+      <div class="loader-progress-bar" id="loaderProgressBar"></div>
+    </div>
+    <p class="loader-loading-text" id="loaderLoadingText">Loading</p>
+  </div>
+</div>
+
+<!-- Navigation -->
+<nav class="nav" id="nav">
+  <div class="nav-container">
+    <a href="#home" class="nav-logo">
+      <img src="/img/btb-logo.png" alt="" class="nav-logo-img" />
+      <span class="logo-text">Beyond <em>The Body</em></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#about" class="nav-link">About</a></li>
+      <li><a href="#conditions" class="nav-link">Conditions</a></li>
+      <li><a href="#services" class="nav-link">Services</a></li>
+      <li><a href="#braintips" class="nav-link">Brain Tips</a></li>
+      <li><a href="#team" class="nav-link">Join Us</a></li>
+      <li><a href="#contact" class="nav-link nav-cta">Free Consult</a></li>
+    </ul>
+    <button class="nav-hamburger" id="hamburger">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <ul>
+    <li><a href="#about" class="mobile-link">About</a></li>
+    <li><a href="#conditions" class="mobile-link">Conditions</a></li>
+    <li><a href="#services" class="mobile-link">Services</a></li>
+    <li><a href="#braintips" class="mobile-link">Brain Tips</a></li>
+    <li><a href="#team" class="mobile-link">Join Us</a></li>
+    <li><a href="#contact" class="mobile-link">Free Consult</a></li>
+  </ul>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="hero-bg">
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-orb hero-orb-3"></div>
+    <div class="hero-grid"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      Mental Wellness Platform
+    </div>
+    <h1 class="hero-title">
+      <span class="hero-title-top">Your safe space to</span>
+      <span class="hero-title-main">
+        <em>Heal</em> beyond
+      </span>
+      <span class="hero-title-sub">the body</span>
+    </h1>
+    <p class="hero-desc">Where mental wellness leads physical transformation. Evidence-based therapy, expert support, and a community that understands your journey.</p>
+    <div class="hero-actions">
+      <a href="#contact" class="btn btn-primary">
+        <span>Start Free Consult</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <a href="#about" class="btn btn-ghost">
+        <span>Discover More</span>
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-value">
+          <span class="stat-num" data-target="94">0</span><span class="stat-suffix">%</span>
+        </span>
+        <span class="stat-label">Recovery Rate</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value">
+          <span class="stat-num" data-target="40">0</span><span class="stat-suffix">M+</span>
+        </span>
+        <span class="stat-label">People Helped Annually</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value">
+          <span class="stat-num" data-target="15">0</span><span class="stat-suffix">min</span>
+        </span>
+        <span class="stat-label">Free Consultation</span>
+      </div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="affirmation-card" id="heroAffirmation">
+      <div class="aff-header">
+        <span class="aff-label">Daily Affirmation</span>
+        <div class="aff-controls">
+          <div class="aff-dot active"></div>
+          <div class="aff-dot"></div>
+          <div class="aff-dot"></div>
+        </div>
+      </div>
+      <p class="aff-text">I choose to prioritize my mental wellness alongside my physical health.</p>
+      <button class="aff-next" id="affNext">Next →</button>
+    </div>
+    <div class="hero-float-card card-brain">
+      <span class="float-icon">🧠</span>
+      <div>
+        <strong>Brain Tips</strong>
+        <small>60-second techniques</small>
+      </div>
+    </div>
+    <div class="hero-float-card card-heart">
+      <span class="float-icon">💚</span>
+      <div>
+        <strong>Therapy First</strong>
+        <small>Mind leads body</small>
+      </div>
+    </div>
+    <div class="hero-ring hero-ring-1"></div>
+    <div class="hero-ring hero-ring-2"></div>
+  </div>
+  <div class="scroll-indicator">
+    <div class="scroll-line"></div>
+    <span>Scroll to explore</span>
+  </div>
+</section>
+
+<!-- PARTNERSHIP BANNER -->
+<section class="partnership-banner">
+  <div class="banner-inner">
+    <div class="banner-lockup">
+      <div class="banner-logos">
+        <img src="/img/bodybank-logo.png" alt="Body Bank" class="banner-logo-img" />
+        <span class="banner-x">×</span>
+        <img src="/img/btb-logo.png" alt="Beyond The Body" class="banner-logo-img" />
+      </div>
+      <div class="banner-lockup-label">
+        <span class="banner-bodybank">Body Bank</span>
+        <span class="banner-x-char">×</span>
+        <span class="banner-btb">Beyond <em>The Body</em></span>
+      </div>
+    </div>
+    <div class="banner-text">
+      <h3>Revolutionary Partnership</h3>
+      <p>Therapy first → Mental clarity → Physical transformation</p>
+      <p class="banner-promise">Anyone seeking therapy gets <strong>FREE</strong> Body Bank Lifestyle Management services</p>
+    </div>
+    <a href="#contact" class="btn btn-light">Join the Movement →</a>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about" id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-visual">
+        <div class="about-card main-card">
+          <div class="about-quote">
+            <svg viewBox="0 0 40 30" fill="currentColor" width="40"><path d="M0 30V18.3C0 10.1 5.2 3.7 15.6 0l2.4 3.9C12.1 6 9 9.8 8.4 14.9H16V30H0zm24 0V18.3C24 10.1 29.2 3.7 39.6 0L42 3.9c-5.9 2.1-9 5.9-9.6 11H40V30H24z"/></svg>
+            <p>We had it backwards. Mental wellness should come FIRST — physical transformation follows naturally.</p>
+            <cite>— Body Bank Founder</cite>
+          </div>
+        </div>
+        <div class="about-stat-card">
+          <div class="asc-number">85%</div>
+          <div class="asc-label">Improvement with trauma-informed care</div>
+        </div>
+        <div class="about-badge-float">
+          <span>🏆</span>
+          <span>True Transformation</span>
+        </div>
+      </div>
+      <div class="about-content">
+        <div class="section-tag">Our Mission</div>
+        <h2 class="section-title">We exist to break the stigma around mental wellness</h2>
+        <p class="about-text">Beyond The Body is a safe, judgment-free space where heart, soul, and mind unite. We believe that true transformation goes <em>beyond the body</em> — it starts with healing the mind first.</p>
+        <div class="about-pillars">
+          <div class="pillar">
+            <div class="pillar-icon">🌱</div>
+            <div>
+              <h4>Normalize Mental Wellness</h4>
+              <p>Making mental health as accepted and celebrated as physical fitness</p>
+            </div>
+          </div>
+          <div class="pillar">
+            <div class="pillar-icon">🔬</div>
+            <div>
+              <h4>Evidence-Based Approach</h4>
+              <p>Every technique backed by science, every therapist carefully vetted</p>
+            </div>
+          </div>
+          <div class="pillar">
+            <div class="pillar-icon">🤝</div>
+            <div>
+              <h4>Community Support</h4>
+              <p>You're never alone — connecting you with those who truly understand</p>
+            </div>
+          </div>
+        </div>
+        <div class="about-disclaimer">
+          <span>⚠️</span>
+          <p>Our content is educational, not diagnostic. Always consult licensed professionals. We complement, never replace, your doctor.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONDITIONS -->
+<section class="conditions" id="conditions">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Conditions We Address</div>
+      <h2 class="section-title">You're not alone in this</h2>
+      <p class="section-desc">Mental health conditions affect millions. Understanding creates connection and hope. Breaking stigma through knowledge.</p>
+    </div>
+    <div class="conditions-grid" id="conditionsGrid">
+      <!-- filled by JS -->
+    </div>
+    <div class="conditions-cta">
+      <p>Remember: information isn't diagnosis. <a href="#contact">Talk to a specialist →</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="services" id="services">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">What We Offer</div>
+      <h2 class="section-title">Specialists seeking <em>you</em></h2>
+      <p class="section-desc">We match you with the perfect professional for your unique journey — no guesswork, no generic care.</p>
+    </div>
+    <div class="services-grid">
+      <div class="service-card" data-delay="0">
+        <div class="service-icon">🪪</div>
+        <h3>Licensed Therapists</h3>
+        <ul class="service-list">
+          <li>Anxiety & Depression</li>
+          <li>Relationship Counseling</li>
+          <li>Life Transitions</li>
+        </ul>
+        <div class="service-glow"></div>
+      </div>
+      <div class="service-card featured" data-delay="100">
+        <div class="service-badge">Most Popular</div>
+        <div class="service-icon">⚡</div>
+        <h3>Specialized Experts</h3>
+        <ul class="service-list">
+          <li>Eating Disorders</li>
+          <li>Workplace Stress</li>
+          <li>Family Therapy</li>
+        </ul>
+        <div class="service-glow"></div>
+      </div>
+      <div class="service-card" data-delay="200">
+        <div class="service-icon">💜</div>
+        <h3>Trauma Specialists</h3>
+        <ul class="service-list">
+          <li>PTSD & Complex Trauma</li>
+          <li>Childhood Trauma Recovery</li>
+          <li>Crisis Intervention</li>
+        </ul>
+        <div class="service-glow"></div>
+      </div>
+      <div class="service-card" data-delay="300">
+        <div class="service-icon">🤝</div>
+        <h3>Group Facilitators</h3>
+        <ul class="service-list">
+          <li>Support Circles</li>
+          <li>Grief & Loss Groups</li>
+          <li>Addiction Recovery</li>
+        </ul>
+        <div class="service-glow"></div>
+      </div>
+    </div>
+    <div class="services-process">
+      <div class="process-step">
+        <div class="process-num">01</div>
+        <div class="process-text">
+          <h4>Free 15-min Consult</h4>
+          <p>We listen to understand your needs</p>
+        </div>
+      </div>
+      <div class="process-arrow">→</div>
+      <div class="process-step">
+        <div class="process-num">02</div>
+        <div class="process-text">
+          <h4>Expert Matching</h4>
+          <p>Get paired with your ideal specialist</p>
+        </div>
+      </div>
+      <div class="process-arrow">→</div>
+      <div class="process-step">
+        <div class="process-num">03</div>
+        <div class="process-text">
+          <h4>Begin Healing</h4>
+          <p>Your transformation starts here</p>
+        </div>
+      </div>
+      <div class="process-arrow">→</div>
+      <div class="process-step">
+        <div class="process-num">04</div>
+        <div class="process-text">
+          <h4>Thrive</h4>
+          <p>Mind heals, body follows naturally</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BRAIN TIPS -->
+<section class="braintips" id="braintips">
+  <div class="bt-bg">
+    <div class="bt-orb-1"></div>
+    <div class="bt-orb-2"></div>
+  </div>
+  <div class="container">
+    <div class="section-header light">
+      <div class="section-tag light">Evidence-Based</div>
+      <h2 class="section-title">Brain Tips™</h2>
+      <p class="section-desc">60-second techniques, expert-backed strategies. When you're overwhelmed, we've got you.</p>
+    </div>
+    <div class="bt-grid" id="btGrid">
+      <!-- filled by JS -->
+    </div>
+    <div class="breathing-exercise">
+      <h3>Try it Now: Box Breathing</h3>
+      <div class="breathing-visual">
+        <div class="breath-box" id="breathBox">
+          <div class="breath-text" id="breathText">Press Start</div>
+          <div class="breath-progress" id="breathProgress"></div>
+        </div>
+        <div class="breath-steps">
+          <div class="bs" data-phase="inhale">Inhale<br><small>4s</small></div>
+          <div class="bs" data-phase="hold1">Hold<br><small>4s</small></div>
+          <div class="bs" data-phase="exhale">Exhale<br><small>4s</small></div>
+          <div class="bs" data-phase="hold2">Hold<br><small>4s</small></div>
+        </div>
+        <button class="btn btn-primary" id="breathStart">Start Breathing</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AFFIRMATIONS -->
+<section class="affirmations-section" id="affirmations">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Daily Practice</div>
+      <h2 class="section-title">Beyond The Body <em>Affirmations</em></h2>
+      <p class="section-desc">Daily words to rewire your inner dialogue. Your inner dialogue shapes your outer reality.</p>
+    </div>
+    <div class="aff-carousel" id="affCarousel">
+      <div class="aff-viewport">
+        <div class="aff-track" id="affTrack">
+          <!-- filled by JS -->
+        </div>
+      </div>
+      <div class="aff-nav">
+        <button class="aff-btn" id="affPrev">←</button>
+        <div class="aff-dots" id="affDots"></div>
+        <button class="aff-btn" id="affNextBtn">→</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUOTES -->
+<section class="quotes-section" id="quotes">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Words of Wisdom</div>
+      <h2 class="section-title">Let these words guide you</h2>
+    </div>
+    <div class="quotes-grid">
+      <div class="quote-card">
+        <div class="qc-quote">"You, yourself, as much as anybody in the entire universe, deserve your love and affection."</div>
+        <div class="qc-author">— Buddha</div>
+      </div>
+      <div class="quote-card accent">
+        <div class="qc-quote">"Mental health is not a destination, but a process. It's about how you drive, not where you're going."</div>
+        <div class="qc-author">— Noam Shpancer</div>
+      </div>
+      <div class="quote-card">
+        <div class="qc-quote">"Recovery is not one and done. It is a lifelong journey that takes place one day, one step at a time."</div>
+        <div class="qc-author">— Unknown</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- JOIN THE TEAM -->
+<section class="join-section" id="team">
+  <div class="join-bg">
+    <div class="join-orb"></div>
+  </div>
+  <div class="container">
+    <div class="join-inner">
+      <div class="join-content">
+        <div class="section-tag light">We're Hiring</div>
+        <h2 class="section-title light">Join our revolution</h2>
+        <p class="join-desc">We're building something extraordinary. Mental wellness & healing revolution starts here. We're looking for passionate professionals who believe transformation goes 'Beyond The Body'.</p>
+        <div class="join-roles">
+          <div class="join-role">
+            <span class="jr-icon">🟢</span>
+            <div>
+              <h4>Licensed Therapists</h4>
+              <p>Anxiety, depression, relationship counseling</p>
+            </div>
+          </div>
+          <div class="join-role">
+            <span class="jr-icon">🔵</span>
+            <div>
+              <h4>Specialized Experts</h4>
+              <p>Eating disorders, workplace stress, family therapy</p>
+            </div>
+          </div>
+          <div class="join-role">
+            <span class="jr-icon">🟣</span>
+            <div>
+              <h4>Trauma Specialists</h4>
+              <p>PTSD, childhood trauma, crisis intervention</p>
+            </div>
+          </div>
+          <div class="join-role">
+            <span class="jr-icon">🟡</span>
+            <div>
+              <h4>Group Facilitators</h4>
+              <p>Support circles, grief groups, addiction recovery</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="join-form-card">
+        <h3>DM to get started</h3>
+        <form id="joinForm" class="form">
+          <div class="form-group">
+            <input type="text" name="name" placeholder="Your name" required class="form-input" />
+          </div>
+          <div class="form-group">
+            <input type="email" name="email" placeholder="Your email" required class="form-input" />
+          </div>
+          <div class="form-group">
+            <select name="service" class="form-input">
+              <option value="">Select your specialty</option>
+              <option>Licensed Therapist</option>
+              <option>Trauma Specialist</option>
+              <option>Group Facilitator</option>
+              <option>Specialized Expert</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <textarea name="message" placeholder="Tell us about your experience and why you want to join..." rows="4" class="form-input"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary full-width">
+            <span>Send Application</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+          </button>
+          <div class="form-response" id="joinResponse"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT / FREE CONSULT -->
+<section class="contact-section" id="contact">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Start Today</div>
+      <h2 class="section-title">Your healing journey begins with a <em>conversation</em></h2>
+      <p class="section-desc">Free 15-minute consultation. No commitment. Just compassionate guidance toward the right support for you.</p>
+    </div>
+    <div class="contact-grid">
+      <div class="contact-info">
+        <div class="ci-card">
+          <span class="ci-icon">⭐</span>
+          <h4>Free 15-min Consult</h4>
+          <p>Get matched with the right specialist — no cost, no strings attached.</p>
+        </div>
+        <div class="ci-card">
+          <span class="ci-icon">🔒</span>
+          <h4>Your Trust is Sacred</h4>
+          <p>We protect your information like our own. Total confidentiality guaranteed.</p>
+        </div>
+        <div class="ci-card">
+          <span class="ci-icon">🌱</span>
+          <h4>Begin Transformation</h4>
+          <p>Therapy first → Mental clarity → Physical capability. Proven approach.</p>
+        </div>
+      </div>
+      <div class="contact-form-card">
+        <h3>Book Your Free Consultation</h3>
+        <form id="consultForm" class="form">
+          <div class="form-row">
+            <div class="form-group">
+              <input type="text" name="name" placeholder="Your name *" required class="form-input" />
+            </div>
+            <div class="form-group">
+              <input type="email" name="email" placeholder="Email address *" required class="form-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <input type="tel" name="phone" placeholder="Phone number (optional)" class="form-input" />
+          </div>
+          <div class="form-group">
+            <select name="concern" class="form-input">
+              <option value="">What brings you here?</option>
+              <option>Anxiety & Depression</option>
+              <option>Trauma & PTSD</option>
+              <option>Stress & Burnout</option>
+              <option>Relationship Issues</option>
+              <option>Eating Disorders</option>
+              <option>Grief & Loss</option>
+              <option>Addiction Recovery</option>
+              <option>Other / Not Sure</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <textarea name="message" placeholder="Tell us a little about what you're experiencing (optional)..." rows="3" class="form-input"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary full-width">
+            <span>Book Free Consultation</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+          <div class="form-response" id="consultResponse"></div>
+          <p class="form-note">No spam, ever. We'll reach out within 24 hours.</p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <img src="/img/btb-logo.png" alt="Beyond The Body" class="footer-logo-img" />
+          <span>Beyond <em>The Body</em></span>
+        </div>
+        <p>Your safe space to embrace your heart, soul, and mind. Together, let's look 'Beyond The Body' and unlock your true potential.</p>
+        <div class="footer-socials">
+          <a href="https://www.instagram.com/beyondthebody_?igsh=bGhlNHc0c3hqN3Zs" target="_blank" rel="noopener noreferrer" class="instagram-link" aria-label="Follow us on Instagram">
+            <svg class="instagram-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+            </svg>
+            <span class="instagram-handle">@beyondthebody_</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-disclaimer">
+        ⚠️ Content is educational, not diagnostic. Always consult qualified professionals. Emergency situations require immediate medical care.
+      </div>
+      <div class="footer-copy">
+        © 2025 Beyond The Body. All rights reserved. Built with 💚 for healing.
+      </div>
+    </div>
+
+    <!-- The Beyond Wellness Platform -->
+    <div class="footer-platform">
+      <h4 class="platform-title">The Beyond Wellness Platform</h4>
+      <div class="platform-brands">
+        <a href="https://beyondthebody.fit" target="_blank" rel="noopener noreferrer" class="platform-brand">
+          <img src="/img/btb-logo.png" alt="Beyond The Body" class="platform-logo" />
+          <span class="platform-domain">BeyondThebody.fit</span>
+        </a>
+        <span class="platform-dot">•</span>
+        <a href="https://bodybank.fit" target="_blank" rel="noopener noreferrer" class="platform-brand">
+          <img src="/img/bodybank-logo.png" alt="Body Bank" class="platform-logo" />
+          <span class="platform-domain">BodyBank.fit</span>
+        </a>
+        <span class="platform-dot">•</span>
+        <a href="https://fitchef.fit" target="_blank" rel="noopener noreferrer" class="platform-brand">
+          <img src="/img/Fitchef%20logo.png" alt="FitChef" class="platform-logo" />
+          <span class="platform-domain">FitChef.fit</span>
+        </a>
+      </div>
+      <p class="platform-tagline">Healing • Strength • Nutrition</p>
+    </div>
+  </div>
+</footer>
+
+<!-- Condition Modal -->
+<div class="modal" id="conditionModal">
+  <div class="modal-overlay" id="modalOverlay"></div>
+  <div class="modal-content" id="modalContent">
+    <button class="modal-close" id="modalClose">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>
