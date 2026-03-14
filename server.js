@@ -1177,75 +1177,85 @@ async function autoMigrate() {
     if (testUserRows.rows.length > 0 && hasSessions.rows.length === 0) {
       const uid = testUserRows.rows[0].id;
       const now = new Date();
-      const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(10, 0, 0, 0);
-      const nextWeek = new Date(now); nextWeek.setDate(nextWeek.getDate() + 7); nextWeek.setHours(14, 0, 0, 0);
-      const lastWeek = new Date(now); lastWeek.setDate(lastWeek.getDate() - 7); lastWeek.setHours(11, 0, 0, 0);
-      const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14); twoWeeksAgo.setHours(9, 0, 0, 0);
-      const s1 = await db.query(
-        `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, completed_at, rating)
-         VALUES ($1, $2, '1:1 Therapy', $3, 50, 'COMPLETED', $3, 5) RETURNING id`,
-        [uid, specialistId, lastWeek]
-      );
-      const s2 = await db.query(
-        `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, completed_at, rating)
-         VALUES ($1, $2, 'Session', $3, 60, 'COMPLETED', $3, 5) RETURNING id`,
-        [uid, specialistId, twoWeeksAgo]
-      );
-      await db.query(
-        `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
-         VALUES ($1, $2, 'Coaching', $3, 50, 'UPCOMING')`,
-        [uid, specialistId, tomorrow]
-      );
-      await db.query(
-        `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
-         VALUES ($1, $2, 'Follow-up', $3, 45, 'UPCOMING')`,
-        [uid, specialistId, nextWeek]
-      );
-      const sid1 = s1.rows[0]?.id; const sid2 = s2.rows[0]?.id;
-      if (sid1) {
+      const specialistIds = [2, 3, 4, 5]; // Dr. Sarah Chen, James Miller, Maya Foster, Leo Torres
+      for (const sid of specialistIds) {
+        await db.query(
+          'INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT (user_id, specialist_id) DO NOTHING',
+          [uid, sid]
+        );
+      }
+      await db.query('UPDATE dashboard_users SET healing_score = 74 WHERE id = $1', [uid]);
+      const sessionTypes = ['1:1 Therapy', 'Coaching', 'Hypnosis', 'Mindfulness', 'Follow-up', 'Deep Dive', 'Check-in'];
+      const completedSessions = [];
+      for (let i = 0; i < 10; i++) {
+        const d = new Date(now); d.setDate(d.getDate() - (14 + i * 4)); d.setHours(10 + (i % 3), 0, 0, 0);
+        const spId = specialistIds[i % specialistIds.length];
+        const r = await db.query(
+          `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, completed_at, rating)
+           VALUES ($1, $2, $3, $4, ${50 + (i % 3) * 5}, 'COMPLETED', $4, ${4 + (i % 2)}) RETURNING id`,
+          [uid, spId, sessionTypes[i % sessionTypes.length], d]
+        );
+        if (r.rows[0]?.id) {
+          completedSessions.push({ id: r.rows[0].id, specialistId: spId });
+        }
+      }
+      for (const s of completedSessions.slice(0, 6)) {
         await db.query(
           'INSERT INTO session_notes (session_id, specialist_id, user_id, content, is_private) VALUES ($1, $2, $3, $4, true)',
-          [sid1, specialistId, uid, 'Client showed good progress with grounding techniques. Will continue weekly.']
+          [s.id, s.specialistId, uid, ['Great progress on goals today.', 'Explored breathing techniques. Client engaged.', 'Set action steps for the week.', 'Reflected on wins. Mood improving.', 'Reviewed homework. On track.', 'Breakthrough moment — client shared openly.'][completedSessions.indexOf(s) % 6]]
         );
         await db.query(
           'INSERT INTO reviews (session_id, user_id, specialist_id, rating, excerpt) VALUES ($1, $2, $3, 5, $4)',
-          [sid1, uid, specialistId, 'Very supportive and professional. Felt safe to open up.']
+          [s.id, uid, s.specialistId, 5, ['Life-changing support.', 'So grateful for this space.', 'Always feel heard.', 'Best decision I made.', 'Progress I never thought possible.', 'Thank you for the safe space.'][completedSessions.indexOf(s) % 6]]
         );
       }
-      if (sid2) {
+      for (let i = 0; i < 6; i++) {
+        const d = new Date(now); d.setDate(d.getDate() + (i + 1)); d.setHours(9 + (i % 2) * 4, 30 * (i % 2), 0, 0);
         await db.query(
-          'INSERT INTO session_notes (session_id, specialist_id, user_id, content, is_private) VALUES ($1, $2, $3, $4, true)',
-          [sid2, specialistId, uid, 'Initial assessment. Goals set for next month.']
-        );
-        await db.query(
-          'INSERT INTO reviews (session_id, user_id, specialist_id, rating, excerpt) VALUES ($1, $2, $3, 5, $4)',
-          [sid2, uid, specialistId, 'Great first session. Looking forward to more.']
+          `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
+           VALUES ($1, $2, $3, $4, 50, 'UPCOMING')`,
+          [uid, specialistIds[i % specialistIds.length], ['1:1 Therapy', 'Coaching', 'Check-in', 'Follow-up', 'Mindfulness', 'Hypnosis'][i], d]
         );
       }
-      for (let d = 0; d < 14; d++) {
+      for (let d = 0; d < 30; d++) {
         const dte = new Date(now); dte.setDate(dte.getDate() - d);
         const dateStr = dte.toISOString().slice(0, 10);
-        const value = 4 + Math.floor(Math.random() * 5);
+        const value = d < 7 ? 6 + (d % 3) : (5 + Math.floor(Math.random() * 4));
+        const notes = ['Feeling calm', 'Good sleep', 'Productive day', 'Mindful morning', 'Grateful', 'Stayed present', 'Small win today', null, null, null];
         await db.query(
           'INSERT INTO mood_log (user_id, date, value, note) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, date) DO UPDATE SET value = $3, note = $4',
-          [uid, dateStr, value, d === 0 ? 'Feeling good today' : null]
+          [uid, dateStr, value, notes[d % notes.length]]
         );
       }
       await db.query(
-        'INSERT INTO user_milestones (user_id, milestone_id, unlocked_at) VALUES ($1, 1, CURRENT_DATE - 5), ($1, 2, CURRENT_DATE - 30) ON CONFLICT (user_id, milestone_id) DO NOTHING',
+        'INSERT INTO user_milestones (user_id, milestone_id, unlocked_at) VALUES ($1, 1, CURRENT_DATE - 60), ($1, 2, CURRENT_DATE - 20), ($1, 3, CURRENT_DATE - 8) ON CONFLICT (user_id, milestone_id) DO NOTHING',
         [uid]
       );
-      await db.query(
-        `INSERT INTO community_posts (user_id, content, likes, comments) VALUES
-         ($1, 'Grateful for this community and my progress this month. Small steps every day.', 12, 3),
-         ($1, 'Anyone else find morning meditation game-changing? Share your routine!', 8, 5)`,
-        [uid]
-      );
-      if (testUserRows.rows[1]) {
+      const myPosts = [
+        'Grateful for this community and my progress this month. Small steps every day add up.',
+        'Anyone else find morning meditation game-changing? Share your routine!',
+        '10 sessions in with my therapist — the consistency is paying off. To anyone just starting: stick with it.',
+        'Hit my 7-day streak today. The app reminders actually help.',
+        'Shared my first milestone in the group. The support here is real.',
+      ];
+      for (const content of myPosts) {
         await db.query(
-          'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, 5, 1)',
-          [testUserRows.rows[1].id, 'Second week in — already noticing a shift in how I handle stress.'] 
+          'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, $3, $4)',
+          [uid, content, 8 + Math.floor(Math.random() * 15), 1 + Math.floor(Math.random() * 6)]
         );
+      }
+      if (testUserRows.rows[1]) {
+        const others = [
+          'Second week in — already noticing a shift in how I handle stress.',
+          'This community gets it. No judgment, just growth.',
+          'Had a breakthrough in my last session. Sharing in case it helps someone.',
+        ];
+        for (const content of others) {
+          await db.query(
+            'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, $3, $4)',
+            [testUserRows.rows[1].id, content, 5 + Math.floor(Math.random() * 8), 1 + Math.floor(Math.random() * 3)]
+          );
+        }
       }
       const appCount = await db.query("SELECT COUNT(*) as c FROM specialist_applications WHERE email IN ('elena.v@example.com','marcus.r@example.com','priya.s@example.com')");
       if (parseInt(appCount.rows[0]?.c || 0, 10) === 0) {
@@ -1268,6 +1278,73 @@ async function autoMigrate() {
          ('application_submitted', 'New specialist application: Elena Vasquez (Therapist)')`
       );
       console.log('autoMigrate: test data seeded (users, sessions, mood, community, applications, activity). Login: testuser1@test.btb.fit / TestUser@123');
+    }
+
+    // 6. Top-up testuser1 for presentation (add more data if account exists but has few sessions)
+    const t1 = await db.query("SELECT id FROM dashboard_users WHERE email = 'testuser1@test.btb.fit' LIMIT 1");
+    if (t1.rows.length > 0) {
+      const uid = t1.rows[0].id;
+      const countR = await db.query('SELECT COUNT(*) as c FROM sessions WHERE user_id = $1', [uid]);
+      const sessionCount = parseInt(countR.rows[0]?.c || 0, 10);
+      if (sessionCount < 12) {
+        const specialistIds = [2, 3, 4, 5];
+        for (const sid of specialistIds) {
+          await db.query(
+            'INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT (user_id, specialist_id) DO NOTHING',
+            [uid, sid]
+          );
+        }
+        await db.query('UPDATE dashboard_users SET healing_score = 74 WHERE id = $1', [uid]);
+        const now = new Date();
+        for (let i = sessionCount; i < 10; i++) {
+          const d = new Date(now); d.setDate(d.getDate() - (14 + i * 4)); d.setHours(10, 0, 0, 0);
+          const spId = specialistIds[i % specialistIds.length];
+          await db.query(
+            `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, completed_at, rating)
+             VALUES ($1, $2, '1:1 Therapy', $3, 50, 'COMPLETED', $3, 5)`,
+            [uid, spId, d]
+          );
+        }
+        for (let d = 0; d < 30; d++) {
+          const dte = new Date(now); dte.setDate(dte.getDate() - d);
+          const dateStr = dte.toISOString().slice(0, 10);
+          const value = 5 + Math.floor(Math.random() * 4);
+          await db.query(
+            'INSERT INTO mood_log (user_id, date, value, note) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, date) DO UPDATE SET value = $3, note = $4',
+            [uid, dateStr, value, d < 3 ? 'Feeling good' : null]
+          );
+        }
+        await db.query(
+          'INSERT INTO user_milestones (user_id, milestone_id, unlocked_at) VALUES ($1, 1, CURRENT_DATE - 60), ($1, 2, CURRENT_DATE - 20), ($1, 3, CURRENT_DATE - 8) ON CONFLICT (user_id, milestone_id) DO NOTHING',
+          [uid]
+        );
+        const extraPosts = [
+          '10 sessions in — the consistency is paying off. To anyone just starting: stick with it.',
+          'Hit my 7-day streak today. The app reminders actually help.',
+          'Shared my first milestone. The support here is real.',
+        ];
+        for (const content of extraPosts) {
+          await db.query(
+            'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, 10, 2)',
+            [uid, content]
+          );
+        }
+        const upcomingCount = await db.query(
+          "SELECT COUNT(*) as c FROM sessions WHERE user_id = $1 AND status = 'UPCOMING'",
+          [uid]
+        );
+        if (parseInt(upcomingCount.rows[0]?.c || 0, 10) < 4) {
+          for (let i = 0; i < 4; i++) {
+            const d = new Date(now); d.setDate(d.getDate() + i + 1); d.setHours(10 + i, 0, 0, 0);
+            await db.query(
+              `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
+               VALUES ($1, $2, 'Coaching', $3, 50, 'UPCOMING')`,
+              [uid, specialistIds[i % specialistIds.length], d]
+            );
+          }
+        }
+        console.log('autoMigrate: testuser1 presentation data topped up (sessions, mood, milestones, community).');
+      }
     }
 
     console.log('autoMigrate: done');
