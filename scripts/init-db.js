@@ -19,7 +19,7 @@ const postgresUrl = dbUrl.replace(/\/([^/?]+)(\?.*)?$/, '/postgres$2');
 const dbName = 'beyond_the_body';
 
 async function run() {
-  // Step 1: Connect to default DB and create beyond_the_body if not exists
+  // Step 1 (optional): Create beyond_the_body DB if running locally against postgres. Skip on Render (DB already exists).
   const admin = new Client({ connectionString: postgresUrl });
   try {
     await admin.connect();
@@ -29,12 +29,11 @@ async function run() {
     });
     await admin.end();
   } catch (err) {
-    console.error('Could not create database:', err.message);
     await admin.end().catch(() => {});
-    process.exit(1);
+    console.log('Skip create-database (use existing DB):', err.message);
   }
 
-  // Step 2: Connect to beyond_the_body and run schema + seed
+  // Step 2: Connect and run schema + seed
   const client = new Client({ connectionString: dbUrl });
   try {
     await client.connect();

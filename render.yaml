@@ -1,0 +1,48 @@
+# Render Blueprint — Beyond The Body (NestJS + Next.js)
+# Deploy from repo: https://github.com/DineshSingh2026/Beyondthebody.fit
+# Docs: https://render.com/docs/blueprint-spec
+
+databases:
+  - name: beyond-the-body-db
+    plan: free
+
+services:
+  # ---------- 1. Backend (NestJS API) ----------
+  - type: web
+    name: beyond-the-body-api
+    runtime: node
+    plan: free
+
+    rootDir: backend
+
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+
+    healthCheckPath: /api/health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: beyond-the-body-db
+          property: connectionString
+      # Set in Dashboard after deploy: your frontend URL (e.g. https://beyond-the-body.onrender.com)
+      - key: FRONTEND_URL
+        sync: false
+
+  # ---------- 2. Frontend (Next.js) ----------
+  - type: web
+    name: beyond-the-body
+    runtime: node
+    plan: free
+
+    rootDir: frontend
+
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+
+    # Set in Dashboard after backend deploys: https://beyond-the-body-api.onrender.com (then redeploy)
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
