@@ -160,8 +160,9 @@ export const emptyTherapistDashboard = (role: SpecialistType, specialist?: { id:
   clients: [],
   recentNotes: [],
   pendingRequests: [],
+  clientMilestones: [],
   reviews: [],
-  availabilitySlots: [],
+  earningsBreakdown: { sessionsCount: 0, rate: 0, pendingPayout: 0, paidOut: 0 },
 });
 
 export const mockTherapistDashboard = (role: 'LIFE_COACH' | 'HYPNOTHERAPIST' | 'THERAPIST' | 'MUSIC_TUTOR'): TherapistDashboardData => {

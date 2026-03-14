@@ -3,6 +3,8 @@
  * Uses NEXT_PUBLIC_API_URL (default http://localhost:3000) for the Express backend.
  */
 
+import type { TherapistDashboardData } from './dashboard-types';
+
 const API_BASE = typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000') : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 const AUTH_TOKEN_KEY = 'btb_token';
@@ -170,8 +172,8 @@ export const api = {
     return fetchWithAuth(`${API_BASE}/api/admin/activity-log`);
   },
 
-  async getSpecialistDashboard(specialistId: string) {
-    return fetchWithAuth(`${API_BASE}/api/specialists/${specialistId}/dashboard`);
+  async getSpecialistDashboard(specialistId: string): Promise<TherapistDashboardData> {
+    return fetchWithAuth<TherapistDashboardData>(`${API_BASE}/api/specialists/${specialistId}/dashboard`);
   },
 
   async getSpecialistClients(specialistId: string) {

@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { emptyUserDashboard } from '@/lib/mock-data';
 import { api } from '@/lib/api';
-import type { UserDashboardData } from '@/lib/dashboard-types';
+import type { UserDashboardData, UserRole } from '@/lib/dashboard-types';
 import UserMobileHome from '@/components/mobile/UserMobileHome';
 import HealingScoreRing from '@/components/dashboard/HealingScoreRing';
 import StatCard from '@/components/dashboard/StatCard';
@@ -43,7 +43,7 @@ export default function UserDashboardPage() {
         const d = await api.getUserDashboard(me.id);
         if (!cancelled) setData(d);
       } catch {
-        if (!cancelled && me) setData(emptyUserDashboard({ id: me.id, name: me.name, email: me.email, role: me.role }));
+        if (!cancelled && me) setData(emptyUserDashboard({ id: me.id, name: me.name, email: me.email, role: me.role as UserRole }));
       } finally {
         if (!cancelled) setLoading(false);
       }

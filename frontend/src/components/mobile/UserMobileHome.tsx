@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { emptyUserDashboard } from '@/lib/mock-data';
 import { api } from '@/lib/api';
-import type { UserDashboardData } from '@/lib/dashboard-types';
+import type { UserDashboardData, UserRole } from '@/lib/dashboard-types';
 import MiniHealingRing from './MiniHealingRing';
 import MobileCard from './MobileCard';
 import HapticButton from './HapticButton';
@@ -26,7 +26,7 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
     api.getUserDashboard(userId)
       .then(setD)
       .catch(() => {
-        api.getMe().then((me) => setD(emptyUserDashboard(me))).catch(() => {
+        api.getMe().then((me) => setD(emptyUserDashboard({ ...me, role: me.role as UserRole }))).catch(() => {
           setD(emptyUserDashboard({ id: userId, name: userName ?? 'User', email: '', role: 'USER' }));
         });
       });
