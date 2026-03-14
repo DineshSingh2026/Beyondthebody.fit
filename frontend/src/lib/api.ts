@@ -96,10 +96,16 @@ export async function login(email: string, password: string): Promise<{ user: Au
   return r;
 }
 
-export async function signup(name: string, email: string, password: string): Promise<{ user: AuthUser; token: string }> {
+export async function signup(
+  name: string,
+  email: string,
+  password: string,
+  mobile?: string,
+  country?: string
+): Promise<{ user: AuthUser; token: string }> {
   const r = await fetchJson<{ user: AuthUser; token: string }>(`${API_BASE}/api/auth/signup`, {
     method: 'POST',
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ name, email, password, mobile, country }),
   });
   return r;
 }

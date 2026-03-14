@@ -262,7 +262,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.post('/api/auth/signup', async (req, res) => {
-  const { name, email, password } = req.body || {};
+  const { name, email, password, mobile, country } = req.body || {};
   if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password required' });
   if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Service unavailable' });
@@ -270,15 +270,36 @@ app.post('/api/auth/signup', async (req, res) => {
     const existing = await db.query('SELECT id FROM dashboard_users WHERE LOWER(email) = LOWER($1)', [email]);
     if (existing.rows.length > 0) return res.status(409).json({ error: 'An account with this email already exists' });
     const password_hash = await bcrypt.hash(password, 10);
-    const r = await db.query(
-      'INSERT INTO dashboard_users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-      [name.trim(), email.trim().toLowerCase(), password_hash, 'USER']
-    );
+    const hasExtra = mobile != null || country != null;
+    const r = hasExtra
+      ? await db.query(
+          'INSERT INTO dashboard_users (name, email, password_hash, role, mobile, country) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, email, role',
+          [name.trim(), email.trim().toLowerCase(), password_hash, 'USER', (mobile && String(mobile).trim()) || null, (country && String(country).trim()) || null]
+        )
+      : await db.query(
+          'INSERT INTO dashboard_users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
+          [name.trim(), email.trim().toLowerCase(), password_hash, 'USER']
+        );
     const u = r.rows[0];
     const user = { id: String(u.id), name: u.name, email: u.email, role: u.role };
     const token = createToken(user);
     res.status(201).json({ user, token });
   } catch (err) {
+    if (err.code === '42701' || (err.message && err.message.includes('column'))) {
+      try {
+        const r = await db.query(
+          'INSERT INTO dashboard_users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
+          [name.trim(), email.trim().toLowerCase(), password_hash, 'USER']
+        );
+        const u = r.rows[0];
+        const user = { id: String(u.id), name: u.name, email: u.email, role: u.role };
+        const token = createToken(user);
+        return res.status(201).json({ user, token });
+      } catch (e) {
+        console.error('POST /api/auth/signup fallback', e);
+        return res.status(500).json({ error: e.message });
+      }
+    }
     console.error('POST /api/auth/signup', err);
     res.status(500).json({ error: err.message });
   }
@@ -1077,6 +1098,15 @@ async function autoMigrate() {
     `);
     console.log('autoMigrate: schema OK');
 
+    // 1b. Add optional user profile columns if missing (safe for existing DBs)
+    for (const col of ['mobile', 'country']) {
+      try {
+        await db.query(`ALTER TABLE dashboard_users ADD COLUMN ${col} VARCHAR(100)`);
+      } catch (e) {
+        if (e.code !== '42701') throw e; // 42701 = duplicate_column
+      }
+    }
+
     // 2. Insert base users (admin + 4 specialists) — skip if already present
     await db.query(`
       INSERT INTO dashboard_users (id, name, email, role, healing_score) VALUES
@@ -1114,6 +1144,130 @@ async function autoMigrate() {
       const hash  = await bcrypt.hash(plain, 10);
       await db.query('UPDATE dashboard_users SET password_hash = $1 WHERE id = $2', [hash, u.id]);
       console.log(`autoMigrate: password set for ${u.email} (id=${u.id})`);
+    }
+
+    // 5. Seed test data (user, admin, therapist) — idempotent, skip if test users already have sessions
+    const TEST_PASS = 'TestUser@123';
+    const testUserHash = await bcrypt.hash(TEST_PASS, 10);
+    const testUsers = [
+      { name: 'Test User One', email: 'testuser1@test.btb.fit', healing_score: 62 },
+      { name: 'Test User Two', email: 'testuser2@test.btb.fit', healing_score: 58 },
+      { name: 'Alex Demo', email: 'alex.demo@test.btb.fit', healing_score: 71 },
+    ];
+    for (const u of testUsers) {
+      await db.query(
+        `INSERT INTO dashboard_users (name, email, password_hash, role, healing_score) VALUES ($1, $2, $3, 'USER', $4)
+         ON CONFLICT (email) DO NOTHING`,
+        [u.name, u.email, testUserHash, u.healing_score]
+      );
+    }
+    const testUserRows = await db.query(
+      "SELECT id, email FROM dashboard_users WHERE email LIKE '%@test.btb.fit' ORDER BY id"
+    );
+    const specialistId = 2; // Dr. Sarah Chen
+    for (const u of testUserRows.rows) {
+      await db.query(
+        'INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT (user_id, specialist_id) DO NOTHING',
+        [u.id, specialistId]
+      );
+    }
+    const hasSessions = await db.query(
+      "SELECT 1 FROM sessions s JOIN dashboard_users u ON u.id = s.user_id WHERE u.email LIKE '%@test.btb.fit' LIMIT 1"
+    );
+    if (testUserRows.rows.length > 0 && hasSessions.rows.length === 0) {
+      const uid = testUserRows.rows[0].id;
+      const now = new Date();
+      const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(10, 0, 0, 0);
+      const nextWeek = new Date(now); nextWeek.setDate(nextWeek.getDate() + 7); nextWeek.setHours(14, 0, 0, 0);
+      const lastWeek = new Date(now); lastWeek.setDate(lastWeek.getDate() - 7); lastWeek.setHours(11, 0, 0, 0);
+      const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14); twoWeeksAgo.setHours(9, 0, 0, 0);
+      const s1 = await db.query(
+        `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, completed_at, rating)
+         VALUES ($1, $2, '1:1 Therapy', $3, 50, 'COMPLETED', $3, 5) RETURNING id`,
+        [uid, specialistId, lastWeek]
+      );
+      const s2 = await db.query(
+        `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, completed_at, rating)
+         VALUES ($1, $2, 'Session', $3, 60, 'COMPLETED', $3, 5) RETURNING id`,
+        [uid, specialistId, twoWeeksAgo]
+      );
+      await db.query(
+        `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
+         VALUES ($1, $2, 'Coaching', $3, 50, 'UPCOMING')`,
+        [uid, specialistId, tomorrow]
+      );
+      await db.query(
+        `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
+         VALUES ($1, $2, 'Follow-up', $3, 45, 'UPCOMING')`,
+        [uid, specialistId, nextWeek]
+      );
+      const sid1 = s1.rows[0]?.id; const sid2 = s2.rows[0]?.id;
+      if (sid1) {
+        await db.query(
+          'INSERT INTO session_notes (session_id, specialist_id, user_id, content, is_private) VALUES ($1, $2, $3, $4, true)',
+          [sid1, specialistId, uid, 'Client showed good progress with grounding techniques. Will continue weekly.']
+        );
+        await db.query(
+          'INSERT INTO reviews (session_id, user_id, specialist_id, rating, excerpt) VALUES ($1, $2, $3, 5, $4)',
+          [sid1, uid, specialistId, 'Very supportive and professional. Felt safe to open up.']
+        );
+      }
+      if (sid2) {
+        await db.query(
+          'INSERT INTO session_notes (session_id, specialist_id, user_id, content, is_private) VALUES ($1, $2, $3, $4, true)',
+          [sid2, specialistId, uid, 'Initial assessment. Goals set for next month.']
+        );
+        await db.query(
+          'INSERT INTO reviews (session_id, user_id, specialist_id, rating, excerpt) VALUES ($1, $2, $3, 5, $4)',
+          [sid2, uid, specialistId, 'Great first session. Looking forward to more.']
+        );
+      }
+      for (let d = 0; d < 14; d++) {
+        const dte = new Date(now); dte.setDate(dte.getDate() - d);
+        const dateStr = dte.toISOString().slice(0, 10);
+        const value = 4 + Math.floor(Math.random() * 5);
+        await db.query(
+          'INSERT INTO mood_log (user_id, date, value, note) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, date) DO UPDATE SET value = $3, note = $4',
+          [uid, dateStr, value, d === 0 ? 'Feeling good today' : null]
+        );
+      }
+      await db.query(
+        'INSERT INTO user_milestones (user_id, milestone_id, unlocked_at) VALUES ($1, 1, CURRENT_DATE - 5), ($1, 2, CURRENT_DATE - 30) ON CONFLICT (user_id, milestone_id) DO NOTHING',
+        [uid]
+      );
+      await db.query(
+        `INSERT INTO community_posts (user_id, content, likes, comments) VALUES
+         ($1, 'Grateful for this community and my progress this month. Small steps every day.', 12, 3),
+         ($1, 'Anyone else find morning meditation game-changing? Share your routine!', 8, 5)`,
+        [uid]
+      );
+      if (testUserRows.rows[1]) {
+        await db.query(
+          'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, 5, 1)',
+          [testUserRows.rows[1].id, 'Second week in — already noticing a shift in how I handle stress.'] 
+        );
+      }
+      const appCount = await db.query("SELECT COUNT(*) as c FROM specialist_applications WHERE email IN ('elena.v@example.com','marcus.r@example.com','priya.s@example.com')");
+      if (parseInt(appCount.rows[0]?.c || 0, 10) === 0) {
+        await db.query(
+          `INSERT INTO specialist_applications (name, email, specialty, status) VALUES
+           ('Elena Vasquez', 'elena.v@example.com', 'THERAPIST', 'PENDING'),
+           ('Marcus Reid', 'marcus.r@example.com', 'LIFE_COACH', 'PENDING'),
+           ('Priya Sharma', 'priya.s@example.com', 'HYPNOTHERAPIST', 'PENDING')`
+        );
+      }
+      const nextDay = new Date(now); nextDay.setDate(nextDay.getDate() + 2); nextDay.setHours(15, 0, 0, 0);
+      await db.query(
+        'INSERT INTO booking_requests (specialist_id, user_id, proposed_at, session_type, status) VALUES ($1, $2, $3, $4, $5)',
+        [specialistId, uid, nextDay, '1:1 Therapy', 'PENDING']
+      );
+      await db.query(
+        `INSERT INTO activity_log (type, message) VALUES
+         ('user_signup', 'New user signed up: testuser1@test.btb.fit'),
+         ('session_completed', 'Session completed — Test User One & Dr. Sarah Chen'),
+         ('application_submitted', 'New specialist application: Elena Vasquez (Therapist)')`
+      );
+      console.log('autoMigrate: test data seeded (users, sessions, mood, community, applications, activity). Login: testuser1@test.btb.fit / TestUser@123');
     }
 
     console.log('autoMigrate: done');

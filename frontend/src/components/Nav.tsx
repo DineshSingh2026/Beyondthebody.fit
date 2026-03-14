@@ -57,13 +57,8 @@ export default function Nav() {
               </li>
             ))}
             <li>
-              <Link href="/signup" className="nav-link" style={{ textDecoration: 'none', color: 'inherit' }}>
-                Sign up
-              </Link>
-            </li>
-            <li>
               <Link href="/login" className="nav-link nav-cta" style={{ textDecoration: 'none' }}>
-                Login
+                Sign in
               </Link>
             </li>
             <li>
@@ -103,13 +98,8 @@ export default function Nav() {
             </li>
           ))}
           <li>
-            <Link href="/signup" className="mobile-link" style={{ display: 'block', padding: '12px 16px' }}>
-              Sign up
-            </Link>
-          </li>
-          <li>
             <Link href="/login" className="mobile-link" style={{ display: 'block', padding: '12px 16px' }}>
-              Login
+              Sign in
             </Link>
           </li>
           <li>
