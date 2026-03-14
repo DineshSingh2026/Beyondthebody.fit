@@ -1,0 +1,27 @@
+.ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.glowGreen {
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, var(--green3) 0%, transparent 70%);
+  opacity: 0.04;
+}
+
+.glowGold {
+  position: absolute;
+  bottom: -20%;
+  right: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, var(--gold3) 0%, transparent 70%);
+  opacity: 0.04;
+}

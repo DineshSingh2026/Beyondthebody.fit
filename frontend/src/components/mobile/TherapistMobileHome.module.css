@@ -1,0 +1,181 @@
+.section {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 12px;
+  font-weight: 500;
+}
+
+.hero {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.scoreWrap {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 8px;
+}
+
+.sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.scheduleScroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 0 0 8px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  margin: 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.scheduleCard {
+  flex: 0 0 160px;
+  scroll-snap-align: start;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.time {
+  font-weight: 500;
+  color: var(--gold);
+  font-size: 13px;
+}
+
+.type {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.nextRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.clientName {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.nextTime {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+
+.statValue {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--cream);
+}
+
+.statLabel {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.requestCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.requestCard:last-child {
+  border-bottom: none;
+}
+
+.requestMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.requestName {
+  display: block;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.requestTime {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.requestActions {
+  display: flex;
+  gap: 8px;
+}
+
+.clientScroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 0 0 8px;
+  margin: 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.clientCard {
+  flex: 0 0 120px;
+  scroll-snap-align: start;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.clientName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: center;
+}
+
+.muted {
+  font-size: 11px;
+  color: var(--muted);
+}

@@ -1,0 +1,117 @@
+/* Beyond The Body — Ultra-Luxury Dashboard System
+   Design tokens & shared utility classes. DO NOT DEVIATE. */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');
+
+:root {
+  --bg:     #060e09;
+  --bg2:    #0b1710;
+  --bg3:    #0f1e14;
+  --card:   #111f16;
+  --card2:  #152419;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+
+  --gold:   #c9a84c;
+  --gold2:  rgba(201,168,76,0.12);
+  --gold3:  rgba(201,168,76,0.06);
+
+  --green:  #4ade80;
+  --green2: rgba(74,222,128,0.10);
+  --green3: rgba(74,222,128,0.05);
+
+  --sage:   #8fada0;
+  --cream:  #e8e0d0;
+  --text:   #dde8e2;
+  --muted:  #6b8a78;
+  --dim:    #3d5248;
+  --danger: #ff6b6b;
+  --warn:   #f0a500;
+
+  /* Specialty accents */
+  --purple:     #9b7fd4;
+  --purple2:    rgba(155,127,212,0.12);
+  --teal:       #4db6ac;
+  --teal2:      rgba(77,182,172,0.12);
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:   'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --radius: 12px;
+  --radius-lg: 16px;
+  --transition: all 0.2s ease;
+
+  /* Mobile-specific */
+  --bottom-nav-height: 68px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --radius-card: 16px;
+  --radius-pill: 999px;
+}
+
+/* Shared utility classes */
+.dash-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+
+.dash-label-lg {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+
+.dash-accent-italic {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--sage);
+}
+
+.dash-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: var(--transition);
+}
+
+.dash-card:hover {
+  background: var(--card2);
+  border-color: var(--border2);
+}
+
+.dash-card-glow {
+  box-shadow: 0 0 20px rgba(201,168,76,0.15);
+}
+
+/* Scrollbar hidden */
+.dash-scroll-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.dash-scroll-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Skeleton shimmer */
+@keyframes dash-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.dash-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg3) 0%,
+    var(--card2) 50%,
+    var(--bg3) 100%
+  );
+  background-size: 200% 100%;
+  animation: dash-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius);
+}

@@ -1,0 +1,341 @@
+.section {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 12px;
+  font-weight: 500;
+}
+
+/* Greeting Hero */
+.hero {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.greeting {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--cream);
+  margin: 0 0 4px;
+}
+
+.sub {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--sage);
+  margin: 0 0 16px;
+}
+
+.heroRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.weekStrip {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 12px;
+}
+
+.progressBar {
+  height: 4px;
+  background: var(--bg3);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  width: 60%;
+  background: var(--gold);
+  border-radius: 2px;
+}
+
+/* Next Session Card */
+.nextSessionCard {
+  border-left: 4px solid var(--gold);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.timeChip {
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.specialistName {
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.ctaRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* Affirmation */
+.affirmation {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-style: italic;
+  color: var(--cream);
+  line-height: 1.4;
+  margin-bottom: 20px;
+}
+
+/* Quick Actions */
+.quickGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.quickBtn {
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.quickBtn:active {
+  background: var(--card2);
+  border-color: var(--border2);
+}
+
+.quickIcon {
+  font-size: 28px;
+}
+
+/* Mood strip */
+.moodRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.moodDot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--green2);
+  border: 2px solid var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.moodDot.today {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold3);
+}
+
+.moodTrend {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--sage);
+  margin-top: 8px;
+}
+
+/* Horizontal scroll */
+.specialistScroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  padding: 0 0 8px;
+  margin: 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.specialistCard {
+  flex: 0 0 160px;
+  scroll-snap-align: start;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.specialistName {
+  font-weight: 500;
+  color: var(--text);
+  font-size: 13px;
+  text-align: center;
+}
+
+.rating {
+  font-size: 12px;
+  color: var(--gold);
+}
+
+/* Session list */
+.sessionItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sessionItem:last-child {
+  border-bottom: none;
+}
+
+.sessionTime {
+  color: var(--gold);
+  font-weight: 500;
+  min-width: 64px;
+  font-size: 13px;
+}
+
+.sessionMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.sessionType {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chevron {
+  color: var(--dim);
+  font-size: 14px;
+}
+
+/* Feed */
+.feedItem {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.feedItem:last-child {
+  border-bottom: none;
+}
+
+.feedAuthor {
+  font-weight: 500;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.feedContent {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.feedMeta {
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.seeAll {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--gold);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* Milestones */
+.milestoneScroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 0 0 8px;
+  margin: 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.milestoneCard {
+  flex: 0 0 140px;
+  scroll-snap-align: start;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  text-align: center;
+}
+
+.milestoneIcon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.milestoneTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.milestoneDesc {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.noSession {
+  text-align: center;
+  padding: 24px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.bookCta {
+  margin-top: 16px;
+}

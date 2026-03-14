@@ -1,0 +1,9 @@
+.desktop { padding: 24px; color: var(--muted); }
+.page { }
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+}
+.label { font-size: 11px; color: var(--muted); }
+.value { font-family: var(--font-display); font-size: 28px; color: var(--gold); display: block; margin-top: 4px; }
+.breakdown { font-size: 14px; color: var(--muted); }

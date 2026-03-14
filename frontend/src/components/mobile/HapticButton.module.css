@@ -1,0 +1,52 @@
+.btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.primary {
+  background: linear-gradient(135deg, var(--gold), #b8943a);
+  color: var(--bg);
+  box-shadow: 0 2px 12px rgba(201, 168, 76, 0.3);
+}
+
+.primary:active {
+  filter: brightness(0.95);
+}
+
+.secondary {
+  background: var(--card2);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.pill {
+  border-radius: var(--radius-pill);
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.fullWidth {
+  width: 100%;
+}

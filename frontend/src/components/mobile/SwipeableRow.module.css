@@ -1,0 +1,51 @@
+.wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+
+.track {
+  display: flex;
+  align-items: stretch;
+  transition: transform 0.2s ease-out;
+  touch-action: pan-y;
+}
+
+.content {
+  flex: 1;
+  min-width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.actions {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.actionGold {
+  background: var(--gold2);
+  color: var(--gold);
+  border-left: 1px solid var(--border);
+}
+
+.actionDanger {
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--danger);
+}

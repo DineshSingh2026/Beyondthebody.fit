@@ -1,0 +1,168 @@
+/* Beyond The Body — Mobile-specific styles
+   Safe areas, touch targets, iOS/Android fixes, animations. */
+
+/* Touch targets: min 44×44px (Apple HIG) */
+.mobile-tap-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
+}
+
+/* Scroll containers */
+.mobile-scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+}
+
+.mobile-scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Prevent Safari rubber-band on body when using fixed nav */
+body.mobile-active {
+  overscroll-behavior: none;
+}
+
+/* Fix input zoom on focus (iOS) — font-size ≥16px */
+input, textarea, select {
+  font-size: 16px;
+}
+
+/* Fix 100vh bug (Safari toolbar) */
+.mobile-full-height {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Safe area padding */
+.mobile-safe-top {
+  padding-top: var(--safe-top);
+}
+
+.mobile-safe-bottom {
+  padding-bottom: var(--safe-bottom);
+}
+
+.mobile-scroll-content {
+  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+}
+
+/* Disable callout on long-press (iOS) */
+.mobile-no-callout img,
+.mobile-no-callout a {
+  -webkit-touch-callout: none;
+  touch-callout: none;
+}
+
+/* Fix position:fixed blur in Safari */
+.mobile-blur-bg {
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Android: disable text selection on UI elements */
+.mobile-no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Ripple on tap */
+.mobile-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(201, 168, 76, 0.15);
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mobile-ripple:active::after {
+  animation: mobile-ripple 0.4s ease-out;
+}
+
+@keyframes mobile-ripple {
+  to {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Card enter stagger */
+.mobile-card-enter {
+  animation: mobile-card-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.mobile-card-enter:nth-child(1) { animation-delay: 0ms; }
+.mobile-card-enter:nth-child(2) { animation-delay: 60ms; }
+.mobile-card-enter:nth-child(3) { animation-delay: 120ms; }
+.mobile-card-enter:nth-child(4) { animation-delay: 180ms; }
+.mobile-card-enter:nth-child(5) { animation-delay: 240ms; }
+
+@keyframes mobile-card-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Gold pulse on active elements */
+@keyframes mobile-gold-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(201, 168, 76, 0); }
+}
+
+.mobile-gold-pulse {
+  animation: mobile-gold-pulse 2s ease-in-out infinite;
+}
+
+/* Skeleton shimmer (mobile) */
+@keyframes mobile-shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+
+.mobile-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--card) 25%,
+    var(--card2) 50%,
+    var(--card) 75%
+  );
+  background-size: 200% 100%;
+  animation: mobile-shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Mobile breakpoint: hide mobile UI at 768px+ */
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .desktop-only {
+    display: none !important;
+  }
+}

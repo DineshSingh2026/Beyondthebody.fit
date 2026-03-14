@@ -1,0 +1,90 @@
+.desktop {
+  padding: 24px;
+  color: var(--muted);
+}
+
+.page {
+  padding-bottom: 80px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 0 16px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+}
+
+.chip {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--card2);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+
+.chip.active {
+  background: var(--gold);
+  color: var(--bg);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sessionRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.time {
+  color: var(--gold);
+  font-weight: 500;
+  min-width: 72px;
+  font-size: 13px;
+}
+
+.meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.name {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.chevron {
+  color: var(--dim);
+  font-size: 18px;
+}
+
+.fab {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 16px);
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), #b8943a);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 300;
+  box-shadow: 0 4px 20px rgba(201, 168, 76, 0.4);
+  z-index: 50;
+}

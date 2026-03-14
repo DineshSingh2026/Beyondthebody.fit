@@ -1,0 +1,45 @@
+.desktop {
+  padding: 24px;
+  color: var(--muted);
+}
+
+.page {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.hero {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--cream);
+  margin: 12px 0 4px;
+}
+
+.email {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu li {
+  border-bottom: 1px solid var(--border);
+}
+
+.menu a {
+  display: block;
+  padding: 16px 0;
+  font-size: 15px;
+  color: var(--text);
+  text-decoration: none;
+}

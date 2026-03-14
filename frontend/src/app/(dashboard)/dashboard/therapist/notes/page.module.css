@@ -1,0 +1,9 @@
+.desktop { padding: 24px; color: var(--muted); }
+.page { display: flex; flex-direction: column; gap: 12px; }
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+}
+.client { font-weight: 500; color: var(--text); }
+.date { font-size: 12px; color: var(--muted); margin-left: 8px; }
+.preview { font-size: 13px; color: var(--muted); margin: 8px 0 0; line-height: 1.4; }

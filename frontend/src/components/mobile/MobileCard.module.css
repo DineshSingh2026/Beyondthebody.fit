@@ -1,0 +1,22 @@
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 16px 20px;
+  transition: var(--transition);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card:active {
+  background: var(--card2);
+  border-color: var(--border2);
+}
+
+.cardGold {
+  border-left: 4px solid var(--gold);
+}
+
+.cardGreen {
+  border-left: 4px solid var(--green);
+}

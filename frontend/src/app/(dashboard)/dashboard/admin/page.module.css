@@ -1,0 +1,34 @@
+.page { max-width: 1600px; margin: 0 auto; }
+.heroRow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+.heroCard { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; }
+.heroCardLabel { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+.platformScoreWrap { display: flex; align-items: center; gap: 20px; }
+.platformScoreNum { font-family: var(--font-display); font-size: 2rem; color: var(--text); }
+.platformScoreLabel { font-size: 1rem; color: var(--muted); }
+.platformSub { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.revenueNum { font-family: var(--font-display); font-size: 2.5rem; font-weight: 500; color: var(--gold); display: block; margin-bottom: 12px; }
+.deltaPositive { font-size: 12px; color: var(--green); margin-top: 8px; display: block; }
+.liveStats { display: flex; flex-direction: column; gap: 12px; }
+.liveNum { font-family: var(--font-display); font-size: 1.75rem; color: var(--green); margin-right: 8px; }
+.statsRow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 24px; }
+.grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+.section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.sectionTitle { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 16px; }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table th { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--muted); font-weight: 500; }
+.table td { padding: 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+.tableUser { display: flex; align-items: center; gap: 10px; }
+.muted { color: var(--muted) !important; }
+.gold { color: var(--gold); }
+.btnSm { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-size: 12px; cursor: pointer; }
+.barChartWrap { display: flex; align-items: flex-end; gap: 4px; height: 120px; }
+.bar { flex: 1; min-width: 4px; border-radius: 4px 4px 0 0; transition: height 0.3s ease; }
+.areaChartWrap { margin-top: 8px; }
+.rosterList { display: flex; flex-direction: column; gap: 12px; }
+.rosterItem { display: flex; align-items: center; gap: 12px; }
+.rosterName { display: block; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+.pendingList { list-style: none; padding: 0; margin: 0; }
+.pendingList li { padding: 8px 0; font-size: 13px; color: var(--muted); }
+.activityList { list-style: none; padding: 0; margin: 0; }
+.activityList li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text); }
+.activityList li span:first-child { margin-right: 8px; color: var(--dim); }
