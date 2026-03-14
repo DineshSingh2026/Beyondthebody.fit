@@ -22,21 +22,16 @@ export default function UserMoodPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    api.getMe()
-      .then((me) => {
-        if (me.role === 'ADMIN') {
-          router.replace('/dashboard/admin');
-          return;
-        }
-        if (SPECIALIST_ROLES.includes(me.role)) {
-          router.replace('/dashboard/therapist');
-          return;
-        }
+    (async () => {
+      try {
+        const me = await api.getMe();
+        if (me.role === 'ADMIN') { router.replace('/dashboard/admin'); return; }
+        if (SPECIALIST_ROLES.includes(me.role)) { router.replace('/dashboard/therapist'); return; }
         setUserId(me.id);
-        return api.getMoodLog(me.id);
-      })
-      .then((log) => { if (log) setMoodLog(log); })
-      .catch(() => {});
+        const log = await api.getMoodLog(me.id) as import('@/lib/dashboard-types').MoodDay[];
+        setMoodLog(log);
+      } catch { /* keep default mood log */ }
+    })();
   }, [router]);
 
   const handleLog = () => {

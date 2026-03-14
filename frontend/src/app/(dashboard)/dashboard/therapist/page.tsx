@@ -29,27 +29,19 @@ export default function TherapistDashboardPage() {
   const [d, setD] = useState<TherapistDashboardData>(() => mockTherapistDashboard('THERAPIST'));
 
   useEffect(() => {
-    api.getMe()
-      .then((me) => {
-        if (me.role === 'ADMIN') {
-          router.replace('/dashboard/admin');
-          return;
-        }
-        if (me.role === 'USER') {
-          router.replace('/dashboard/user');
-          return;
-        }
+    (async () => {
+      try {
+        const me = await api.getMe();
+        if (me.role === 'ADMIN') { router.replace('/dashboard/admin'); return; }
+        if (me.role === 'USER') { router.replace('/dashboard/user'); return; }
         if (SPECIALIST_ROLES.includes(me.role as SpecialistType)) {
           setSpecialistId(me.id);
           setRole(me.role as SpecialistType);
-          return api.getSpecialistDashboard(me.id);
+          const dashboard = await api.getSpecialistDashboard(me.id);
+          setD(dashboard as TherapistDashboardData);
         }
-        return null;
-      })
-      .then((dashboard) => {
-        if (dashboard) setD(dashboard as TherapistDashboardData);
-      })
-      .catch(() => {});
+      } catch { /* keep mock data */ }
+    })();
   }, [router]);
 
   if (isMobile && specialistId) return <TherapistMobileHome specialistId={specialistId} />;

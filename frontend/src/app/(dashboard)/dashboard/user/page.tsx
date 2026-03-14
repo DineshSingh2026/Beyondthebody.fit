@@ -30,25 +30,21 @@ export default function UserDashboardPage() {
 
   useEffect(() => {
     let cancelled = false;
-    api.getMe()
-      .then((me) => {
+    (async () => {
+      try {
+        const me = await api.getMe();
         if (cancelled) return;
-        if (me.role === 'ADMIN') {
-          router.replace('/dashboard/admin');
-          return;
-        }
-        if (SPECIALIST_ROLES.includes(me.role)) {
-          router.replace('/dashboard/therapist');
-          return;
-        }
+        if (me.role === 'ADMIN') { router.replace('/dashboard/admin'); return; }
+        if (SPECIALIST_ROLES.includes(me.role)) { router.replace('/dashboard/therapist'); return; }
         setUserId(me.id);
-        return api.getUserDashboard(me.id);
-      })
-      .then((d) => {
-        if (d && !cancelled) setData(d as UserDashboardData);
-      })
-      .catch(() => { if (!cancelled) setData(mockUserDashboard); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+        const d = await api.getUserDashboard(me.id);
+        if (!cancelled) setData(d);
+      } catch {
+        if (!cancelled) setData(mockUserDashboard);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
     return () => { cancelled = true; };
   }, [router]);
 
