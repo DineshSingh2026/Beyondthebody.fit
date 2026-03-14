@@ -39,8 +39,10 @@
 .heroRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 16px;
+  margin-top: 8px;
+  margin-bottom: 4px;
 }
 
 .weekStrip {

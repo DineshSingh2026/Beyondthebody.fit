@@ -26,27 +26,29 @@ export default function MiniHealingRing({
   }, []);
 
   return (
-    <div className={styles.wrap} style={{ width: size, height: size }}>
-      <svg width={size} height={size} className={styles.svg}>
-        <circle
-          className={styles.bg}
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          strokeWidth="4"
-        />
-        <circle
-          className={styles.stroke}
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          strokeWidth="4"
-          strokeDasharray={circumference}
-          strokeDashoffset={mounted ? offset : circumference}
-          style={{ stroke: strokeColor }}
-        />
-      </svg>
-      <span className={styles.value} style={{ fontSize: size * 0.2 }}>{score}</span>
+    <div className={styles.wrap} style={{ width: size }}>
+      <div style={{ position: 'relative', width: size, height: size }}>
+        <svg width={size} height={size} className={styles.svg}>
+          <circle
+            className={styles.bg}
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            strokeWidth="4"
+          />
+          <circle
+            className={styles.stroke}
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            strokeWidth="4"
+            strokeDasharray={circumference}
+            strokeDashoffset={mounted ? offset : circumference}
+            style={{ stroke: strokeColor }}
+          />
+        </svg>
+        <span className={styles.value} style={{ fontSize: size * 0.2 }}>{score}</span>
+      </div>
       {label && <span className={styles.label}>{label}</span>}
     </div>
   );

@@ -1004,32 +1004,42 @@ async function seedTestUser1() {
       'INSERT INTO user_milestones (user_id, milestone_id, unlocked_at) VALUES ($1, 1, CURRENT_DATE - 60), ($1, 2, CURRENT_DATE - 20), ($1, 3, CURRENT_DATE - 8) ON CONFLICT (user_id, milestone_id) DO NOTHING',
       [uid]
     );
-    const extraPosts = [
-      '10 sessions in — the consistency is paying off. To anyone just starting: stick with it.',
-      'Hit my 7-day streak today. The app reminders actually help.',
-      'Shared my first milestone. The support here is real.',
-    ];
-    for (const content of extraPosts) {
-      await db.query(
-        'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, 10, 2)',
-        [uid, content]
-      );
-    }
-    const upcomingCount = await db.query(
-      "SELECT COUNT(*) as c FROM sessions WHERE user_id = $1 AND status = 'UPCOMING'",
-      [uid]
-    );
-    if (parseInt(upcomingCount.rows[0]?.c || 0, 10) < 4) {
-      for (let i = 0; i < 4; i++) {
-        const d = new Date(now); d.setDate(d.getDate() + i + 1); d.setHours(10 + i, 0, 0, 0);
+    const postCountR = await db.query('SELECT COUNT(*) as c FROM community_posts WHERE user_id = $1', [uid]);
+    if (parseInt(postCountR.rows[0]?.c || 0, 10) < 3) {
+      const extraPosts = [
+        '10 sessions in — the consistency is paying off. To anyone just starting: stick with it.',
+        'Hit my 7-day streak today. The app reminders actually help.',
+        'Shared my first milestone. The support here is real.',
+      ];
+      for (const content of extraPosts) {
         await db.query(
-          `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
-           VALUES ($1, $2, 'Coaching', $3, 50, 'UPCOMING')`,
-          [uid, specialistIds[i % specialistIds.length], d]
+          'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, 10, 2)',
+          [uid, content]
         );
       }
     }
-    return { ok: true, message: 'testuser1@test.btb.fit seeded. Refresh dashboard.' };
+    // Always refresh upcoming sessions — delete stale past ones, add fresh future ones
+    await db.query(
+      "DELETE FROM sessions WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()",
+      [uid]
+    );
+    const upcomingCount = await db.query(
+      "SELECT COUNT(*) as c FROM sessions WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at >= NOW()",
+      [uid]
+    );
+    const upcomingNeed = 4 - parseInt(upcomingCount.rows[0]?.c || 0, 10);
+    const sessionLabels = ['1:1 Therapy', 'Coaching', 'Hypnosis', 'Mindfulness'];
+    if (upcomingNeed > 0) {
+      for (let i = 0; i < upcomingNeed; i++) {
+        const d = new Date(now); d.setDate(d.getDate() + i + 1); d.setHours(10 + i, 0, 0, 0);
+        await db.query(
+          `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
+           VALUES ($1, $2, $3, $4, 50, 'UPCOMING')`,
+          [uid, specialistIds[i % specialistIds.length], sessionLabels[i % sessionLabels.length], d]
+        );
+      }
+    }
+    return { ok: true, message: 'testuser1@test.btb.fit seeded/refreshed. Upcoming sessions updated to future dates. Refresh dashboard.' };
   } catch (err) {
     console.error('seedTestUser1 error:', err);
     return { ok: false, error: err.message };
@@ -1357,16 +1367,16 @@ async function autoMigrate() {
       console.log('autoMigrate: test data seeded (users, sessions, mood, community, applications, activity). Login: testuser1@test.btb.fit / TestUser@123');
     }
 
-    // 6. Top-up testuser1 for presentation (run when account exists and data is below target)
+    // 6. Top-up testuser1 every startup — refresh upcoming sessions + mood + ensure all data present
     const t1 = await db.query("SELECT id, healing_score FROM dashboard_users WHERE email = 'testuser1@test.btb.fit' LIMIT 1");
     if (t1.rows.length > 0) {
       const uid = t1.rows[0].id;
       const healingScore = t1.rows[0].healing_score == null ? 0 : parseInt(t1.rows[0].healing_score, 10);
       const countR = await db.query('SELECT COUNT(*) as c FROM sessions WHERE user_id = $1', [uid]);
       const sessionCount = parseInt(countR.rows[0]?.c || 0, 10);
-      const needsTopUp = sessionCount < 12 || healingScore === 0;
-      if (needsTopUp) {
-        console.log(`autoMigrate: testuser1 (sessions=${sessionCount}, healing_score=${healingScore}) — topping up for presentation.`);
+      // Always run to keep upcoming sessions fresh (past-dated upcoming sessions are deleted and recreated)
+      if (true) {
+        console.log(`autoMigrate: testuser1 (sessions=${sessionCount}, healing_score=${healingScore}) — refreshing presentation data.`);
         const specialistIds = [2, 3, 4, 5];
         for (const sid of specialistIds) {
           await db.query(
@@ -1398,32 +1408,42 @@ async function autoMigrate() {
           'INSERT INTO user_milestones (user_id, milestone_id, unlocked_at) VALUES ($1, 1, CURRENT_DATE - 60), ($1, 2, CURRENT_DATE - 20), ($1, 3, CURRENT_DATE - 8) ON CONFLICT (user_id, milestone_id) DO NOTHING',
           [uid]
         );
-        const extraPosts = [
-          '10 sessions in — the consistency is paying off. To anyone just starting: stick with it.',
-          'Hit my 7-day streak today. The app reminders actually help.',
-          'Shared my first milestone. The support here is real.',
-        ];
-        for (const content of extraPosts) {
-          await db.query(
-            'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, 10, 2)',
-            [uid, content]
-          );
-        }
-        const upcomingCount = await db.query(
-          "SELECT COUNT(*) as c FROM sessions WHERE user_id = $1 AND status = 'UPCOMING'",
-          [uid]
-        );
-        if (parseInt(upcomingCount.rows[0]?.c || 0, 10) < 4) {
-          for (let i = 0; i < 4; i++) {
-            const d = new Date(now); d.setDate(d.getDate() + i + 1); d.setHours(10 + i, 0, 0, 0);
+        const postCountR = await db.query('SELECT COUNT(*) as c FROM community_posts WHERE user_id = $1', [uid]);
+        if (parseInt(postCountR.rows[0]?.c || 0, 10) < 3) {
+          const extraPosts = [
+            '10 sessions in — the consistency is paying off. To anyone just starting: stick with it.',
+            'Hit my 7-day streak today. The app reminders actually help.',
+            'Shared my first milestone. The support here is real.',
+          ];
+          for (const content of extraPosts) {
             await db.query(
-              `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
-               VALUES ($1, $2, 'Coaching', $3, 50, 'UPCOMING')`,
-              [uid, specialistIds[i % specialistIds.length], d]
+              'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, 10, 2)',
+              [uid, content]
             );
           }
         }
-        console.log('autoMigrate: testuser1 presentation data topped up (sessions, mood, milestones, community).');
+        // Purge stale upcoming sessions (past dates), then fill to 4 fresh future ones
+        await db.query(
+          "DELETE FROM sessions WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()",
+          [uid]
+        );
+        const upcomingCount = await db.query(
+          "SELECT COUNT(*) as c FROM sessions WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at >= NOW()",
+          [uid]
+        );
+        const upcomingNeed = 4 - parseInt(upcomingCount.rows[0]?.c || 0, 10);
+        const sessionLabels = ['1:1 Therapy', 'Coaching', 'Hypnosis', 'Mindfulness'];
+        if (upcomingNeed > 0) {
+          for (let i = 0; i < upcomingNeed; i++) {
+            const d = new Date(now); d.setDate(d.getDate() + i + 1); d.setHours(10 + i, 0, 0, 0);
+            await db.query(
+              `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
+               VALUES ($1, $2, $3, $4, 50, 'UPCOMING')`,
+              [uid, specialistIds[i % specialistIds.length], sessionLabels[i % sessionLabels.length], d]
+            );
+          }
+        }
+        console.log('autoMigrate: testuser1 presentation data topped up (sessions, mood, milestones, community, upcoming sessions refreshed).');
       }
     }
 
