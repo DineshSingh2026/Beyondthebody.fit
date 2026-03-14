@@ -10,6 +10,7 @@
     "db:seed:passwords": "node scripts/set-dashboard-passwords.js",
     "check": "node scripts/check-api-db.js",
     "test:e2e": "node scripts/run-e2e.js",
+    "test:e2e:full": "node scripts/run-e2e.js",
     "test:e2e:playwright": "playwright test --config=playwright.config.js"
   },
   "dependencies": {

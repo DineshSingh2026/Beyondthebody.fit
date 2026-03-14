@@ -1,6 +1,30 @@
 .desktop {
-  padding: 24px;
+  padding: 24px 32px;
+  max-width: 640px;
+}
+
+.desktopTitle {
+  font-size: 1.5rem;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.desktopSub {
   color: var(--muted);
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+
+.feedGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.empty, .muted {
+  color: var(--muted);
+  padding: 24px 0;
+  font-size: 14px;
 }
 
 .page {

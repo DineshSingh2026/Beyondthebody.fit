@@ -1,3 +1,14 @@
-.desktop { padding: 24px; color: var(--muted); }
-.page { }
-.title { font-family: var(--font-display); font-size: 18px; color: var(--cream); margin: 0; }
+.page { padding: 24px 32px; max-width: 800px; }
+.title { font-size: 1.5rem; color: var(--text); margin: 0 0 8px; }
+.sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+.muted, .empty { color: var(--muted); padding: 24px 0; font-size: 14px; }
+.list { display: flex; flex-direction: column; gap: 12px; }
+.card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+}
+.info { flex: 1; min-width: 0; }
+.name { font-weight: 500; color: var(--text); display: block; }
+.specialty { font-size: 12px; color: var(--gold-soft); display: block; }
+.meta { font-size: 12px; color: var(--muted); display: block; margin-top: 4px; }

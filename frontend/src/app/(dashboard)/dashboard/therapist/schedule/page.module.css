@@ -1,4 +1,16 @@
-.desktop { padding: 24px; color: var(--muted); }
-.page { }
-.title { font-family: var(--font-display); font-size: 18px; color: var(--cream); margin: 0 0 8px; }
-.muted { font-size: 14px; color: var(--muted); }
+.page { padding: 24px 32px; max-width: 640px; }
+.title { font-size: 1.5rem; color: var(--text); margin: 0 0 8px; }
+.sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+.section { margin-bottom: 24px; }
+.sectionTitle { font-size: 1rem; color: var(--text); margin: 0 0 12px; }
+.list { display: flex; flex-direction: column; gap: 12px; }
+.card {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+}
+.time { color: var(--gold); font-weight: 500; min-width: 80px; font-size: 13px; }
+.info { flex: 1; min-width: 0; }
+.info .name { font-weight: 500; color: var(--text); display: block; }
+.meta { font-size: 12px; color: var(--muted); }
+.empty, .muted { color: var(--muted); padding: 12px 0; font-size: 14px; }

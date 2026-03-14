@@ -286,38 +286,29 @@ app.post('/api/auth/signup', async (req, res) => {
 
 app.get('/api/auth/me', async (req, res) => {
   const bearer = req.headers.authorization;
-  const token = bearer && bearer.startsWith('Bearer ') ? bearer.slice(7) : (req.query.token || req.headers['x-user-id']);
-  if (token && !/^\d+$/.test(token)) {
-    const payload = verifyToken(token);
-    if (payload && db.connected && await hasDashboard()) {
-      try {
-        const r = await db.query('SELECT id, name, email, role FROM dashboard_users WHERE id = $1', [payload.id]);
-        if (r.rows.length > 0) {
-          const u = r.rows[0];
-          return res.json({ id: String(u.id), name: u.name, email: u.email, role: u.role });
-        }
-      } catch (err) {
-        console.error('GET /api/auth/me', err);
-      }
-    }
-  }
-  const userId = typeof token === 'string' && /^\d+$/.test(token) ? token : (req.query.userId || '6');
-  if (!db.connected || !(await hasDashboard())) {
-    return res.json({ id: userId, name: 'Alex Rivera', email: 'alex@example.com', role: 'USER' });
-  }
+  const token = bearer && bearer.startsWith('Bearer ') ? bearer.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const payload = verifyToken(token);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Service unavailable' });
   try {
-    const r = await db.query('SELECT id, name, email, role FROM dashboard_users WHERE id = $1', [userId]);
+    const r = await db.query('SELECT id, name, email, role FROM dashboard_users WHERE id = $1', [payload.id]);
     if (r.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     const u = r.rows[0];
-    res.json({ id: String(u.id), name: u.name, email: u.email, role: u.role });
+    return res.json({ id: String(u.id), name: u.name, email: u.email, role: u.role });
   } catch (err) {
     console.error('GET /api/auth/me', err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 });
 
 app.get('/api/users/:id/dashboard', async (req, res) => {
+  const bearer = req.headers.authorization;
+  const token = bearer && bearer.startsWith('Bearer ') ? bearer.slice(7) : null;
+  const payload = token ? verifyToken(token) : null;
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
   const userId = req.params.id;
+  if (String(payload.id) !== String(userId)) return res.status(403).json({ error: 'Forbidden' });
   if (!db.connected || !(await hasDashboard())) {
     return res.status(503).json({ error: 'Dashboard not configured' });
   }
@@ -495,7 +486,26 @@ app.get('/api/community/feed', async (req, res) => {
   }
 });
 
+const requireAuth = (req) => {
+  const bearer = req.headers.authorization;
+  const token = bearer && bearer.startsWith('Bearer ') ? bearer.slice(7) : null;
+  return token ? verifyToken(token) : null;
+};
+const requireAdmin = (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (payload.role !== 'ADMIN') return res.status(403).json({ error: 'Forbidden' });
+  return payload;
+};
+const requireSpecialistSelf = (req, res, id) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (String(payload.id) !== String(id)) return res.status(403).json({ error: 'Forbidden' });
+  return payload;
+};
+
 app.get('/api/admin/platform-stats', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
   if (!db.connected || !(await hasDashboard())) {
     return res.json({
       platformScore: 87, uptimePercent: 99.9, activeSessions: 12, errorRate: 0.02,
@@ -544,6 +554,7 @@ app.get('/api/admin/platform-stats', async (req, res) => {
 });
 
 app.get('/api/admin/applications', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query('SELECT id, name, email, specialty, status, applied_at FROM specialist_applications ORDER BY applied_at DESC');
@@ -555,6 +566,7 @@ app.get('/api/admin/applications', async (req, res) => {
 });
 
 app.patch('/api/admin/applications/:id', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
   const { status } = req.body;
   if (!status || !['APPROVED', 'REJECTED', 'REVIEWING', 'PENDING'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
@@ -600,6 +612,7 @@ app.patch('/api/admin/applications/:id', async (req, res) => {
 });
 
 app.get('/api/admin/sessions', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query(
@@ -623,6 +636,7 @@ app.get('/api/admin/sessions', async (req, res) => {
 });
 
 app.get('/api/admin/users', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query("SELECT id, name, email, role FROM dashboard_users WHERE role = 'USER' ORDER BY id");
@@ -634,6 +648,7 @@ app.get('/api/admin/users', async (req, res) => {
 });
 
 app.get('/api/admin/specialists', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query(
@@ -657,6 +672,7 @@ app.get('/api/admin/specialists', async (req, res) => {
 });
 
 app.get('/api/admin/activity-log', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query('SELECT id, type, message, created_at FROM activity_log ORDER BY created_at DESC LIMIT 30');
@@ -708,6 +724,7 @@ app.get('/api/specialists/browse', async (req, res) => {
 
 app.get('/api/specialists/:id/dashboard', async (req, res) => {
   const id = req.params.id;
+  if (requireSpecialistSelf(req, res, id) === undefined) return;
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
   try {
     const spR = await db.query('SELECT id, name, email, role FROM dashboard_users WHERE id = $1 AND role IN (\'THERAPIST\', \'LIFE_COACH\', \'HYPNOTHERAPIST\', \'MUSIC_TUTOR\')', [id]);
@@ -930,6 +947,26 @@ app.get('/api/health', async (req, res) => {
 async function autoMigrate() {
   if (!db.connected) return;
   try {
+    // 0. Website forms (consultation + join) — no FK to dashboard
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS consultations (
+        id         SERIAL PRIMARY KEY,
+        name       VARCHAR(255) NOT NULL,
+        email      VARCHAR(255) NOT NULL,
+        phone      VARCHAR(50),
+        concern    VARCHAR(255),
+        message    TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS join_applications (
+        id         SERIAL PRIMARY KEY,
+        name       VARCHAR(255) NOT NULL,
+        email      VARCHAR(255) NOT NULL,
+        service    VARCHAR(255),
+        message    TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
     // 1. Create all dashboard tables (safe — IF NOT EXISTS)
     await db.query(`
       CREATE TABLE IF NOT EXISTS dashboard_users (

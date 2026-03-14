@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import {
-  mockAdminPlatformStats,
-  mockApplications,
-  mockAdminSessions,
-  mockSpecialistRoster,
-  mockActivityLog,
+  emptyAdminPlatformStats,
+  emptyApplications,
+  emptyAdminSessions,
+  emptySpecialistRoster,
+  emptyActivityLog,
   mockSessionsDailyChart,
   mockUserGrowthChart,
 } from '@/lib/mock-data';
@@ -28,11 +28,11 @@ const SPECIALIST_ROLES = ['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TU
 export default function AdminDashboardPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
-  const [stats, setStats] = useState(mockAdminPlatformStats);
-  const [applications, setApplications] = useState(mockApplications);
-  const [sessions, setSessions] = useState(mockAdminSessions);
-  const [roster, setRoster] = useState(mockSpecialistRoster);
-  const [activityLog, setActivityLog] = useState(mockActivityLog);
+  const [stats, setStats] = useState(emptyAdminPlatformStats);
+  const [applications, setApplications] = useState(emptyApplications);
+  const [sessions, setSessions] = useState(emptyAdminSessions);
+  const [roster, setRoster] = useState(emptySpecialistRoster);
+  const [activityLog, setActivityLog] = useState(emptyActivityLog);
 
   useEffect(() => {
     api.getMe()
@@ -50,11 +50,11 @@ export default function AdminDashboardPage() {
   }, [router]);
 
   useEffect(() => {
-    api.getAdminPlatformStats().then(setStats).catch(() => {});
-    api.getAdminApplications().then(setApplications).catch(() => {});
-    api.getAdminSessions().then(setSessions).catch(() => {});
-    api.getAdminSpecialists().then(setRoster).catch(() => {});
-    api.getAdminActivityLog().then(setActivityLog).catch(() => {});
+    api.getAdminPlatformStats().then(setStats).catch(() => setStats(emptyAdminPlatformStats));
+    api.getAdminApplications().then(setApplications).catch(() => setApplications(emptyApplications));
+    api.getAdminSessions().then(setSessions).catch(() => setSessions(emptyAdminSessions));
+    api.getAdminSpecialists().then(setRoster).catch(() => setRoster(emptySpecialistRoster));
+    api.getAdminActivityLog().then(setActivityLog).catch(() => setActivityLog(emptyActivityLog));
   }, []);
 
   const [approvedAlert, setApprovedAlert] = useState<{ name: string; email: string; role: string; tempPassword: string } | null>(null);

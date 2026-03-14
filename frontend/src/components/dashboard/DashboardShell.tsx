@@ -1,34 +1,38 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import type { UserRole } from '@/lib/dashboard-types';
+import { api } from '@/lib/api';
 import AmbientBackground from './AmbientBackground';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import styles from './DashboardShell.module.css';
 
-const pathToRole: Record<string, UserRole> = {
-  '/dashboard/user': 'USER',
-  '/dashboard/admin': 'ADMIN',
-  '/dashboard/therapist': 'LIFE_COACH',
-};
-
-const mockUserName: Record<string, string> = {
-  '/dashboard/user': 'Alex',
-  '/dashboard/admin': 'Admin',
-  '/dashboard/therapist': 'Dr. Sarah Chen',
-};
-
-const mockSubtitles: Record<string, string> = {
+const pathSubtitles: Record<string, string> = {
   '/dashboard/therapist': 'Your clients are waiting',
 };
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
-  const role = pathToRole[pathname] ?? 'USER';
-  const userName = mockUserName[pathname] ?? 'User';
-  const subtitle = mockSubtitles[pathname];
-  const healingScore = role === 'USER' ? 72 : 0;
+  const [userName, setUserName] = useState<string>('');
+  const [role, setRole] = useState<UserRole>('USER');
+  const [healingScore, setHealingScore] = useState(0);
+
+  useEffect(() => {
+    api.getMe()
+      .then((me) => {
+        setUserName(me.name);
+        setRole(me.role as UserRole);
+        setHealingScore(0);
+      })
+      .catch(() => {
+        setUserName('User');
+        setRole('USER');
+      });
+  }, []);
+
+  const subtitle = pathSubtitles[pathname];
   return (
     <div className={styles.wrap}>
       <AmbientBackground />

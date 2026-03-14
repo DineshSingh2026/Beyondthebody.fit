@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import MoodPicker from '@/components/mobile/MoodPicker';
 import HapticButton from '@/components/mobile/HapticButton';
-import { mockUserDashboard } from '@/lib/mock-data';
 import { api } from '@/lib/api';
 import MiniChart from '@/components/dashboard/MiniChart';
 import styles from './page.module.css';
@@ -18,7 +17,7 @@ export default function UserMoodPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [moodIndex, setMoodIndex] = useState(3);
   const [note, setNote] = useState('');
-  const [moodLog, setMoodLog] = useState(mockUserDashboard.moodLog);
+  const [moodLog, setMoodLog] = useState<import('@/lib/dashboard-types').MoodDay[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -51,16 +50,8 @@ export default function UserMoodPage() {
 
   const moodData = moodLog.slice(-30).map((m) => m.value);
 
-  if (!isMobile) {
-    return (
-      <div className={styles.desktop}>
-        <p>Mood tracker — resize to mobile or open on a phone.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.page}>
+  const mainContent = (
+    <>
       <h2 className={styles.heading}>How are you feeling?</h2>
       <MoodPicker value={moodIndex} onChange={setMoodIndex} />
       <textarea
@@ -87,6 +78,20 @@ export default function UserMoodPage() {
           </li>
         ))}
       </ul>
-    </div>
+    </>
+  );
+
+  if (!isMobile) {
+    return (
+      <div className={styles.desktop}>
+        <h2 className={styles.desktopTitle}>Mood Tracker</h2>
+        <p className={styles.desktopSub}>Log how you feel and track your journey.</p>
+        <div className={styles.desktopContent}>{mainContent}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.page}>{mainContent}</div>
   );
 }

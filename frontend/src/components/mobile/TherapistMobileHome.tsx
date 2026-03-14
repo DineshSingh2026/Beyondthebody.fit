@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockTherapistDashboard } from '@/lib/mock-data';
+import { emptyTherapistDashboard } from '@/lib/mock-data';
 import { api } from '@/lib/api';
 import type { SpecialistType } from '@/lib/dashboard-types';
 import type { TherapistDashboardData } from '@/lib/dashboard-types';
@@ -13,7 +13,7 @@ import Badge from '@/components/ui/Badge';
 import styles from './TherapistMobileHome.module.css';
 
 export default function TherapistMobileHome({ specialistId }: { specialistId: string }) {
-  const [d, setD] = useState<TherapistDashboardData>(() => mockTherapistDashboard('THERAPIST'));
+  const [d, setD] = useState<TherapistDashboardData>(() => emptyTherapistDashboard('THERAPIST'));
   useEffect(() => {
     if (!specialistId) return;
     api.getSpecialistDashboard(specialistId).then(setD).catch(() => {});

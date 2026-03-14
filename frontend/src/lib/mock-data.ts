@@ -1,9 +1,11 @@
-/** Beyond The Body — Mock data for dashboards (until API is ready) */
+/** Beyond The Body — Mock/empty data for dashboards */
 
 import type {
   UserDashboardData,
+  User,
   AdminPlatformStats,
   SpecialistApplication,
+  SpecialistType,
   AdminSessionRow,
   SpecialistRosterEntry,
   ActivityLogEntry,
@@ -16,6 +18,24 @@ import type {
 } from './dashboard-types';
 
 const specialistType = (s: string) => s as 'LIFE_COACH' | 'HYPNOTHERAPIST' | 'THERAPIST' | 'MUSIC_TUTOR';
+
+/** Empty dashboard for a real user when API fails or they have no data yet */
+export function emptyUserDashboard(user: User): UserDashboardData {
+  const firstName = user.name.split(' ')[0] || user.name;
+  return {
+    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    healingScore: { value: 0, label: 'Healing Journey' },
+    stats: { sessionsCompleted: 0, streak: 0, moodAverage: 0, communityPosts: 0 },
+    affirmation: 'I am worthy of healing and growth.',
+    brainTip: { title: 'Box Breathing', description: 'Inhale 4s, hold 4s, exhale 4s. Repeat for calm.', icon: '🫁' },
+    upcomingSessions: [],
+    specialists: [],
+    moodLog: [],
+    milestones: [],
+    communityFeed: [],
+    dailyBrainTip: { title: '5-4-3-2-1 Grounding', description: 'Name 5 things you see, 4 you touch, 3 you hear, 2 you smell, 1 you taste.', category: 'Grounding' },
+  };
+}
 
 export const mockUserDashboard: UserDashboardData = {
   user: { id: 'u1', name: 'Alex Rivera', email: 'alex@example.com', role: 'USER' },
@@ -53,6 +73,26 @@ export const mockUserDashboard: UserDashboardData = {
   dailyBrainTip: { title: '5-4-3-2-1 Grounding', description: 'Name 5 things you see, 4 you touch, 3 you hear, 2 you smell, 1 you taste.', category: 'Grounding' },
 };
 
+/** Empty stats when API fails or no data yet */
+export const emptyAdminPlatformStats: AdminPlatformStats = {
+  platformScore: 0,
+  uptimePercent: 0,
+  activeSessions: 0,
+  errorRate: 0,
+  revenueToday: 0,
+  revenueDeltaPercent: 0,
+  revenueSparkline: [],
+  liveUsers: 0,
+  liveSessions: 0,
+  specialistsOnline: 0,
+  totalUsers: 0,
+  totalSpecialists: 0,
+  sessionsThisMonth: 0,
+  avgSessionRating: 0,
+  revenueMTD: 0,
+  newApplications: 0,
+};
+
 export const mockAdminPlatformStats: AdminPlatformStats = {
   platformScore: 87,
   uptimePercent: 99.9,
@@ -71,6 +111,11 @@ export const mockAdminPlatformStats: AdminPlatformStats = {
   revenueMTD: 98420,
   newApplications: 5,
 };
+
+export const emptyApplications: SpecialistApplication[] = [];
+export const emptyAdminSessions: AdminSessionRow[] = [];
+export const emptySpecialistRoster: SpecialistRosterEntry[] = [];
+export const emptyActivityLog: ActivityLogEntry[] = [];
 
 export const mockApplications: SpecialistApplication[] = [
   { id: 'a1', name: 'Elena Vasquez', email: 'elena@example.com', specialty: specialistType('THERAPIST'), appliedAt: '2024-03-12T10:00:00Z', status: 'PENDING' },
@@ -101,6 +146,23 @@ export const mockActivityLog: ActivityLogEntry[] = [
 export const mockSessionsDailyChart = Array.from({ length: 30 }, (_, i) => 15 + Math.floor(Math.random() * 40));
 
 export const mockUserGrowthChart = [120, 145, 168, 190, 210, 245, 280, 310, 340, 380, 420, 460, 510, 560, 620, 680, 740, 820, 900, 980, 1060, 1120, 1180, 1240];
+
+/** Empty therapist dashboard when API fails or no data yet */
+export const emptyTherapistDashboard = (role: SpecialistType, specialist?: { id: string; name: string; email: string; role?: SpecialistType }): TherapistDashboardData => ({
+  specialist: specialist ? { ...specialist, role: specialist.role ?? role } : { id: '', name: '', email: '', role },
+  practiceScore: 0,
+  todayStats: { sessionsToday: 0, hoursBooked: 0, newRequests: 0, completionRate: 0 },
+  earningsThisMonth: 0,
+  earningsDeltaPercent: 0,
+  earningsSparkline: [],
+  stats: { activeClients: 0, sessionsThisWeek: 0, avgRating: 0, completionRate: 0, responseTimeMinutes: 0 },
+  todaySchedule: [],
+  clients: [],
+  recentNotes: [],
+  pendingRequests: [],
+  reviews: [],
+  availabilitySlots: [],
+});
 
 export const mockTherapistDashboard = (role: 'LIFE_COACH' | 'HYPNOTHERAPIST' | 'THERAPIST' | 'MUSIC_TUTOR'): TherapistDashboardData => {
   const name = role === 'THERAPIST' ? 'Dr. Sarah Chen' : role === 'LIFE_COACH' ? 'James Miller' : role === 'HYPNOTHERAPIST' ? 'Maya Foster' : 'Leo Torres';

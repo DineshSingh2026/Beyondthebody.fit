@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import {
-  mockAdminPlatformStats,
-  mockApplications,
+  emptyAdminPlatformStats,
+  emptyApplications,
   mockActivityLog,
   mockUserGrowthChart,
 } from '@/lib/mock-data';
@@ -21,8 +21,8 @@ const specialtyVariant: Record<string, 'gold' | 'green' | 'purple' | 'teal'> = {
 };
 
 export default function AdminMobileHome() {
-  const [s, setS] = useState(mockAdminPlatformStats);
-  const [applications, setApplications] = useState(mockApplications);
+  const [s, setS] = useState(emptyAdminPlatformStats);
+  const [applications, setApplications] = useState(emptyApplications);
   const [activityLog, setActivityLog] = useState(mockActivityLog);
 
   useEffect(() => {

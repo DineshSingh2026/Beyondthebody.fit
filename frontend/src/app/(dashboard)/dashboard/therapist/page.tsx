@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/useMediaQuery';
-import { mockTherapistDashboard } from '@/lib/mock-data';
+import { emptyTherapistDashboard } from '@/lib/mock-data';
 import { api } from '@/lib/api';
 import type { SpecialistType } from '@/lib/dashboard-types';
 import type { TherapistDashboardData } from '@/lib/dashboard-types';
@@ -26,7 +26,7 @@ export default function TherapistDashboardPage() {
   const [specialistId, setSpecialistId] = useState<string | null>(null);
   const [role, setRole] = useState<SpecialistType>('THERAPIST');
   const [joinModal, setJoinModal] = useState<{ clientName: string } | null>(null);
-  const [d, setD] = useState<TherapistDashboardData>(() => mockTherapistDashboard('THERAPIST'));
+  const [d, setD] = useState<TherapistDashboardData>(() => emptyTherapistDashboard('THERAPIST'));
 
   useEffect(() => {
     (async () => {
@@ -36,11 +36,14 @@ export default function TherapistDashboardPage() {
         if (me.role === 'USER') { router.replace('/dashboard/user'); return; }
         if (SPECIALIST_ROLES.includes(me.role as SpecialistType)) {
           setSpecialistId(me.id);
-          setRole(me.role as SpecialistType);
+          const roleType = me.role as SpecialistType;
+          setRole(roleType);
           const dashboard = await api.getSpecialistDashboard(me.id);
           setD(dashboard as TherapistDashboardData);
         }
-      } catch { /* keep mock data */ }
+      } catch {
+        setD(emptyTherapistDashboard(role));
+      }
     })();
   }, [router]);
 

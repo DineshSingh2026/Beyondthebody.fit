@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { mockUserDashboard } from '@/lib/mock-data';
+import { emptyUserDashboard } from '@/lib/mock-data';
 import { api } from '@/lib/api';
 import type { UserDashboardData } from '@/lib/dashboard-types';
 import MiniHealingRing from './MiniHealingRing';
@@ -19,12 +19,25 @@ function getGreeting() {
   return 'Good evening';
 }
 
-export default function UserMobileHome({ userId }: { userId: string }) {
-  const [d, setD] = useState<UserDashboardData>(mockUserDashboard);
+export default function UserMobileHome({ userId, userName }: { userId: string; userName?: string }) {
+  const [d, setD] = useState<UserDashboardData | null>(null);
   useEffect(() => {
     if (!userId) return;
-    api.getUserDashboard(userId).then(setD).catch(() => {});
-  }, [userId]);
+    api.getUserDashboard(userId)
+      .then(setD)
+      .catch(() => {
+        api.getMe().then((me) => setD(emptyUserDashboard(me))).catch(() => {
+          setD(emptyUserDashboard({ id: userId, name: userName ?? 'User', email: '', role: 'USER' }));
+        });
+      });
+  }, [userId, userName]);
+  if (!d) {
+    return (
+      <div className={styles.hero}>
+        <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 24 }}>Loading…</p>
+      </div>
+    );
+  }
   const firstName = d.user.name.split(' ')[0] ?? 'there';
   const nextSession = d.upcomingSessions[0];
   const moodLast7 = d.moodLog.slice(-7);

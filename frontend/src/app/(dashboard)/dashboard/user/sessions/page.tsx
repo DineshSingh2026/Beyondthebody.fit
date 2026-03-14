@@ -1,36 +1,60 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useIsMobile } from '@/hooks/useMediaQuery';
-import { mockUserDashboard } from '@/lib/mock-data';
 import Link from 'next/link';
+import { api } from '@/lib/api';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import HapticButton from '@/components/mobile/HapticButton';
 import SwipeableRow from '@/components/mobile/SwipeableRow';
+import type { SessionSummary } from '@/lib/dashboard-types';
 import styles from './page.module.css';
 
+const SPECIALIST_ROLES = ['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'];
+
 export default function UserSessionsPage() {
+  const router = useRouter();
   const isMobile = useIsMobile();
-  const d = mockUserDashboard;
+  const [userId, setUserId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
 
-  if (!isMobile) {
-    return (
-      <div className={styles.desktop}>
-        <p>Use the sidebar to view upcoming and past sessions, or resize to mobile to see the sessions list.</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await api.getMe();
+        if (me.role === 'ADMIN') { router.replace('/dashboard/admin'); return; }
+        if (SPECIALIST_ROLES.includes(me.role)) { router.replace('/dashboard/therapist'); return; }
+        setUserId(me.id);
+        const data = await api.getUpcomingSessions(me.id);
+        setSessions(Array.isArray(data) ? data : []);
+      } catch {
+        setSessions([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [router]);
 
-  return (
-    <div className={styles.page}>
-      <div className={styles.chips}>
-        <button type="button" className={`${styles.chip} ${styles.active}`}>All</button>
-        <button type="button" className={styles.chip}>Upcoming</button>
-        <button type="button" className={styles.chip}>Completed</button>
-        <button type="button" className={styles.chip}>Cancelled</button>
-      </div>
-      <div className={styles.list}>
-        {d.upcomingSessions.map((s) => (
+  const filtered = sessions.filter((s) => {
+    if (filter === 'upcoming') return s.status === 'UPCOMING' || s.status === 'IN_PROGRESS';
+    if (filter === 'completed') return s.status === 'COMPLETED';
+    return true;
+  });
+
+  const sessionList = (
+    <div className={styles.list}>
+      {filtered.length === 0 ? (
+        <p className={styles.empty}>
+          {filter === 'completed' ? 'No past sessions yet.' : filter === 'upcoming' ? 'No upcoming sessions.' : 'No sessions yet.'}
+          <br />
+          <Link href="/dashboard/user/specialists">Find a specialist</Link> to book one.
+        </p>
+      ) : (
+        filtered.map((s) => (
           <SwipeableRow
             key={s.id}
             leftAction={{ label: 'Reschedule', onClick: () => {} }}
@@ -46,9 +70,64 @@ export default function UserSessionsPage() {
               <span className={styles.chevron}>›</span>
             </div>
           </SwipeableRow>
-        ))}
+        ))
+      )}
+    </div>
+  );
+
+  const chips = (
+    <div className={styles.chips}>
+      <button
+        type="button"
+        className={`${styles.chip} ${filter === 'all' ? styles.active : ''}`}
+        onClick={() => setFilter('all')}
+      >
+        All
+      </button>
+      <button
+        type="button"
+        className={`${styles.chip} ${filter === 'upcoming' ? styles.active : ''}`}
+        onClick={() => setFilter('upcoming')}
+      >
+        Upcoming
+      </button>
+      <button
+        type="button"
+        className={`${styles.chip} ${filter === 'completed' ? styles.active : ''}`}
+        onClick={() => setFilter('completed')}
+      >
+        Completed
+      </button>
+    </div>
+  );
+
+  if (loading && !userId) {
+    return (
+      <div className={styles.page}>
+        <p className={styles.muted}>Loading…</p>
       </div>
-      <Link href="/dashboard/user/sessions" className={styles.fab}>
+    );
+  }
+
+  if (!isMobile) {
+    return (
+      <div className={styles.desktop}>
+        <h2 className={styles.desktopTitle}>Sessions</h2>
+        <p className={styles.desktopSub}>Upcoming and past sessions with your specialists.</p>
+        {chips}
+        {sessionList}
+        <Link href="/dashboard/user/specialists" className={styles.bookLink}>
+          Book a session
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.page}>
+      {chips}
+      {sessionList}
+      <Link href="/dashboard/user/specialists" className={styles.fab}>
         <span>+</span>
       </Link>
     </div>

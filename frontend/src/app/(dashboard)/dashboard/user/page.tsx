@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/useMediaQuery';
-import { mockUserDashboard } from '@/lib/mock-data';
+import { emptyUserDashboard } from '@/lib/mock-data';
 import { api } from '@/lib/api';
 import type { UserDashboardData } from '@/lib/dashboard-types';
 import UserMobileHome from '@/components/mobile/UserMobileHome';
@@ -25,22 +25,25 @@ export default function UserDashboardPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [data, setData] = useState<UserDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      let me: { id: string; name: string; email: string; role: string } | null = null;
       try {
-        const me = await api.getMe();
+        me = await api.getMe();
         if (cancelled) return;
         if (me.role === 'ADMIN') { router.replace('/dashboard/admin'); return; }
         if (SPECIALIST_ROLES.includes(me.role)) { router.replace('/dashboard/therapist'); return; }
         setUserId(me.id);
+        setUserName(me.name);
         const d = await api.getUserDashboard(me.id);
         if (!cancelled) setData(d);
       } catch {
-        if (!cancelled) setData(mockUserDashboard);
+        if (!cancelled && me) setData(emptyUserDashboard({ id: me.id, name: me.name, email: me.email, role: me.role }));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -56,12 +59,11 @@ export default function UserDashboardPage() {
         </div>
       );
     }
-    if (userId) return <UserMobileHome userId={userId} />;
+    if (userId) return <UserMobileHome userId={userId} userName={userName ?? undefined} />;
     return null;
   }
 
-  const d = data || mockUserDashboard;
-  if (loading && !data) {
+  if (loading || !data) {
     return (
       <div className={styles.page}>
         <div className={styles.heroRow}><div className="dash-skeleton" style={{ height: 200 }} /></div>
@@ -70,6 +72,7 @@ export default function UserDashboardPage() {
       </div>
     );
   }
+  const d = data;
   return (
     <motion.div
       className={styles.page}

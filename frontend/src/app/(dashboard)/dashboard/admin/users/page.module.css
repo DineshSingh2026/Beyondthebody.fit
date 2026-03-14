@@ -1,4 +1,18 @@
-.desktop { padding: 24px; color: var(--muted); }
-.page { }
-.title { font-family: var(--font-display); font-size: 18px; color: var(--cream); margin: 0 0 8px; }
-.muted { font-size: 14px; color: var(--muted); }
+.page { padding: 24px 32px; max-width: 900px; }
+.title { font-size: 1.5rem; color: var(--text); margin: 0 0 8px; }
+.sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+.muted, .empty { color: var(--muted); padding: 24px 0; font-size: 14px; }
+.list { display: flex; flex-direction: column; gap: 12px; }
+.card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+}
+.info { flex: 1; min-width: 0; }
+.info .name { font-weight: 500; color: var(--text); display: block; }
+.info .email { font-size: 13px; color: var(--muted); display: block; }
+.role { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--card2); color: var(--muted); }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+.table th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+.table td { color: var(--text); font-size: 14px; }
