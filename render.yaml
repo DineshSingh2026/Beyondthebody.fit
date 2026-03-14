@@ -1,23 +1,30 @@
-# Render Blueprint — Beyond The Body (NestJS + Next.js)
-# Deploy from repo: https://github.com/DineshSingh2026/Beyondthebody.fit
+# Render Blueprint — Beyond The Body
+# Repo: https://github.com/DineshSingh2026/Beyondthebody.fit
 # Docs: https://render.com/docs/blueprint-spec
+#
+# DEPLOYMENT ORDER:
+#   1. This file deploys TWO web services + ONE database.
+#   2. After first deploy, copy the public URL of `beyond-the-body-api`
+#      (e.g. https://beyond-the-body-api.onrender.com) and paste it as
+#      NEXT_PUBLIC_API_URL in the `beyond-the-body` service env vars,
+#      then trigger a manual redeploy of the frontend.
 
 databases:
   - name: beyond-the-body-db
     plan: free
 
 services:
-  # ---------- 1. Backend (NestJS API) ----------
+  # ──────────────────────────────────────────────
+  # 1. Express API backend  (server.js at repo root)
+  # ──────────────────────────────────────────────
   - type: web
     name: beyond-the-body-api
     runtime: node
     plan: free
 
-    rootDir: backend
-
-    # Install devDependencies so @nestjs/cli is available for `nest build`
-    buildCommand: npm install --include=dev && npm run build
-    startCommand: npm run start
+    # server.js lives at the repo root — no rootDir needed
+    buildCommand: npm install
+    startCommand: node server.js
 
     healthCheckPath: /api/health
 
@@ -28,11 +35,22 @@ services:
         fromDatabase:
           name: beyond-the-body-db
           property: connectionString
-      # Set in Dashboard after deploy: your frontend URL (e.g. https://beyond-the-body.onrender.com)
+      # Random HMAC secret — Render auto-generates a secure value
+      - key: AUTH_SECRET
+        generateValue: true
+      # Optional: override default admin/therapist passwords
+      # - key: ADMIN_PASSWORD
+      #   value: Admin@BTB2026
+      # - key: THERAPIST_PASSWORD
+      #   value: Therapist@BTB2026
+      # CORS: set this to your frontend domain after deploy
+      # e.g. https://beyond-the-body.onrender.com or https://beyondthebody.fit
       - key: FRONTEND_URL
         sync: false
 
-  # ---------- 2. Frontend (Next.js) ----------
+  # ──────────────────────────────────────────────
+  # 2. Next.js frontend  (frontend/ sub-directory)
+  # ──────────────────────────────────────────────
   - type: web
     name: beyond-the-body
     runtime: node
@@ -43,7 +61,9 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm run start
 
-    # Set in Dashboard after backend deploys: https://beyond-the-body-api.onrender.com (then redeploy)
     envVars:
+      # REQUIRED: paste the API service public URL here after first deploy,
+      # e.g. https://beyond-the-body-api.onrender.com
+      # Then click "Manual Deploy" on this service.
       - key: NEXT_PUBLIC_API_URL
         sync: false

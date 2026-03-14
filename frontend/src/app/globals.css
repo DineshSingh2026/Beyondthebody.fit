@@ -526,7 +526,7 @@ body:hover .cursor { opacity: 1; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: center;
-  padding: 140px 100px 100px;
+  padding: 100px 100px 100px;
   max-width: 1440px;
   margin: 0 auto;
   position: relative;
@@ -3248,15 +3248,19 @@ textarea.form-input {
    DISCLAIMER STRIP
    ============================================ */
 .disclaimer-strip {
-  background: rgba(201, 169, 98, 0.08);
-  border-bottom: 1px solid rgba(201, 169, 98, 0.18);
-  padding: 10px 24px;
+  position: sticky;
+  top: 68px; /* sits just below the fixed nav */
+  z-index: 900;
+  background: rgba(14, 24, 20, 0.97);
+  border-bottom: 1px solid rgba(201, 169, 98, 0.22);
+  padding: 9px 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   text-align: center;
   flex-wrap: wrap;
+  backdrop-filter: blur(12px);
 }
 
 .disclaimer-strip-icon {
@@ -3790,8 +3794,10 @@ textarea.form-input {
 
 @media (max-width: 600px) {
   .disclaimer-strip {
-    padding: 10px 16px;
-    gap: 8px;
+    top: 60px; /* smaller nav on mobile */
+    padding: 8px 14px;
+    gap: 6px;
+    font-size: 11px;
   }
 
   .safe-space {

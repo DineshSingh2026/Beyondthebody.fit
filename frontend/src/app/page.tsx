@@ -35,8 +35,8 @@ export default async function HomePage() {
       <div className="cursor" id="cursor" />
       <div className="cursor-follower" id="cursorFollower" />
       <Nav />
-      <DisclaimerBanner />
       <main>
+        <DisclaimerBanner />
         <Hero affirmations={affirmations} />
         <PartnershipBanner />
         <About />

@@ -926,26 +926,162 @@ app.get('/api/health', async (req, res) => {
   res.json({ ok: true, db: dbOk ? 'connected' : (db.connected ? 'error' : 'not configured') });
 });
 
-async function seedAdminPasswords() {
+// ─── Auto-migrate: create schema + seed base users (idempotent) ─────────────
+async function autoMigrate() {
   if (!db.connected) return;
   try {
-    const r = await db.query(
-      "SELECT id, email, password_hash FROM dashboard_users WHERE id IN (1, 2) AND role IN ('ADMIN','THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR')"
-    );
-    const needsPassword = r.rows.filter(u => !u.password_hash);
-    if (needsPassword.length === 0) return;
+    // 1. Create all dashboard tables (safe — IF NOT EXISTS)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS dashboard_users (
+        id             SERIAL PRIMARY KEY,
+        name           VARCHAR(255) NOT NULL,
+        email          VARCHAR(255) NOT NULL UNIQUE,
+        password_hash  VARCHAR(255),
+        role           VARCHAR(50)  NOT NULL DEFAULT 'USER',
+        avatar_url     VARCHAR(500),
+        healing_score  INT DEFAULT 0,
+        created_at     TIMESTAMPTZ  DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS user_specialists (
+        user_id       INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        specialist_id  INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        PRIMARY KEY (user_id, specialist_id)
+      );
+      CREATE TABLE IF NOT EXISTS sessions (
+        id               SERIAL PRIMARY KEY,
+        user_id          INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        specialist_id    INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        type             VARCHAR(100) NOT NULL,
+        scheduled_at     TIMESTAMPTZ NOT NULL,
+        duration_minutes INT NOT NULL DEFAULT 50,
+        status           VARCHAR(20)  NOT NULL DEFAULT 'UPCOMING',
+        rating           DECIMAL(2,1),
+        completed_at     TIMESTAMPTZ,
+        created_at       TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS mood_log (
+        id         SERIAL PRIMARY KEY,
+        user_id    INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        date       DATE NOT NULL,
+        value      INT NOT NULL CHECK (value >= 1 AND value <= 10),
+        note       TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (user_id, date)
+      );
+      CREATE TABLE IF NOT EXISTS milestones (
+        id          SERIAL PRIMARY KEY,
+        title       VARCHAR(255) NOT NULL,
+        description TEXT,
+        icon        VARCHAR(20),
+        sort_order  INT DEFAULT 0
+      );
+      CREATE TABLE IF NOT EXISTS user_milestones (
+        user_id      INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        milestone_id INT NOT NULL REFERENCES milestones(id) ON DELETE CASCADE,
+        unlocked_at  DATE NOT NULL DEFAULT CURRENT_DATE,
+        PRIMARY KEY (user_id, milestone_id)
+      );
+      CREATE TABLE IF NOT EXISTS community_posts (
+        id         SERIAL PRIMARY KEY,
+        user_id    INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        content    TEXT NOT NULL,
+        likes      INT NOT NULL DEFAULT 0,
+        comments   INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS specialist_applications (
+        id         SERIAL PRIMARY KEY,
+        name       VARCHAR(255) NOT NULL,
+        email      VARCHAR(255) NOT NULL,
+        specialty  VARCHAR(50)  NOT NULL,
+        status     VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+        applied_at TIMESTAMPTZ  DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS session_notes (
+        id            SERIAL PRIMARY KEY,
+        session_id    INT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+        specialist_id INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        user_id       INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        content       TEXT NOT NULL,
+        is_private    BOOLEAN DEFAULT TRUE,
+        created_at    TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS booking_requests (
+        id            SERIAL PRIMARY KEY,
+        specialist_id INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        user_id       INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        proposed_at   TIMESTAMPTZ NOT NULL,
+        session_type  VARCHAR(100) NOT NULL,
+        status        VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+        created_at    TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS reviews (
+        id            SERIAL PRIMARY KEY,
+        session_id    INT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+        user_id       INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        specialist_id  INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        rating        INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+        excerpt       TEXT,
+        created_at    TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS activity_log (
+        id         SERIAL PRIMARY KEY,
+        type       VARCHAR(50) NOT NULL,
+        message    TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_sessions_user       ON sessions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_sessions_specialist ON sessions(specialist_id);
+      CREATE INDEX IF NOT EXISTS idx_sessions_scheduled  ON sessions(scheduled_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_status     ON sessions(status);
+      CREATE INDEX IF NOT EXISTS idx_mood_log_user_date  ON mood_log(user_id, date DESC);
+      CREATE INDEX IF NOT EXISTS idx_community_created   ON community_posts(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_activity_created    ON activity_log(created_at DESC);
+    `);
+    console.log('autoMigrate: schema OK');
 
-    const ADMIN_PASS    = process.env.ADMIN_PASSWORD     || 'Admin@BTB2026';
+    // 2. Insert base users (admin + 4 specialists) — skip if already present
+    await db.query(`
+      INSERT INTO dashboard_users (id, name, email, role, healing_score) VALUES
+        (1, 'Admin',        'admin@beyondthebody.fit', 'ADMIN',         0),
+        (2, 'Dr. Sarah Chen','sarah@btb.fit',           'THERAPIST',     0),
+        (3, 'James Miller', 'james@btb.fit',            'LIFE_COACH',    0),
+        (4, 'Maya Foster',  'maya@btb.fit',             'HYPNOTHERAPIST',0),
+        (5, 'Leo Torres',   'leo@btb.fit',              'MUSIC_TUTOR',   0)
+      ON CONFLICT (email) DO NOTHING;
+      -- keep sequence in sync if rows were inserted
+      SELECT setval('dashboard_users_id_seq', GREATEST((SELECT MAX(id) FROM dashboard_users), 5));
+    `);
+
+    // 3. Insert default milestones
+    await db.query(`
+      INSERT INTO milestones (title, description, icon, sort_order) VALUES
+        ('First session completed', 'You began your healing journey',      '🌱', 1),
+        ('10 sessions milestone',   'Consistency is your superpower',      '✨', 2),
+        ('7-day streak',            'Daily check-ins for 7 days',          '🔥', 3)
+      ON CONFLICT DO NOTHING;
+    `);
+
+    // 4. Seed passwords for accounts that still have NULL password_hash
+    const ADMIN_PASS     = process.env.ADMIN_PASSWORD     || 'Admin@BTB2026';
     const THERAPIST_PASS = process.env.THERAPIST_PASSWORD || 'Therapist@BTB2026';
+    const SPECIALIST_PASS = process.env.THERAPIST_PASSWORD || 'Therapist@BTB2026';
 
-    for (const u of needsPassword) {
-      const plain = u.id === 1 ? ADMIN_PASS : THERAPIST_PASS;
+    const r = await db.query(
+      `SELECT id, email FROM dashboard_users
+       WHERE password_hash IS NULL
+         AND role IN ('ADMIN','THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR')`
+    );
+    for (const u of r.rows) {
+      const plain = u.id === 1 ? ADMIN_PASS : SPECIALIST_PASS;
       const hash  = await bcrypt.hash(plain, 10);
       await db.query('UPDATE dashboard_users SET password_hash = $1 WHERE id = $2', [hash, u.id]);
-      console.log(`Auto-seeded password for user id=${u.id} (${u.email})`);
+      console.log(`autoMigrate: password set for ${u.email} (id=${u.id})`);
     }
+
+    console.log('autoMigrate: done');
   } catch (err) {
-    console.warn('seedAdminPasswords skipped (table may not exist yet):', err.message);
+    console.error('autoMigrate error:', err.message);
   }
 }
 
@@ -954,7 +1090,7 @@ function startServer(port) {
     console.log(`Beyond The Body server running on http://localhost:${port}`);
     if (db.connected) {
       console.log('PostgreSQL: connected');
-      await seedAdminPasswords();
+      await autoMigrate();
     } else {
       console.log('PostgreSQL: not configured (using in-memory data). Set DATABASE_URL to use DB.');
     }
