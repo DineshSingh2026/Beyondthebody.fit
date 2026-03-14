@@ -1,0 +1,19 @@
+export default function DisclaimerBanner() {
+  return (
+    <div className="disclaimer-strip" role="note" aria-label="Educational disclaimer">
+      <span className="disclaimer-strip-icon">⚠️</span>
+      <span className="disclaimer-strip-text">
+        Content on this site is <strong>educational only — not diagnostic or medical advice</strong>.
+        Always consult a licensed professional. In crisis?{' '}
+        <a
+          href="https://www.samaritans.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="disclaimer-strip-link"
+        >
+          Get immediate help →
+        </a>
+      </span>
+    </div>
+  );
+}

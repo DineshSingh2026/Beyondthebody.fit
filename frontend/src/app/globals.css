@@ -3243,3 +3243,574 @@ textarea.form-input {
     margin-top: 24px;
   }
 }
+
+/* ============================================
+   DISCLAIMER STRIP
+   ============================================ */
+.disclaimer-strip {
+  background: rgba(201, 169, 98, 0.08);
+  border-bottom: 1px solid rgba(201, 169, 98, 0.18);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  flex-wrap: wrap;
+}
+
+.disclaimer-strip-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.disclaimer-strip-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.disclaimer-strip-text strong {
+  color: var(--gold-soft);
+}
+
+.disclaimer-strip-link {
+  color: var(--green);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.disclaimer-strip-link:hover {
+  text-decoration: underline;
+}
+
+/* ============================================
+   PARTNERSHIP BANNER ADDITIONS
+   ============================================ */
+.banner-pill {
+  display: inline-block;
+  background: rgba(201, 169, 98, 0.15);
+  color: var(--gold-soft);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 4px 14px;
+  border-radius: 100px;
+  border: 1px solid rgba(201, 169, 98, 0.25);
+  margin-bottom: 12px;
+}
+
+.banner-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.banner-badge {
+  font-size: 11px;
+  color: var(--green);
+  background: rgba(91, 184, 154, 0.1);
+  border: 1px solid rgba(91, 184, 154, 0.2);
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-weight: 500;
+}
+
+/* ============================================
+   AFFILIATE STRIP
+   ============================================ */
+.affiliate-strip {
+  margin-top: 48px;
+  background: linear-gradient(135deg, rgba(91, 184, 154, 0.06), rgba(201, 169, 98, 0.06));
+  border: 1px solid rgba(91, 184, 154, 0.15);
+  border-radius: 12px;
+  padding: 20px 28px;
+}
+
+.affiliate-strip-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.affiliate-strip-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.affiliate-strip p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.affiliate-strip-link {
+  color: var(--green);
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.affiliate-strip-link:hover {
+  text-decoration: underline;
+}
+
+/* ============================================
+   SAFE SPACE SECTION
+   ============================================ */
+.safe-space {
+  padding: 100px 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.safe-space-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 60px;
+  align-items: start;
+  margin-top: 60px;
+}
+
+.ss-signup-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px 32px;
+}
+
+.ss-signup-icon {
+  font-size: 36px;
+  margin-bottom: 16px;
+}
+
+.ss-signup-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+
+.ss-benefits {
+  list-style: none;
+  margin: 0 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ss-benefits li {
+  font-size: 14px;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ss-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ss-input {
+  padding: 13px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--dark-3);
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.ss-input:focus {
+  border-color: var(--green);
+}
+
+.ss-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 10px;
+  text-align: center;
+}
+
+.ss-success {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(91, 184, 154, 0.1);
+  border: 1px solid rgba(91, 184, 154, 0.25);
+  border-radius: 10px;
+  padding: 16px 20px;
+  font-size: 14px;
+  color: var(--green);
+}
+
+.ss-success span:first-child {
+  font-size: 24px;
+}
+
+.ss-experts-title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.ss-experts-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.ss-expert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ss-expert-card {
+  display: flex;
+  gap: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  transition: var(--transition);
+}
+
+.ss-expert-card:hover {
+  border-color: rgba(91, 184, 154, 0.3);
+  transform: translateY(-2px);
+}
+
+.ss-expert-avatar {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ss-expert-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ss-expert-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.ss-expert-header strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.ss-expert-role {
+  font-size: 11px;
+  color: var(--green);
+  background: rgba(91, 184, 154, 0.1);
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+.ss-expert-speciality {
+  font-size: 12px;
+  color: var(--gold-soft);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.ss-expert-bio {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ============================================
+   MOOD QUIZ SECTION
+   ============================================ */
+.mood-quiz {
+  padding: 100px 0;
+  background: linear-gradient(180deg, var(--dark-2) 0%, var(--surface) 100%);
+  border-top: 1px solid var(--border);
+}
+
+.mood-quiz-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: start;
+  margin-top: 20px;
+}
+
+.mq-left .section-title {
+  margin-bottom: 10px;
+}
+
+.mq-moods {
+  display: flex;
+  gap: 10px;
+  margin: 32px 0 28px;
+  flex-wrap: wrap;
+}
+
+.mq-mood-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: var(--transition);
+  flex: 1;
+  min-width: 64px;
+}
+
+.mq-mood-btn:hover {
+  border-color: rgba(91, 184, 154, 0.4);
+  transform: translateY(-2px);
+}
+
+.mq-mood-btn.selected {
+  border-color: var(--green);
+  background: rgba(91, 184, 154, 0.1);
+}
+
+.mq-emoji {
+  font-size: 28px;
+}
+
+.mq-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.mq-result {
+  background: rgba(91, 184, 154, 0.07);
+  border: 1px solid rgba(91, 184, 154, 0.2);
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mq-result-text {
+  font-size: 14px;
+  color: var(--text-light);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.mq-cta {
+  align-self: flex-start;
+}
+
+.mq-insight-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 30px;
+  margin-bottom: 24px;
+}
+
+.mq-insight-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.mq-insight-icon {
+  font-size: 36px;
+  flex-shrink: 0;
+}
+
+.mq-insight-category {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.mq-insight-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--text);
+  margin: 0;
+}
+
+.mq-insight-tip {
+  font-size: 14px;
+  color: var(--text-light);
+  line-height: 1.8;
+  margin: 0 0 20px;
+}
+
+.mq-insight-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.mq-insight-dot {
+  opacity: 0.4;
+}
+
+.mq-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.mq-stat {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+}
+
+.mq-stat-num {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--green);
+  margin-bottom: 6px;
+}
+
+.mq-stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ============================================
+   JOIN SECTION ADDITIONS
+   ============================================ */
+.join-compliance-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 28px;
+}
+
+.jcb-badge {
+  font-size: 12px;
+  color: var(--green);
+  background: rgba(91, 184, 154, 0.12);
+  border: 1px solid rgba(91, 184, 154, 0.25);
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-weight: 500;
+}
+
+.join-privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(91, 184, 154, 0.06);
+  border: 1px solid rgba(91, 184, 154, 0.15);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.join-privacy-note span:first-child {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ============================================
+   RESPONSIVE: New sections
+   ============================================ */
+@media (max-width: 900px) {
+  .safe-space-grid,
+  .mood-quiz-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .mq-moods {
+    gap: 8px;
+  }
+
+  .mq-mood-btn {
+    padding: 12px 10px;
+    min-width: 52px;
+  }
+
+  .mq-stats-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .affiliate-strip-inner {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .banner-badges {
+    justify-content: center;
+  }
+
+  .join-compliance-badges {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .disclaimer-strip {
+    padding: 10px 16px;
+    gap: 8px;
+  }
+
+  .safe-space {
+    padding: 60px 0;
+  }
+
+  .mood-quiz {
+    padding: 60px 0;
+  }
+
+  .ss-signup-card {
+    padding: 24px 20px;
+  }
+
+  .mq-insight-card {
+    padding: 20px;
+  }
+
+  .mq-stats-row {
+    grid-template-columns: 1fr;
+  }
+}

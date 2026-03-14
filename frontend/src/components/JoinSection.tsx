@@ -47,8 +47,14 @@ export default function JoinSection() {
             <p className="join-desc">
               We&apos;re building something extraordinary. Mental wellness &amp; healing revolution
               starts here. We&apos;re looking for passionate professionals who believe
-              transformation goes &apos;Beyond The Body&apos;.
+              transformation goes beyond the body.
             </p>
+            <div className="join-compliance-badges">
+              <span className="jcb-badge">✓ RCI Compliant</span>
+              <span className="jcb-badge">✓ BACP Standards</span>
+              <span className="jcb-badge">✓ Ethically Governed</span>
+              <span className="jcb-badge">✓ Teletherapy Certified</span>
+            </div>
             <div className="join-roles">
               {roles.map((r) => (
                 <div className="join-role" key={r.title}>
@@ -62,7 +68,11 @@ export default function JoinSection() {
             </div>
           </div>
           <div className="join-form-card">
-            <h3>DM to get started</h3>
+            <h3>Apply to Join the Team</h3>
+            <div className="join-privacy-note">
+              <span>🔒</span>
+              <span>Your application is confidential. We follow strict teletherapy and data privacy guidelines aligned with GDPR and professional ethics codes.</span>
+            </div>
             <form id="joinForm" className="form" onSubmit={handleSubmit}>
               <div className="form-group">
                 <input type="text" name="name" placeholder="Your name" required className="form-input" />

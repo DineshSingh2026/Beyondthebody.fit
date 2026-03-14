@@ -59,6 +59,22 @@ export default function Services() {
             </div>
           ))}
         </div>
+        <div className="affiliate-strip">
+          <div className="affiliate-strip-inner">
+            <span className="affiliate-strip-icon">💡</span>
+            <p>
+              <strong>After your session,</strong> explore Body Bank&apos;s personalised nutrition &amp; recovery programmes for sustained energy and holistic results.{' '}
+              <a
+                href="https://bodybank.fit"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="affiliate-strip-link"
+              >
+                Discover Body Bank programmes →
+              </a>
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

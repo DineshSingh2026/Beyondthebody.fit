@@ -40,18 +40,14 @@ export default function Conditions({ conditions }: Props) {
               >
                 <div className="cc-top">
                   <h3 className="cc-name">{cond.name}</h3>
-                  <span className="cc-badge">{cond.treatment}</span>
+                  <span
+                    className="cc-treatment"
+                    style={{ background: `${cond.color}20`, color: cond.color }}
+                  >
+                    {cond.treatment}
+                  </span>
                 </div>
                 <p className="cc-fact">📊 {cond.fact}</p>
-                <span
-                  className="cc-treatment"
-                  style={{
-                    background: `${cond.color}20`,
-                    color: cond.color,
-                  }}
-                >
-                  {cond.treatment}
-                </span>
                 <p className="cc-learn">Learn more &amp; find support →</p>
               </div>
             ))}
@@ -97,6 +93,15 @@ export default function Conditions({ conditions }: Props) {
                   {modalCond.treatments.map((t) => (
                     <li key={t}>{t}</li>
                   ))}
+                </ul>
+              </div>
+              <div className="modal-section">
+                <h4>Real-Life Scenarios</h4>
+                <ul className="modal-list modal-scenarios">
+                  {modalCond.name === 'Anxiety' && <><li>&ldquo;I freeze before every big meeting at work.&rdquo;</li><li>&ldquo;I can&apos;t sleep because my mind won&apos;t stop.&rdquo;</li></>}
+                  {modalCond.name === 'Depression' && <><li>&ldquo;I lost all motivation — even things I loved feel empty.&rdquo;</li><li>&ldquo;Getting out of bed feels impossible some days.&rdquo;</li></>}
+                  {modalCond.name === 'Stress' && <><li>&ldquo;Navigating family stress at work is exhausting.&rdquo;</li><li>&ldquo;I&apos;m running on empty and can&apos;t find balance.&rdquo;</li></>}
+                  {!['Anxiety','Depression','Stress'].includes(modalCond.name) && <><li>&ldquo;I&apos;ve been carrying this alone for too long.&rdquo;</li><li>&ldquo;I want to heal but don&apos;t know where to start.&rdquo;</li></>}
                 </ul>
               </div>
               <div className="modal-cta">

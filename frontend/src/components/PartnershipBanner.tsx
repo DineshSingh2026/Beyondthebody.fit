@@ -17,15 +17,21 @@ export default function PartnershipBanner() {
           </div>
         </div>
         <div className="banner-text">
-          <h3>Revolutionary Partnership</h3>
-          <p>Therapy first → Mental clarity → Physical transformation</p>
+          <div className="banner-pill">Exclusive Partnership</div>
+          <h3>Mind heals first. Body follows.</h3>
+          <p>The only platform where mental therapy and physical transformation work as one.</p>
           <p className="banner-promise">
-            Anyone seeking therapy gets <strong>FREE</strong> Body Bank Lifestyle Management
-            services
+            Every therapy client receives <strong>FREE</strong> Body Bank Lifestyle Management —
+            nutrition, fitness & recovery support included.
           </p>
+          <div className="banner-badges">
+            <span className="banner-badge">✓ RCI Compliant</span>
+            <span className="banner-badge">✓ Ethically Governed</span>
+            <span className="banner-badge">✓ Evidence-Based</span>
+          </div>
         </div>
         <a href="#contact" className="btn btn-light">
-          Join the Movement →
+          Start Your Journey →
         </a>
       </div>
     </section>
