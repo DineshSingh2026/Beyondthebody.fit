@@ -57,10 +57,15 @@ export default function AdminDashboardPage() {
     api.getAdminActivityLog().then(setActivityLog).catch(() => {});
   }, []);
 
+  const [approvedAlert, setApprovedAlert] = useState<{ name: string; email: string; role: string; tempPassword: string } | null>(null);
+
   const handleApplicationStatus = (id: string, status: string) => {
-    api.patchApplication(id, status).then(() => {
+    api.patchApplication(id, status).then((res) => {
       api.getAdminApplications().then(setApplications).catch(() => {});
       api.getAdminPlatformStats().then(setStats).catch(() => {});
+      if (status === 'APPROVED' && res.newUser) {
+        setApprovedAlert({ name: res.newUser.name, email: res.newUser.email, role: res.newUser.role, tempPassword: res.newUser.tempPassword });
+      }
     }).catch(() => {});
   };
 
@@ -69,6 +74,24 @@ export default function AdminDashboardPage() {
   const s = stats;
   return (
     <motion.div className={styles.page} initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.05 } } }}>
+      {approvedAlert && (
+        <div className={styles.approvedAlert}>
+          <div className={styles.approvedAlertInner}>
+            <span className={styles.approvedAlertIcon}>✅</span>
+            <div>
+              <strong>{approvedAlert.name}</strong> has been approved as <strong>{approvedAlert.role.replace('_', ' ')}</strong>.
+              <br />
+              Account created — share these login credentials with them:
+              <div className={styles.approvedCredentials}>
+                <span>Email: <code>{approvedAlert.email}</code></span>
+                <span>Temp Password: <code>{approvedAlert.tempPassword}</code></span>
+                <span className={styles.approvedNote}>Ask them to change their password after first login.</span>
+              </div>
+            </div>
+            <button className={styles.approvedClose} onClick={() => setApprovedAlert(null)}>✕</button>
+          </div>
+        </div>
+      )}
       <div className={styles.heroRow}>
         <motion.div className={styles.heroCard} variants={item}>
           <div className={styles.heroCardLabel}>Platform Health</div>

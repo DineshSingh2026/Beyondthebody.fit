@@ -73,6 +73,16 @@ export async function postConsultation(data: { name: string; email: string; phon
   return fetchJson<{ success: boolean; message: string }>(`${API_BASE}/api/consultation`, { method: 'POST', body: JSON.stringify(data) });
 }
 
+export async function postSpecialistApplication(data: { name: string; email: string; specialty: string; message?: string }) {
+  return fetchJson<{ success: boolean; message: string }>(`${API_BASE}/api/specialist-applications`, { method: 'POST', body: JSON.stringify(data) });
+}
+
+export type SpecialistBrowse = { id: string; name: string; role: string; avatarUrl?: string | null; rating?: number | null; sessionCount: number };
+
+export async function browseSpecialists(): Promise<SpecialistBrowse[]> {
+  return fetchJson(`${API_BASE}/api/specialists/browse`);
+}
+
 // ---------- Auth ----------
 export type AuthUser = { id: string; name: string; email: string; role: string };
 
@@ -133,11 +143,15 @@ export const api = {
     return fetchWithAuth(`${API_BASE}/api/admin/applications`);
   },
 
-  async patchApplication(id: string, status: string) {
+  async patchApplication(id: string, status: string): Promise<{ success: boolean; newUser?: { id: string; name: string; email: string; role: string; tempPassword: string } | null }> {
     return fetchWithAuth(`${API_BASE}/api/admin/applications/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });
+  },
+
+  async browseSpecialists(): Promise<SpecialistBrowse[]> {
+    return fetchWithAuth(`${API_BASE}/api/specialists/browse`);
   },
 
   async getAdminSessions() {

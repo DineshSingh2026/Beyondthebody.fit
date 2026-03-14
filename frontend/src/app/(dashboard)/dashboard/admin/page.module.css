@@ -32,3 +32,12 @@
 .activityList { list-style: none; padding: 0; margin: 0; }
 .activityList li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text); }
 .activityList li span:first-child { margin-right: 8px; color: var(--dim); }
+
+.approvedAlert { margin-bottom: 24px; }
+.approvedAlertInner { display: flex; align-items: flex-start; gap: 14px; background: rgba(91,184,154,0.1); border: 1px solid rgba(91,184,154,0.3); border-radius: 12px; padding: 20px 24px; }
+.approvedAlertIcon { font-size: 22px; flex-shrink: 0; }
+.approvedAlert strong { color: var(--text); }
+.approvedCredentials { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; font-size: 13px; color: var(--text-light); background: var(--bg2); border-radius: 8px; padding: 12px 16px; }
+.approvedCredentials code { font-family: var(--font-mono,monospace); color: var(--green); background: rgba(91,184,154,0.08); padding: 2px 6px; border-radius: 4px; }
+.approvedNote { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.approvedClose { margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; }

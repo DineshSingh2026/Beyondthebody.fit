@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { postContact } from '@/lib/api';
+import { postSpecialistApplication } from '@/lib/api';
 
 const roles = [
   { icon: '🟢', title: 'Licensed Therapists', desc: 'Anxiety, depression, relationship counseling' },
@@ -18,20 +18,26 @@ export default function JoinSection() {
     e.preventDefault();
     setLoading(true);
     const fd = new FormData(e.currentTarget);
+    const specialty = (fd.get('service') as string) || '';
+    if (!specialty) {
+      setResponse({ success: false, message: 'Please select your specialty.' });
+      setLoading(false);
+      return;
+    }
     try {
-      const json = await postContact({
+      const json = await postSpecialistApplication({
         name: fd.get('name') as string,
         email: fd.get('email') as string,
+        specialty,
         message: fd.get('message') as string,
-        service: fd.get('service') as string,
       });
       setResponse(json);
       if (json.success) (e.target as HTMLFormElement).reset();
-    } catch {
-      setResponse({ success: false, message: 'Something went wrong. Please try again.' });
+    } catch (err) {
+      setResponse({ success: false, message: err instanceof Error ? err.message : 'Something went wrong. Please try again.' });
     }
     setLoading(false);
-    setTimeout(() => setResponse(null), 6000);
+    setTimeout(() => setResponse(null), 8000);
   };
 
   return (

@@ -152,6 +152,27 @@ app.get('/api/services', async (req, res) => {
   }
 });
 
+// ---------- POST: Specialist / therapist applications → specialist_applications ----------
+app.post('/api/specialist-applications', async (req, res) => {
+  const { name, email, specialty, message } = req.body || {};
+  if (!name || !email || !specialty) return res.status(400).json({ success: false, message: 'Name, email and specialty are required.' });
+  if (!db.connected || !(await hasDashboard())) {
+    console.log('Specialist application (no DB):', { name, email, specialty });
+    return res.json({ success: true, message: "Thank you! We'll review your application and be in touch within 48 hours." });
+  }
+  try {
+    await db.query(
+      'INSERT INTO specialist_applications (name, email, specialty) VALUES ($1, $2, $3)',
+      [name.trim(), email.trim().toLowerCase(), specialty.trim()]
+    );
+    res.json({ success: true, message: "Application received! We'll review it and be in touch within 48 hours." });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ success: false, message: 'An application with this email already exists.' });
+    console.error('POST /api/specialist-applications', err);
+    res.status(500).json({ success: false, message: 'Could not save. Please try again.' });
+  }
+});
+
 // ---------- POST: Join / Contact form → join_applications ----------
 app.post('/api/contact', async (req, res) => {
   const { name, email, message, service } = req.body;
@@ -539,7 +560,39 @@ app.patch('/api/admin/applications/:id', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
   try {
     await db.query('UPDATE specialist_applications SET status = $1 WHERE id = $2', [status, req.params.id]);
-    res.json({ success: true });
+
+    let newUser = null;
+    if (status === 'APPROVED') {
+      const appR = await db.query('SELECT name, email, specialty FROM specialist_applications WHERE id = $1', [req.params.id]);
+      if (appR.rows.length > 0) {
+        const app = appR.rows[0];
+        const roleMap = {
+          'Licensed Therapist': 'THERAPIST',
+          'Trauma Specialist': 'THERAPIST',
+          'Group Facilitator': 'THERAPIST',
+          'Specialized Expert': 'LIFE_COACH',
+          'THERAPIST': 'THERAPIST',
+          'LIFE_COACH': 'LIFE_COACH',
+          'HYPNOTHERAPIST': 'HYPNOTHERAPIST',
+          'MUSIC_TUTOR': 'MUSIC_TUTOR',
+        };
+        const role = roleMap[app.specialty] || 'THERAPIST';
+        const existing = await db.query('SELECT id FROM dashboard_users WHERE LOWER(email) = LOWER($1)', [app.email]);
+        if (existing.rows.length === 0) {
+          const TEMP_PASS = process.env.THERAPIST_TEMP_PASSWORD || 'Welcome@BTB2026';
+          const hash = await bcrypt.hash(TEMP_PASS, 10);
+          const uR = await db.query(
+            'INSERT INTO dashboard_users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
+            [app.name.trim(), app.email.trim().toLowerCase(), hash, role]
+          );
+          newUser = { id: String(uR.rows[0].id), name: uR.rows[0].name, email: uR.rows[0].email, role, tempPassword: TEMP_PASS };
+          await db.query("INSERT INTO activity_log (type, message) VALUES ('specialist_approved', $1)", [`${app.name} (${app.email}) approved as ${role} — account created`]);
+          console.log(`Approved specialist: ${app.name} <${app.email}> as ${role}, temp password set.`);
+        }
+      }
+    }
+
+    res.json({ success: true, newUser });
   } catch (err) {
     console.error('PATCH /api/admin/applications/:id', err);
     res.status(500).json({ error: err.message });
@@ -616,6 +669,40 @@ app.get('/api/admin/activity-log', async (req, res) => {
   } catch (err) {
     console.error('GET /api/admin/activity-log', err);
     res.json([]);
+  }
+});
+
+// ---------- Browse all active specialists (for user discovery) ----------
+app.get('/api/specialists/browse', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) {
+    return res.json([
+      { id: '2', name: 'Dr. Sarah Chen', role: 'THERAPIST', speciality: 'Anxiety, Trauma & PTSD', bio: 'Over 12 years helping clients rebuild confidence after trauma. CBT-certified.', rating: 4.9, sessionCount: 248 },
+      { id: '3', name: 'James Miller', role: 'LIFE_COACH', speciality: 'Burnout & Life Transitions', bio: 'Specialist in workplace stress and goal alignment.', rating: 4.8, sessionCount: 180 },
+      { id: '4', name: 'Maya Foster', role: 'HYPNOTHERAPIST', speciality: 'Habit & Behaviour Change', bio: 'Combines evidence-based hypnotherapy with mindfulness.', rating: 4.7, sessionCount: 132 },
+    ]);
+  }
+  try {
+    const r = await db.query(
+      `SELECT u.id, u.name, u.role, u.avatar_url,
+        ROUND(AVG(s.rating)::numeric, 1) as avg_rating,
+        COUNT(s.id) FILTER (WHERE s.status = 'COMPLETED') as session_count
+       FROM dashboard_users u
+       LEFT JOIN sessions s ON s.specialist_id = u.id
+       WHERE u.role IN ('THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR')
+       GROUP BY u.id, u.name, u.role, u.avatar_url
+       ORDER BY session_count DESC, avg_rating DESC`
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      name: rr.name,
+      role: rr.role,
+      avatarUrl: rr.avatar_url || null,
+      rating: rr.avg_rating ? Number(rr.avg_rating) : null,
+      sessionCount: parseInt(rr.session_count || '0', 10),
+    })));
+  } catch (err) {
+    console.error('GET /api/specialists/browse', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

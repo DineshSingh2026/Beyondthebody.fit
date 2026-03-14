@@ -15,6 +15,7 @@ interface NavSection {
 
 const userNav: NavSection[] = [
   { title: 'My Sanctuary', items: [{ label: 'Dashboard', href: '/dashboard/user' }] },
+  { title: 'Specialists', items: [{ label: 'Find a Specialist', href: '/dashboard/user/specialists' }, { label: 'My Specialists', href: '/dashboard/user#specialists' }] },
   { title: 'Sessions', items: [{ label: 'Upcoming', href: '/dashboard/user#sessions' }, { label: 'Past', href: '/dashboard/user#past' }] },
   { title: 'Wellness', items: [{ label: 'Mood Tracker', href: '/dashboard/user#mood' }, { label: 'Milestones', href: '/dashboard/user#milestones' }] },
   { title: 'Community', items: [{ label: 'Feed', href: '/dashboard/user#community' }] },
