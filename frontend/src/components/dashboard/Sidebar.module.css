@@ -90,3 +90,28 @@
   color: var(--green);
   background: var(--green3);
 }
+
+.footer {
+  padding: 16px 24px 0;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.logout {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+}
+
+.logout:hover {
+  color: var(--text);
+  background: var(--bg3);
+}

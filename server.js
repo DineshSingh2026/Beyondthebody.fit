@@ -1,12 +1,41 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const AUTH_SECRET = process.env.AUTH_SECRET || 'btb-dev-secret-change-in-production';
+
+function createToken(payload) {
+  const data = JSON.stringify({ id: payload.id, role: payload.role, email: payload.email });
+  const sig = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex');
+  return Buffer.from(JSON.stringify({ data, sig })).toString('base64url');
+}
+
+function verifyToken(token) {
+  if (!token) return null;
+  try {
+    const raw = JSON.parse(Buffer.from(token, 'base64url').toString());
+    const sig = crypto.createHmac('sha256', AUTH_SECRET).update(raw.data).digest('hex');
+    if (sig !== raw.sig) return null;
+    return JSON.parse(raw.data);
+  } catch {
+    return null;
+  }
+}
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------- In-memory fallback when DB not configured ----------
@@ -165,6 +194,635 @@ app.post('/api/consultation', async (req, res) => {
     console.log('Free consultation request:', { name, email, phone, concern, message });
   }
   res.json({ success: true, message: 'Your free 15-minute consultation has been requested! We\'ll contact you within 24 hours.' });
+});
+
+// ---------- Dashboard API (requires dashboard_users table) ----------
+const hasDashboard = async () => {
+  if (!db.connected) return false;
+  try {
+    await db.query('SELECT 1 FROM dashboard_users LIMIT 1');
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const formatSession = (row, userRow, specialistRow) => ({
+  id: String(row.id),
+  clientName: userRow ? userRow.name.split(' ')[0] : 'Client',
+  specialistName: specialistRow ? specialistRow.name : '',
+  specialistType: specialistRow ? specialistRow.role : 'THERAPIST',
+  type: row.type,
+  time: row.scheduled_at ? new Date(row.scheduled_at).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' }) : '',
+  durationMinutes: row.duration_minutes,
+  status: row.status,
+  rating: row.rating ? Number(row.rating) : undefined,
+});
+
+// ---------- Auth: login, signup, me ----------
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Service unavailable' });
+  try {
+    const r = await db.query('SELECT id, name, email, role, password_hash FROM dashboard_users WHERE LOWER(email) = LOWER($1)', [email]);
+    if (r.rows.length === 0) return res.status(401).json({ error: 'Invalid email or password' });
+    const u = r.rows[0];
+    if (!u.password_hash) return res.status(401).json({ error: 'Account not set up for login. Use sign up or contact support.' });
+    const ok = await bcrypt.compare(password, u.password_hash);
+    if (!ok) return res.status(401).json({ error: 'Invalid email or password' });
+    const user = { id: String(u.id), name: u.name, email: u.email, role: u.role };
+    const token = createToken(user);
+    res.json({ user, token });
+  } catch (err) {
+    console.error('POST /api/auth/login', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/signup', async (req, res) => {
+  const { name, email, password } = req.body || {};
+  if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password required' });
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Service unavailable' });
+  try {
+    const existing = await db.query('SELECT id FROM dashboard_users WHERE LOWER(email) = LOWER($1)', [email]);
+    if (existing.rows.length > 0) return res.status(409).json({ error: 'An account with this email already exists' });
+    const password_hash = await bcrypt.hash(password, 10);
+    const r = await db.query(
+      'INSERT INTO dashboard_users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
+      [name.trim(), email.trim().toLowerCase(), password_hash, 'USER']
+    );
+    const u = r.rows[0];
+    const user = { id: String(u.id), name: u.name, email: u.email, role: u.role };
+    const token = createToken(user);
+    res.status(201).json({ user, token });
+  } catch (err) {
+    console.error('POST /api/auth/signup', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/auth/me', async (req, res) => {
+  const bearer = req.headers.authorization;
+  const token = bearer && bearer.startsWith('Bearer ') ? bearer.slice(7) : (req.query.token || req.headers['x-user-id']);
+  if (token && !/^\d+$/.test(token)) {
+    const payload = verifyToken(token);
+    if (payload && db.connected && await hasDashboard()) {
+      try {
+        const r = await db.query('SELECT id, name, email, role FROM dashboard_users WHERE id = $1', [payload.id]);
+        if (r.rows.length > 0) {
+          const u = r.rows[0];
+          return res.json({ id: String(u.id), name: u.name, email: u.email, role: u.role });
+        }
+      } catch (err) {
+        console.error('GET /api/auth/me', err);
+      }
+    }
+  }
+  const userId = typeof token === 'string' && /^\d+$/.test(token) ? token : (req.query.userId || '6');
+  if (!db.connected || !(await hasDashboard())) {
+    return res.json({ id: userId, name: 'Alex Rivera', email: 'alex@example.com', role: 'USER' });
+  }
+  try {
+    const r = await db.query('SELECT id, name, email, role FROM dashboard_users WHERE id = $1', [userId]);
+    if (r.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const u = r.rows[0];
+    res.json({ id: String(u.id), name: u.name, email: u.email, role: u.role });
+  } catch (err) {
+    console.error('GET /api/auth/me', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/users/:id/dashboard', async (req, res) => {
+  const userId = req.params.id;
+  if (!db.connected || !(await hasDashboard())) {
+    return res.status(503).json({ error: 'Dashboard not configured' });
+  }
+  try {
+    const userR = await db.query('SELECT id, name, email, role, healing_score FROM dashboard_users WHERE id = $1', [userId]);
+    if (userR.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const user = userR.rows[0];
+    if (user.role !== 'USER') return res.status(400).json({ error: 'Not a user account' });
+
+    const statsR = await db.query(
+      `SELECT COUNT(*) FILTER (WHERE status = 'COMPLETED') as sessions_completed FROM sessions WHERE user_id = $1`,
+      [userId]
+    );
+    const moodR = await db.query(
+      'SELECT COALESCE(AVG(value), 0) as avg FROM mood_log WHERE user_id = $1 AND date >= CURRENT_DATE - 14',
+      [userId]
+    );
+    const postsR = await db.query('SELECT COUNT(*) as c FROM community_posts WHERE user_id = $1', [userId]);
+    const sessionsCompleted = parseInt(statsR.rows[0]?.sessions_completed || 0, 10);
+    const moodAvg = parseFloat(moodR.rows[0]?.avg || 0).toFixed(1);
+    const communityPosts = parseInt(postsR.rows[0]?.c || 0, 10);
+    const streak = 7;
+
+    const affR = await db.query('SELECT text FROM affirmations ORDER BY RANDOM() LIMIT 1');
+    const tipR = await db.query('SELECT title, description, category, icon FROM brain_tips ORDER BY RANDOM() LIMIT 1');
+    const dailyTipR = await db.query('SELECT title, description, category FROM brain_tips ORDER BY RANDOM() LIMIT 1');
+
+    const upcomingR = await db.query(
+      `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role
+       FROM sessions s
+       JOIN dashboard_users u ON u.id = s.user_id
+       JOIN dashboard_users sp ON sp.id = s.specialist_id
+       WHERE s.user_id = $1 AND s.scheduled_at >= NOW() AND s.status IN ('UPCOMING', 'IN_PROGRESS')
+       ORDER BY s.scheduled_at ASC LIMIT 10`,
+      [userId]
+    );
+    const specialistsR = await db.query(
+      `SELECT sp.id, sp.name, sp.role,
+        (SELECT COUNT(*) FROM sessions WHERE specialist_id = sp.id AND status = 'COMPLETED') as session_count,
+        (SELECT ROUND(AVG(rating)::numeric, 1) FROM sessions WHERE specialist_id = sp.id AND rating IS NOT NULL) as avg_rating
+       FROM dashboard_users sp
+       JOIN user_specialists us ON us.specialist_id = sp.id
+       WHERE us.user_id = $1`,
+      [userId]
+    );
+    const moodLogR = await db.query(
+      'SELECT date::text, value, note FROM mood_log WHERE user_id = $1 ORDER BY date DESC LIMIT 14',
+      [userId]
+    );
+    const milestonesR = await db.query(
+      `SELECT m.id, m.title, m.description, m.icon, um.unlocked_at as date
+       FROM user_milestones um JOIN milestones m ON m.id = um.milestone_id WHERE um.user_id = $1 ORDER BY um.unlocked_at DESC`,
+      [userId]
+    );
+    const feedR = await db.query(
+      `SELECT p.id, u.name as author_name, p.content, p.likes, p.comments, p.created_at
+       FROM community_posts p JOIN dashboard_users u ON u.id = p.user_id ORDER BY p.created_at DESC LIMIT 10`
+    );
+
+    const upcomingSessions = upcomingR.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role }));
+    const specialists = specialistsR.rows.map(r => ({
+      id: String(r.id),
+      name: r.name,
+      type: r.role,
+      rating: parseFloat(r.avg_rating || 0) || 0,
+      sessionCount: parseInt(r.session_count || 0, 10),
+    }));
+    const moodLog = moodLogR.rows.map(r => ({ date: r.date, value: r.value, note: r.note || undefined }));
+    const milestones = milestonesR.rows.map(r => ({ id: String(r.id), title: r.title, description: r.description, date: r.date, icon: r.icon }));
+    const communityFeed = feedR.rows.map(r => ({
+      id: String(r.id),
+      authorName: r.author_name,
+      content: r.content,
+      timestamp: r.created_at ? (() => { const d = new Date(r.created_at); const h = Math.round((Date.now() - d) / 3600000); return h < 1 ? 'Just now' : h < 24 ? h + 'h ago' : Math.floor(h / 24) + ' days ago'; })() : '',
+      likes: r.likes || 0,
+      comments: r.comments || 0,
+    }));
+
+    res.json({
+      user: { id: String(user.id), name: user.name, email: user.email, role: user.role },
+      healingScore: { value: user.healing_score || 0, label: 'Healing Journey' },
+      stats: { sessionsCompleted, streak: Number(streak), moodAverage: Number(moodAvg), communityPosts },
+      affirmation: affR.rows[0]?.text || 'I am worthy of healing and growth.',
+      brainTip: tipR.rows[0] ? { title: tipR.rows[0].title, description: tipR.rows[0].description, icon: tipR.rows[0].icon } : { title: 'Box Breathing', description: 'Inhale 4s, hold 4s, exhale 4s.', icon: '🫁' },
+      upcomingSessions,
+      specialists,
+      moodLog,
+      milestones,
+      communityFeed,
+      dailyBrainTip: dailyTipR.rows[0] ? { title: dailyTipR.rows[0].title, description: dailyTipR.rows[0].description, category: dailyTipR.rows[0].category } : { title: '5-4-3-2-1 Grounding', description: 'Name 5 things you see, 4 you touch, 3 you hear, 2 you smell, 1 you taste.', category: 'Grounding' },
+    });
+  } catch (err) {
+    console.error('GET /api/users/:id/dashboard', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/users/:id/sessions/upcoming', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role
+       FROM sessions s JOIN dashboard_users u ON u.id = s.user_id JOIN dashboard_users sp ON sp.id = s.specialist_id
+       WHERE s.user_id = $1 AND s.scheduled_at >= NOW() AND s.status IN ('UPCOMING', 'IN_PROGRESS') ORDER BY s.scheduled_at ASC`,
+      [req.params.id]
+    );
+    res.json(r.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role })));
+  } catch (err) {
+    console.error('GET /api/users/:id/sessions/upcoming', err);
+    res.json([]);
+  }
+});
+
+app.get('/api/users/:id/specialists', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT sp.id, sp.name, sp.role,
+        (SELECT COUNT(*) FROM sessions WHERE specialist_id = sp.id AND status = 'COMPLETED') as session_count,
+        (SELECT ROUND(AVG(rating)::numeric, 1) FROM sessions WHERE specialist_id = sp.id AND rating IS NOT NULL) as avg_rating
+       FROM dashboard_users sp JOIN user_specialists us ON us.specialist_id = sp.id WHERE us.user_id = $1`,
+      [req.params.id]
+    );
+    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, type: rr.role, rating: parseFloat(rr.avg_rating || 0) || 0, sessionCount: parseInt(rr.session_count || 0, 10) })));
+  } catch (err) {
+    console.error('GET /api/users/:id/specialists', err);
+    res.json([]);
+  }
+});
+
+app.get('/api/users/:id/mood-log', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query('SELECT date::text, value, note FROM mood_log WHERE user_id = $1 ORDER BY date DESC LIMIT 30', [req.params.id]);
+    res.json(r.rows.map(rr => ({ date: rr.date, value: rr.value, note: rr.note || undefined })));
+  } catch (err) {
+    console.error('GET /api/users/:id/mood-log', err);
+    res.json([]);
+  }
+});
+
+app.post('/api/users/:id/mood-log', async (req, res) => {
+  const { date, value, note } = req.body;
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  if (!date || value == null) return res.status(400).json({ error: 'date and value required' });
+  try {
+    await db.query(
+      'INSERT INTO mood_log (user_id, date, value, note) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, date) DO UPDATE SET value = $3, note = $4',
+      [req.params.id, date, Math.min(10, Math.max(1, parseInt(value, 10) || 5)), note || null]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('POST /api/users/:id/mood-log', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/community/feed', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT p.id, u.name as author_name, p.content, p.likes, p.comments, p.created_at FROM community_posts p JOIN dashboard_users u ON u.id = p.user_id ORDER BY p.created_at DESC LIMIT 20`
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      authorName: rr.author_name,
+      content: rr.content,
+      timestamp: rr.created_at ? (() => { const d = new Date(rr.created_at); const h = Math.round((Date.now() - d) / 3600000); return h < 1 ? 'Just now' : h < 24 ? h + 'h ago' : Math.floor(h / 24) + ' days ago'; })() : '',
+      likes: rr.likes || 0,
+      comments: rr.comments || 0,
+    })));
+  } catch (err) {
+    console.error('GET /api/community/feed', err);
+    res.json([]);
+  }
+});
+
+app.get('/api/admin/platform-stats', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) {
+    return res.json({
+      platformScore: 87, uptimePercent: 99.9, activeSessions: 12, errorRate: 0.02,
+      revenueToday: 4280, revenueDeltaPercent: 18, revenueSparkline: [3200, 3500, 3800, 3600, 4000, 4200, 4280],
+      liveUsers: 48, liveSessions: 12, specialistsOnline: 22,
+      totalUsers: 1240, totalSpecialists: 84, sessionsThisMonth: 892, avgSessionRating: 4.7, revenueMTD: 98420, newApplications: 5,
+    });
+  }
+  try {
+    const usersR = await db.query("SELECT COUNT(*) as c FROM dashboard_users WHERE role = 'USER'");
+    const specialistsR = await db.query("SELECT COUNT(*) as c FROM dashboard_users WHERE role IN ('THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR')");
+    const sessionsR = await db.query("SELECT COUNT(*) as c FROM sessions WHERE scheduled_at >= date_trunc('month', CURRENT_DATE) AND status = 'COMPLETED'");
+    const ratingR = await db.query('SELECT ROUND(AVG(rating)::numeric, 1) as avg FROM sessions WHERE rating IS NOT NULL');
+    const appsR = await db.query("SELECT COUNT(*) as c FROM specialist_applications WHERE status = 'PENDING'");
+    const sessionsTodayR = await db.query("SELECT COUNT(*) as c FROM sessions WHERE scheduled_at::date = CURRENT_DATE AND status IN ('UPCOMING', 'IN_PROGRESS')");
+    const totalUsers = parseInt(usersR.rows[0]?.c || 0, 10);
+    const totalSpecialists = parseInt(specialistsR.rows[0]?.c || 0, 10);
+    const sessionsThisMonth = parseInt(sessionsR.rows[0]?.c || 0, 10);
+    const avgRating = parseFloat(ratingR.rows[0]?.avg || 0) || 4.7;
+    const newApplications = parseInt(appsR.rows[0]?.c || 0, 10);
+    const liveSessions = parseInt(sessionsTodayR.rows[0]?.c || 0, 10);
+    const revenueMTD = sessionsThisMonth * 110;
+    const revenueToday = Math.min(5000, Math.round(revenueMTD / 30 * (0.8 + Math.random() * 0.4)));
+    res.json({
+      platformScore: 87,
+      uptimePercent: 99.9,
+      activeSessions: liveSessions,
+      errorRate: 0.02,
+      revenueToday,
+      revenueDeltaPercent: 18,
+      revenueSparkline: [revenueToday - 800, revenueToday - 500, revenueToday - 200, revenueToday - 100, revenueToday],
+      liveUsers: totalUsers,
+      liveSessions,
+      specialistsOnline: totalSpecialists,
+      totalUsers,
+      totalSpecialists,
+      sessionsThisMonth,
+      avgSessionRating: avgRating,
+      revenueMTD,
+      newApplications,
+    });
+  } catch (err) {
+    console.error('GET /api/admin/platform-stats', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/applications', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query('SELECT id, name, email, specialty, status, applied_at FROM specialist_applications ORDER BY applied_at DESC');
+    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, email: rr.email, specialty: rr.specialty, status: rr.status, appliedAt: rr.applied_at })));
+  } catch (err) {
+    console.error('GET /api/admin/applications', err);
+    res.json([]);
+  }
+});
+
+app.patch('/api/admin/applications/:id', async (req, res) => {
+  const { status } = req.body;
+  if (!status || !['APPROVED', 'REJECTED', 'REVIEWING', 'PENDING'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    await db.query('UPDATE specialist_applications SET status = $1 WHERE id = $2', [status, req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PATCH /api/admin/applications/:id', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/sessions', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT s.id, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role, s.duration_minutes, s.rating, s.status
+       FROM sessions s JOIN dashboard_users u ON u.id = s.user_id JOIN dashboard_users sp ON sp.id = s.specialist_id
+       ORDER BY s.scheduled_at DESC LIMIT 50`
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      userName: rr.user_name,
+      specialistName: rr.specialist_name,
+      specialty: rr.specialist_role,
+      durationMinutes: rr.duration_minutes,
+      rating: rr.rating ? Number(rr.rating) : null,
+      status: rr.status,
+    })));
+  } catch (err) {
+    console.error('GET /api/admin/sessions', err);
+    res.json([]);
+  }
+});
+
+app.get('/api/admin/users', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query("SELECT id, name, email, role FROM dashboard_users WHERE role = 'USER' ORDER BY id");
+    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, email: rr.email, role: rr.role })));
+  } catch (err) {
+    console.error('GET /api/admin/users', err);
+    res.json([]);
+  }
+});
+
+app.get('/api/admin/specialists', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT id, name, role,
+        (SELECT COUNT(*) FROM sessions WHERE specialist_id = dashboard_users.id AND status = 'COMPLETED') as session_count,
+        (SELECT ROUND(AVG(rating)::numeric, 1) FROM sessions WHERE specialist_id = dashboard_users.id AND rating IS NOT NULL) as avg_rating
+       FROM dashboard_users WHERE role IN ('THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR') ORDER BY name`
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      name: rr.name,
+      specialty: rr.role,
+      active: true,
+      sessionCount: parseInt(rr.session_count || 0, 10),
+      rating: parseFloat(rr.avg_rating || 0) || 0,
+    })));
+  } catch (err) {
+    console.error('GET /api/admin/specialists', err);
+    res.json([]);
+  }
+});
+
+app.get('/api/admin/activity-log', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query('SELECT id, type, message, created_at FROM activity_log ORDER BY created_at DESC LIMIT 30');
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      type: rr.type,
+      message: rr.message,
+      timestamp: rr.created_at ? (() => { const d = new Date(rr.created_at); const m = Math.round((Date.now() - d) / 60000); return m < 60 ? m + ' min ago' : Math.floor(m / 60) + ' hours ago'; })() : '',
+    })));
+  } catch (err) {
+    console.error('GET /api/admin/activity-log', err);
+    res.json([]);
+  }
+});
+
+app.get('/api/specialists/:id/dashboard', async (req, res) => {
+  const id = req.params.id;
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const spR = await db.query('SELECT id, name, email, role FROM dashboard_users WHERE id = $1 AND role IN (\'THERAPIST\', \'LIFE_COACH\', \'HYPNOTHERAPIST\', \'MUSIC_TUTOR\')', [id]);
+    if (spR.rows.length === 0) return res.status(404).json({ error: 'Specialist not found' });
+    const sp = spR.rows[0];
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+    const scheduleR = await db.query(
+      `SELECT s.*, u.name as user_name FROM sessions s JOIN dashboard_users u ON u.id = s.user_id
+       WHERE s.specialist_id = $1 AND s.scheduled_at >= $2 AND s.scheduled_at <= $3 ORDER BY s.scheduled_at`,
+      [id, todayStart, todayEnd]
+    );
+    const clientsR = await db.query(
+      `SELECT u.id, u.name, COUNT(s.id) as session_count, MAX(s.scheduled_at)::date as last_date
+       FROM sessions s JOIN dashboard_users u ON u.id = s.user_id
+       WHERE s.specialist_id = $1 AND s.status = 'COMPLETED'
+       GROUP BY u.id, u.name`
+    );
+    const notesR = await db.query(
+      `SELECT n.id, n.content, n.created_at, u.name as client_name FROM session_notes n JOIN dashboard_users u ON u.id = n.user_id WHERE n.specialist_id = $1 ORDER BY n.created_at DESC LIMIT 10`,
+      [id]
+    );
+    const requestsR = await db.query(
+      `SELECT br.id, u.name as client_name, br.proposed_at, br.session_type FROM booking_requests br JOIN dashboard_users u ON u.id = br.user_id WHERE br.specialist_id = $1 AND br.status = 'PENDING'`
+    );
+    const reviewsR = await db.query(
+      `SELECT r.id, r.rating, r.excerpt, r.created_at, u.name as client_name FROM reviews r JOIN dashboard_users u ON u.id = r.user_id WHERE r.specialist_id = $1 ORDER BY r.created_at DESC LIMIT 5`,
+      [id]
+    );
+    const earningsR = await db.query(
+      "SELECT COUNT(*) as cnt FROM sessions WHERE specialist_id = $1 AND status = 'COMPLETED' AND scheduled_at >= date_trunc('month', CURRENT_DATE)",
+      [id]
+    );
+    const sessionsCount = parseInt(earningsR.rows[0]?.cnt || 0, 10);
+    const rate = 75;
+    const todaySchedule = scheduleR.rows.map(row => formatSession(row, { name: row.user_name }, sp));
+    const clients = clientsR.rows.map(r => ({
+      id: String(r.id),
+      name: r.name,
+      sessionCount: parseInt(r.session_count || 0, 10),
+      lastSessionDate: r.last_date,
+      progressScore: 60 + Math.floor(Math.random() * 30),
+      metricLabel: 'Progress',
+      metricValue: 'Improving',
+    }));
+    const recentNotes = notesR.rows.map(r => ({
+      id: String(r.id),
+      clientName: r.client_name,
+      date: r.created_at ? new Date(r.created_at).toISOString().slice(0, 10) : '',
+      preview: (r.content || '').slice(0, 80) + (r.content && r.content.length > 80 ? '...' : ''),
+      tags: [],
+      isPrivate: true,
+    }));
+    const pendingRequests = requestsR.rows.map(r => ({
+      id: String(r.id),
+      clientName: r.client_name,
+      requestedAt: '1 hour ago',
+      proposedTime: r.proposed_at ? new Date(r.proposed_at).toLocaleString() : '',
+      sessionType: r.session_type,
+    }));
+    const reviews = reviewsR.rows.map(r => ({
+      id: String(r.id),
+      clientName: r.client_name,
+      date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : '',
+      rating: r.rating,
+      excerpt: r.excerpt || '',
+    }));
+    res.json({
+      specialist: { id: String(sp.id), name: sp.name, email: sp.email, role: sp.role },
+      practiceScore: 96,
+      todayStats: { sessionsToday: scheduleR.rows.length, hoursBooked: (scheduleR.rows.reduce((a, r) => a + r.duration_minutes, 0) / 60).toFixed(1), newRequests: requestsR.rows.length, completionRate: 94 },
+      earningsThisMonth: sessionsCount * rate,
+      earningsDeltaPercent: 12,
+      earningsSparkline: [sessionsCount * rate - 400, sessionsCount * rate - 200, sessionsCount * rate],
+      stats: { activeClients: clients.length, sessionsThisWeek: sessionsCount, avgRating: 4.8, completionRate: 94, responseTimeMinutes: 45 },
+      todaySchedule,
+      clients,
+      recentNotes,
+      pendingRequests,
+      clientMilestones: [],
+      reviews,
+      earningsBreakdown: { sessionsCount, rate, pendingPayout: 0, paidOut: sessionsCount * rate },
+    });
+  } catch (err) {
+    console.error('GET /api/specialists/:id/dashboard', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/specialists/:id/clients', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT u.id, u.name, COUNT(s.id) as session_count, MAX(s.scheduled_at)::date as last_date
+       FROM sessions s JOIN dashboard_users u ON u.id = s.user_id WHERE s.specialist_id = $1 AND s.status = 'COMPLETED' GROUP BY u.id, u.name`,
+      [req.params.id]
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      name: rr.name,
+      sessionCount: parseInt(rr.session_count || 0, 10),
+      lastSessionDate: String(rr.last_date),
+      progressScore: 60 + Math.floor(Math.random() * 30),
+      metricLabel: 'Progress',
+      metricValue: 'Improving',
+    })));
+  } catch (err) {
+    console.error('GET /api/specialists/:id/clients', err);
+    res.json([]);
+  }
+});
+
+app.get('/api/specialists/:id/sessions/today', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+    const r = await db.query(
+      `SELECT s.*, u.name as user_name FROM sessions s JOIN dashboard_users u ON u.id = s.user_id
+       WHERE s.specialist_id = $1 AND s.scheduled_at >= $2 AND s.scheduled_at <= $3 ORDER BY s.scheduled_at`,
+      [req.params.id, todayStart, todayEnd]
+    );
+    const spR = await db.query('SELECT id, name, role FROM dashboard_users WHERE id = $1', [req.params.id]);
+    const sp = spR.rows[0];
+    res.json(r.rows.map(row => formatSession(row, { name: row.user_name }, sp)));
+  } catch (err) {
+    console.error('GET /api/specialists/:id/sessions/today', err);
+    res.json([]);
+  }
+});
+
+app.get('/api/specialists/:id/notes', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      'SELECT n.id, n.content, n.created_at, u.name as client_name FROM session_notes n JOIN dashboard_users u ON u.id = n.user_id WHERE n.specialist_id = $1 ORDER BY n.created_at DESC LIMIT 20',
+      [req.params.id]
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      clientName: rr.client_name,
+      date: rr.created_at ? new Date(rr.created_at).toISOString().slice(0, 10) : '',
+      preview: (rr.content || '').slice(0, 80) + '...',
+      tags: [],
+      isPrivate: true,
+    })));
+  } catch (err) {
+    console.error('GET /api/specialists/:id/notes', err);
+    res.json([]);
+  }
+});
+
+app.get('/api/specialists/:id/requests', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT br.id, u.name as client_name, br.proposed_at, br.session_type FROM booking_requests br JOIN dashboard_users u ON u.id = br.user_id WHERE br.specialist_id = $1 AND br.status = 'PENDING'`
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      clientName: rr.client_name,
+      requestedAt: '1 hour ago',
+      proposedTime: rr.proposed_at ? new Date(rr.proposed_at).toLocaleString() : '',
+      sessionType: rr.session_type,
+    })));
+  } catch (err) {
+    console.error('GET /api/specialists/:id/requests', err);
+    res.json([]);
+  }
+});
+
+app.patch('/api/specialists/:id/requests/:requestId', async (req, res) => {
+  const { status } = req.body;
+  if (!status || !['accepted', 'declined'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    await db.query('UPDATE booking_requests SET status = $1 WHERE id = $2 AND specialist_id = $3', [status.toUpperCase() === 'ACCEPTED' ? 'ACCEPTED' : 'DECLINED', req.params.requestId, req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PATCH /api/specialists/:id/requests/:requestId', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/specialists/:id/reviews', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      'SELECT r.id, r.rating, r.excerpt, r.created_at, u.name as client_name FROM reviews r JOIN dashboard_users u ON u.id = r.user_id WHERE r.specialist_id = $1 ORDER BY r.created_at DESC LIMIT 10',
+      [req.params.id]
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      clientName: rr.client_name,
+      date: rr.created_at ? new Date(rr.created_at).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : '',
+      rating: rr.rating,
+      excerpt: rr.excerpt || '',
+    })));
+  } catch (err) {
+    console.error('GET /api/specialists/:id/reviews', err);
+    res.json([]);
+  }
 });
 
 // ---------- Health check (API + DB) ----------

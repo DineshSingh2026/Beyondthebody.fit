@@ -1,11 +1,13 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
   mockAdminPlatformStats,
   mockApplications,
   mockActivityLog,
   mockUserGrowthChart,
 } from '@/lib/mock-data';
+import { api } from '@/lib/api';
 import MiniChart from '@/components/dashboard/MiniChart';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
@@ -19,7 +21,17 @@ const specialtyVariant: Record<string, 'gold' | 'green' | 'purple' | 'teal'> = {
 };
 
 export default function AdminMobileHome() {
-  const s = mockAdminPlatformStats;
+  const [s, setS] = useState(mockAdminPlatformStats);
+  const [applications, setApplications] = useState(mockApplications);
+  const [activityLog, setActivityLog] = useState(mockActivityLog);
+
+  useEffect(() => {
+    api.getAdminPlatformStats().then(setS).catch(() => {});
+    api.getAdminApplications().then(setApplications).catch(() => {});
+    api.getAdminActivityLog().then(setActivityLog).catch(() => {});
+  }, []);
+
+  const apps = applications;
 
   return (
     <div className="mobile-card-enter">
@@ -49,7 +61,7 @@ export default function AdminMobileHome() {
 
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Specialist Applications</h3>
-        {mockApplications.map((app) => (
+        {apps.map((app) => (
           <div key={app.id} className={styles.appCard}>
             <Avatar name={app.name} size="md" />
             <div className={styles.appMeta}>
@@ -79,7 +91,7 @@ export default function AdminMobileHome() {
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Activity Log</h3>
         <ul className={styles.log}>
-          {mockActivityLog.slice(0, 5).map((entry) => (
+          {activityLog.slice(0, 5).map((entry) => (
             <li key={entry.id}>
               <span className={styles.logTime}>{entry.timestamp}</span>
               <span className={styles.logMsg}>{entry.message}</span>

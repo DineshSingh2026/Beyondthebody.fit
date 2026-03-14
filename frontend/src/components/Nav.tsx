@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export default function Nav() {
@@ -56,10 +57,20 @@ export default function Nav() {
               </li>
             ))}
             <li>
+              <Link href="/signup" className="nav-link" style={{ textDecoration: 'none', color: 'inherit' }}>
+                Sign up
+              </Link>
+            </li>
+            <li>
+              <Link href="/login" className="nav-link nav-cta" style={{ textDecoration: 'none' }}>
+                Login
+              </Link>
+            </li>
+            <li>
               <button
-                className="nav-link nav-cta"
+                className="nav-link"
                 onClick={() => scrollTo('contact')}
-                style={{ cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Free Consult
               </button>
@@ -91,6 +102,16 @@ export default function Nav() {
               </button>
             </li>
           ))}
+          <li>
+            <Link href="/signup" className="mobile-link" style={{ display: 'block', padding: '12px 16px' }}>
+              Sign up
+            </Link>
+          </li>
+          <li>
+            <Link href="/login" className="mobile-link" style={{ display: 'block', padding: '12px 16px' }}>
+              Login
+            </Link>
+          </li>
           <li>
             <button
               className="mobile-link"

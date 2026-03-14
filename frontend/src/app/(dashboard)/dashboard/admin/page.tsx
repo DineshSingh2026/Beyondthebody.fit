@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import {
@@ -11,22 +13,60 @@ import {
   mockSessionsDailyChart,
   mockUserGrowthChart,
 } from '@/lib/mock-data';
+import { api } from '@/lib/api';
 import AdminMobileHome from '@/components/mobile/AdminMobileHome';
 import StatCard from '@/components/dashboard/StatCard';
 import MiniChart from '@/components/dashboard/MiniChart';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import ProgressRing from '@/components/ui/ProgressRing';
-import type { SpecialistType } from '@/lib/dashboard-types';
 import styles from './page.module.css';
 
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
+const SPECIALIST_ROLES = ['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'];
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const isMobile = useIsMobile();
+  const [stats, setStats] = useState(mockAdminPlatformStats);
+  const [applications, setApplications] = useState(mockApplications);
+  const [sessions, setSessions] = useState(mockAdminSessions);
+  const [roster, setRoster] = useState(mockSpecialistRoster);
+  const [activityLog, setActivityLog] = useState(mockActivityLog);
+
+  useEffect(() => {
+    api.getMe()
+      .then((me) => {
+        if (me.role === 'USER') {
+          router.replace('/dashboard/user');
+          return;
+        }
+        if (SPECIALIST_ROLES.includes(me.role)) {
+          router.replace('/dashboard/therapist');
+          return;
+        }
+      })
+      .catch(() => {});
+  }, [router]);
+
+  useEffect(() => {
+    api.getAdminPlatformStats().then(setStats).catch(() => {});
+    api.getAdminApplications().then(setApplications).catch(() => {});
+    api.getAdminSessions().then(setSessions).catch(() => {});
+    api.getAdminSpecialists().then(setRoster).catch(() => {});
+    api.getAdminActivityLog().then(setActivityLog).catch(() => {});
+  }, []);
+
+  const handleApplicationStatus = (id: string, status: string) => {
+    api.patchApplication(id, status).then(() => {
+      api.getAdminApplications().then(setApplications).catch(() => {});
+      api.getAdminPlatformStats().then(setStats).catch(() => {});
+    }).catch(() => {});
+  };
+
   if (isMobile) return <AdminMobileHome />;
 
-  const s = mockAdminPlatformStats;
+  const s = stats;
   return (
     <motion.div className={styles.page} initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.05 } } }}>
       <div className={styles.heroRow}>
@@ -82,7 +122,7 @@ export default function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {mockApplications.map((a) => (
+                {applications.map((a) => (
                   <tr key={a.id}>
                     <td>
                       <div className={styles.tableUser}>
@@ -93,7 +133,14 @@ export default function AdminDashboardPage() {
                     <td><Badge variant={a.specialty === 'LIFE_COACH' ? 'gold' : a.specialty === 'THERAPIST' ? 'green' : a.specialty === 'HYPNOTHERAPIST' ? 'purple' : 'teal'}>{a.specialty.replace('_', ' ')}</Badge></td>
                     <td className={styles.muted}>{new Date(a.appliedAt).toLocaleDateString()}</td>
                     <td><Badge variant={a.status === 'PENDING' ? 'warn' : 'muted'}>{a.status}</Badge></td>
-                    <td><button type="button" className={styles.btnSm}>Review</button></td>
+                    <td>
+                      {a.status === 'PENDING' && (
+                        <>
+                          <button type="button" className={styles.btnSm} onClick={() => handleApplicationStatus(a.id, 'APPROVED')}>Approve</button>
+                          <button type="button" className={styles.btnSm} onClick={() => handleApplicationStatus(a.id, 'REJECTED')}>Reject</button>
+                        </>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -112,12 +159,12 @@ export default function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {mockAdminSessions.map((sess) => (
+                {sessions.map((sess) => (
                   <tr key={sess.id}>
                     <td>{sess.userName}</td>
                     <td>{sess.specialistName}</td>
                     <td>{sess.durationMinutes} min</td>
-                    <td className={styles.gold}>★ {sess.rating}</td>
+                    <td className={styles.gold}>{sess.rating != null ? `★ ${sess.rating}` : '—'}</td>
                     <td><Badge variant={sess.status === 'COMPLETED' ? 'green' : 'gold'}>{sess.status.replace('_', ' ')}</Badge></td>
                   </tr>
                 ))}
@@ -147,7 +194,7 @@ export default function AdminDashboardPage() {
           <motion.section className={styles.section} variants={item}>
             <h2 className={styles.sectionTitle}>Specialist Roster</h2>
             <div className={styles.rosterList}>
-              {mockSpecialistRoster.map((sp) => (
+              {roster.map((sp) => (
                 <div key={sp.id} className={styles.rosterItem}>
                   <Avatar name={sp.name} size="sm" />
                   <div>
@@ -162,7 +209,7 @@ export default function AdminDashboardPage() {
           <motion.section className={styles.section} variants={item}>
             <h2 className={styles.sectionTitle}>Pending Actions</h2>
             <ul className={styles.pendingList}>
-              <li>Applications to Review: <strong>3</strong></li>
+              <li>Applications to Review: <strong>{applications.filter((a) => a.status === 'PENDING').length}</strong></li>
               <li>Reports Flagged: <strong>0</strong></li>
               <li>Support Tickets: <strong>2</strong></li>
             </ul>
@@ -170,7 +217,7 @@ export default function AdminDashboardPage() {
           <motion.section className={styles.section} variants={item}>
             <h2 className={styles.sectionTitle}>Recent Activity Log</h2>
             <ul className={styles.activityList}>
-              {mockActivityLog.map((log) => (
+              {activityLog.map((log) => (
                 <li key={log.id}>
                   <span className={styles.muted}>{log.timestamp}</span>
                   <span>{log.message}</span>

@@ -1,7 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { mockTherapistDashboard } from '@/lib/mock-data';
+import { api } from '@/lib/api';
 import type { SpecialistType } from '@/lib/dashboard-types';
+import type { TherapistDashboardData } from '@/lib/dashboard-types';
 import MiniHealingRing from './MiniHealingRing';
 import MobileCard from './MobileCard';
 import HapticButton from './HapticButton';
@@ -9,9 +12,12 @@ import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import styles from './TherapistMobileHome.module.css';
 
-export default function TherapistMobileHome() {
-  const role: SpecialistType = 'THERAPIST';
-  const d = mockTherapistDashboard(role);
+export default function TherapistMobileHome({ specialistId }: { specialistId: string }) {
+  const [d, setD] = useState<TherapistDashboardData>(() => mockTherapistDashboard('THERAPIST'));
+  useEffect(() => {
+    if (!specialistId) return;
+    api.getSpecialistDashboard(specialistId).then(setD).catch(() => {});
+  }, [specialistId]);
   const nextSession = d.todaySchedule.find((s) => s.status === 'UPCOMING' || s.status === 'IN_PROGRESS') ?? d.todaySchedule[0];
 
   return (

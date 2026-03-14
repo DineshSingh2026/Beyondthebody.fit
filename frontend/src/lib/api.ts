@@ -1,164 +1,189 @@
-import { BrainTip, Condition, Quote, WellnessService } from './types';
+/**
+ * Beyond The Body — API client.
+ * Uses NEXT_PUBLIC_API_URL (default http://localhost:3000) for the Express backend.
+ */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE = typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000') : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-// ---- Fallback data (mirrors NestJS backend) ----
+const AUTH_TOKEN_KEY = 'btb_token';
+const AUTH_COOKIE_NAME = 'btb_token';
+const AUTH_COOKIE_MAX_AGE_DAYS = 1;
 
-const FALLBACK_AFFIRMATIONS: string[] = [
-  'I choose to prioritize my mental wellness alongside my physical health.',
-  'I am worthy of healing, growth, and unconditional love.',
-  'Every day I move beyond limitations and discover my true potential.',
-  'My mind and body work in harmony to support my wellbeing.',
-  'I embrace the journey of healing with courage and compassion.',
-  'I deserve peace, joy, and a life that feels aligned with my soul.',
-  'Healing is not linear, and I honor every step of my journey.',
-  'I release what no longer serves me and welcome transformation.',
-  'My mental health matters and I invest in it every single day.',
-  'I am beyond my struggles. I am resilient, strong, and capable.',
-];
+export function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
 
-const FALLBACK_CONDITIONS: Condition[] = [
-  {
-    name: 'Anxiety',
-    fact: 'Affects 40 million adults annually',
-    treatment: '80-90% success rate',
-    signs: [
-      'Racing thoughts & constant worry',
-      'Physical symptoms (heart racing, sweating)',
-      'Avoidance of situations or activities',
-      'Difficulty concentrating',
-    ],
-    treatments: [
-      'Cognitive Behavioral Therapy (CBT)',
-      'Exposure Response Prevention',
-      'Mindfulness-based interventions',
-      'Medication when appropriate',
-    ],
-    color: '#7B4FBE',
+export function setToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+  const maxAge = AUTH_COOKIE_MAX_AGE_DAYS * 86400;
+  document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+
+export function clearToken(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
+}
+
+async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...options?.headers } });
+  if (!res.ok) throw new Error(await res.text().catch(() => res.statusText));
+  return res.json();
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  const h: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
+
+async function fetchWithAuth<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, { ...options, headers: { ...authHeaders(), ...(options?.headers as Record<string, string>) } });
+  if (!res.ok) throw new Error(await res.text().catch(() => res.statusText));
+  return res.json();
+}
+
+// ---------- Public site API (used by app/page, Contact, JoinSection) ----------
+export async function fetchAffirmations(): Promise<string[]> {
+  const r = await fetchJson<string[] | string>(`${API_BASE}/api/affirmations`);
+  return Array.isArray(r) ? r : [r as string];
+}
+
+export async function fetchConditions(): Promise<{ name: string; fact: string; treatment: string; signs: string[]; treatments: string[]; color: string }[]> {
+  return fetchJson(`${API_BASE}/api/conditions`);
+}
+
+export async function fetchBrainTips(): Promise<{ title: string; description: string; category: string; icon: string }[]> {
+  const r = await fetchJson<{ title: string; description: string; category: string; icon: string }[] | { title: string; description: string; category: string; icon: string }>(`${API_BASE}/api/brain-tips`);
+  return Array.isArray(r) ? r : [r];
+}
+
+export async function fetchQuotes(): Promise<{ quote_text: string; author: string }[]> {
+  return fetchJson(`${API_BASE}/api/quotes`);
+}
+
+export async function postContact(data: { name: string; email: string; message: string; service?: string }) {
+  return fetchJson<{ success: boolean; message: string }>(`${API_BASE}/api/contact`, { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function postConsultation(data: { name: string; email: string; phone?: string; concern?: string; message?: string }) {
+  return fetchJson<{ success: boolean; message: string }>(`${API_BASE}/api/consultation`, { method: 'POST', body: JSON.stringify(data) });
+}
+
+// ---------- Auth ----------
+export type AuthUser = { id: string; name: string; email: string; role: string };
+
+export async function login(email: string, password: string): Promise<{ user: AuthUser; token: string }> {
+  const r = await fetchJson<{ user: AuthUser; token: string }>(`${API_BASE}/api/auth/login`, {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  return r;
+}
+
+export async function signup(name: string, email: string, password: string): Promise<{ user: AuthUser; token: string }> {
+  const r = await fetchJson<{ user: AuthUser; token: string }>(`${API_BASE}/api/auth/signup`, {
+    method: 'POST',
+    body: JSON.stringify({ name, email, password }),
+  });
+  return r;
+}
+
+// ---------- Dashboard API ----------
+export const api = {
+  async getMe(): Promise<AuthUser> {
+    return fetchWithAuth<AuthUser>(`${API_BASE}/api/auth/me`);
   },
-  {
-    name: 'Depression',
-    fact: '17+ million adults experience this annually',
-    treatment: '70-80% recovery with treatment',
-    signs: [
-      'Persistent sadness or emptiness',
-      'Loss of interest in activities',
-      'Changes in sleep/appetite',
-      'Thoughts of worthlessness',
-    ],
-    treatments: [
-      'Individual therapy (CBT, IPT, DBT)',
-      'Lifestyle interventions',
-      'Support group therapy',
-    ],
-    color: '#C2185B',
+
+  async getUserDashboard(userId: string): Promise<import('./dashboard-types').UserDashboardData> {
+    return fetchWithAuth(`${API_BASE}/api/users/${userId}/dashboard`);
   },
-  {
-    name: 'Trauma & PTSD',
-    fact: '70% of adults experience trauma in lifetime',
-    treatment: '85% improvement with trauma-informed care',
-    signs: [
-      'Intrusive memories or flashbacks',
-      'Avoidance of trauma reminders',
-      'Hypervigilance or easily startled',
-      'Negative changes in thoughts/mood',
-    ],
-    treatments: [
-      'EMDR Therapy',
-      'Trauma-Focused CBT',
-      'Somatic therapy approaches',
-      'Group trauma recovery',
-    ],
-    color: '#1565C0',
+
+  async getUpcomingSessions(userId: string) {
+    return fetchWithAuth(`${API_BASE}/api/users/${userId}/sessions/upcoming`);
   },
-  {
-    name: 'Stress & Burnout',
-    fact: '77% experience physical stress symptoms',
-    treatment: '94% recovery rate with proper support',
-    signs: [
-      'Emotional exhaustion',
-      'Cynicism about work/life',
-      'Reduced sense of accomplishment',
-      'Physical symptoms (headaches, insomnia)',
-    ],
-    treatments: [
-      'Stress reduction techniques',
-      'Boundary setting strategies',
-      'Work-life balance coaching',
-      'Mindfulness & relaxation training',
-    ],
-    color: '#2E7D32',
+
+  async getSpecialists(userId: string) {
+    return fetchWithAuth(`${API_BASE}/api/users/${userId}/specialists`);
   },
-];
 
-const FALLBACK_BRAIN_TIPS: BrainTip[] = [
-  { title: 'Box Breathing', description: 'Inhale 4s → Hold 4s → Exhale 4s → Hold 4s. Repeat for instant calm.', category: 'Anxiety Relief', icon: '🫁' },
-  { title: '5-4-3-2-1 Grounding', description: 'Name 5 things you see, 4 you touch, 3 you hear, 2 you smell, 1 you taste.', category: 'Grounding', icon: '🌿' },
-  { title: 'Cognitive Reframing', description: 'Ask: Is this thought 100% true? What would I tell a friend in this situation?', category: 'Mental Clarity', icon: '🧠' },
-  { title: 'Progressive Relaxation', description: 'Tense each muscle group for 5 seconds, then release. Start from your toes.', category: 'Stress Relief', icon: '💪' },
-  { title: 'Body Scan Meditation', description: 'Close your eyes and scan from head to toe, releasing tension wherever you find it.', category: 'Mindfulness', icon: '✨' },
-  { title: 'Journaling Reset', description: 'Write 3 feelings, 3 gratitudes, 1 intention. Takes 5 minutes, shifts everything.', category: 'Emotional Health', icon: '📝' },
-];
+  async getMoodLog(userId: string) {
+    return fetchWithAuth(`${API_BASE}/api/users/${userId}/mood-log`);
+  },
 
-const FALLBACK_QUOTES: Quote[] = [
-  { quote_text: 'You, yourself, as much as anybody in the entire universe, deserve your love and affection.', author: 'Buddha' },
-  { quote_text: "Mental health is not a destination, but a process. It's about how you drive, not where you're going.", author: 'Noam Shpancer' },
-  { quote_text: 'Recovery is not one and done. It is a lifelong journey that takes place one day, one step at a time.', author: 'Unknown' },
-];
-
-// ---- Fetch helpers ----
-
-async function safeFetch<T>(path: string, fallback: T): Promise<T> {
-  try {
-    const res = await fetch(`${API_URL}/api${path}`, {
-      next: { revalidate: 3600 },
+  async postMoodLog(userId: string, data: { date: string; value: number; note?: string }) {
+    return fetchWithAuth(`${API_BASE}/api/users/${userId}/mood-log`, {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
-    if (!res.ok) return fallback;
-    return res.json();
-  } catch {
-    return fallback;
-  }
-}
+  },
 
-export const fetchAffirmations = () =>
-  safeFetch<string[]>('/affirmations', FALLBACK_AFFIRMATIONS);
+  async getCommunityFeed() {
+    return fetchWithAuth(`${API_BASE}/api/community/feed`);
+  },
 
-export const fetchConditions = () =>
-  safeFetch<Condition[]>('/conditions', FALLBACK_CONDITIONS);
+  async getAdminPlatformStats() {
+    return fetchWithAuth(`${API_BASE}/api/admin/platform-stats`);
+  },
 
-export const fetchBrainTips = () =>
-  safeFetch<BrainTip[]>('/brain-tips', FALLBACK_BRAIN_TIPS);
+  async getAdminApplications() {
+    return fetchWithAuth(`${API_BASE}/api/admin/applications`);
+  },
 
-export const fetchQuotes = () =>
-  safeFetch<Quote[]>('/quotes', FALLBACK_QUOTES);
+  async patchApplication(id: string, status: string) {
+    return fetchWithAuth(`${API_BASE}/api/admin/applications/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
 
-// ---- POST helpers (client-side) ----
+  async getAdminSessions() {
+    return fetchWithAuth(`${API_BASE}/api/admin/sessions`);
+  },
 
-export async function postContact(data: {
-  name: string;
-  email: string;
-  message: string;
-  service?: string;
-}) {
-  const res = await fetch(`${API_URL}/api/contact`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  return res.json();
-}
+  async getAdminUsers() {
+    return fetchWithAuth(`${API_BASE}/api/admin/users`);
+  },
 
-export async function postConsultation(data: {
-  name: string;
-  email: string;
-  phone?: string;
-  concern?: string;
-  message?: string;
-}) {
-  const res = await fetch(`${API_URL}/api/consultation`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  return res.json();
-}
+  async getAdminSpecialists() {
+    return fetchWithAuth(`${API_BASE}/api/admin/specialists`);
+  },
+
+  async getAdminActivityLog() {
+    return fetchWithAuth(`${API_BASE}/api/admin/activity-log`);
+  },
+
+  async getSpecialistDashboard(specialistId: string) {
+    return fetchWithAuth(`${API_BASE}/api/specialists/${specialistId}/dashboard`);
+  },
+
+  async getSpecialistClients(specialistId: string) {
+    return fetchWithAuth(`${API_BASE}/api/specialists/${specialistId}/clients`);
+  },
+
+  async getSpecialistSessionsToday(specialistId: string) {
+    return fetchWithAuth(`${API_BASE}/api/specialists/${specialistId}/sessions/today`);
+  },
+
+  async getSpecialistNotes(specialistId: string) {
+    return fetchWithAuth(`${API_BASE}/api/specialists/${specialistId}/notes`);
+  },
+
+  async getSpecialistRequests(specialistId: string) {
+    return fetchWithAuth(`${API_BASE}/api/specialists/${specialistId}/requests`);
+  },
+
+  async patchBookingRequest(specialistId: string, requestId: string, status: 'accepted' | 'declined') {
+    return fetchWithAuth(`${API_BASE}/api/specialists/${specialistId}/requests/${requestId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  async getSpecialistReviews(specialistId: string) {
+    return fetchWithAuth(`${API_BASE}/api/specialists/${specialistId}/reviews`);
+  },
+};

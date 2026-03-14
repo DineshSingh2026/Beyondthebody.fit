@@ -3,17 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { login, setToken } from '@/lib/api';
+import { signup, setToken } from '@/lib/api';
 import styles from './page.module.css';
 
-function dashboardPathForRole(role: string): string {
-  if (role === 'ADMIN') return '/dashboard/admin';
-  if (['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'].includes(role)) return '/dashboard/therapist';
-  return '/dashboard/user';
-}
-
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,13 +17,17 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
     setLoading(true);
     try {
-      const { user, token } = await login(email.trim(), password);
+      const { user, token } = await signup(name.trim(), email.trim(), password);
       setToken(token);
-      router.push(dashboardPathForRole(user.role));
+      router.push('/dashboard/user');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Sign up failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -38,8 +37,17 @@ export default function LoginPage() {
     <div className={styles.page}>
       <div className={styles.card}>
         <h1 className={styles.title}>Beyond <em>The Body</em></h1>
-        <p className={styles.subtitle}>Healing begins within</p>
+        <p className={styles.subtitle}>Create your account</p>
         <form className={styles.form} onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Full name"
+            className={styles.input}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            autoComplete="name"
+          />
           <input
             type="email"
             placeholder="Email"
@@ -51,20 +59,21 @@ export default function LoginPage() {
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Password (min 8 characters)"
             className={styles.input}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            autoComplete="current-password"
+            minLength={8}
+            autoComplete="new-password"
           />
           {error && <p className={styles.error} role="alert">{error}</p>}
           <button type="submit" className={styles.button} disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Creating account…' : 'Sign up'}
           </button>
         </form>
         <p className={styles.footer}>
-          Don&apos;t have an account? <Link href="/signup">Sign up</Link>
+          Already have an account? <Link href="/login">Sign in</Link>
         </p>
       </div>
     </div>

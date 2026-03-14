@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { mockTherapistDashboard } from '@/lib/mock-data';
+import { api } from '@/lib/api';
 import type { SpecialistType } from '@/lib/dashboard-types';
+import type { TherapistDashboardData } from '@/lib/dashboard-types';
 import TherapistMobileHome from '@/components/mobile/TherapistMobileHome';
 import StatCard from '@/components/dashboard/StatCard';
 import SessionCard from '@/components/dashboard/SessionCard';
@@ -15,14 +18,42 @@ import ProgressRing from '@/components/ui/ProgressRing';
 import styles from './page.module.css';
 
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
+const SPECIALIST_ROLES: SpecialistType[] = ['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'];
 
 export default function TherapistDashboardPage() {
+  const router = useRouter();
   const isMobile = useIsMobile();
-  const [role] = useState<SpecialistType>('THERAPIST');
+  const [specialistId, setSpecialistId] = useState<string | null>(null);
+  const [role, setRole] = useState<SpecialistType>('THERAPIST');
   const [joinModal, setJoinModal] = useState<{ clientName: string } | null>(null);
-  const d = mockTherapistDashboard(role);
+  const [d, setD] = useState<TherapistDashboardData>(() => mockTherapistDashboard('THERAPIST'));
 
-  if (isMobile) return <TherapistMobileHome />;
+  useEffect(() => {
+    api.getMe()
+      .then((me) => {
+        if (me.role === 'ADMIN') {
+          router.replace('/dashboard/admin');
+          return;
+        }
+        if (me.role === 'USER') {
+          router.replace('/dashboard/user');
+          return;
+        }
+        if (SPECIALIST_ROLES.includes(me.role as SpecialistType)) {
+          setSpecialistId(me.id);
+          setRole(me.role as SpecialistType);
+          return api.getSpecialistDashboard(me.id);
+        }
+        return null;
+      })
+      .then((dashboard) => {
+        if (dashboard) setD(dashboard as TherapistDashboardData);
+      })
+      .catch(() => {});
+  }, [router]);
+
+  if (isMobile && specialistId) return <TherapistMobileHome specialistId={specialistId} />;
+  if (isMobile) return null;
 
   return (
     <motion.div className={styles.page} initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.05 } } }}>

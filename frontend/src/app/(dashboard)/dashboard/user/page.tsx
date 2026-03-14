@@ -1,8 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { mockUserDashboard } from '@/lib/mock-data';
+import { api } from '@/lib/api';
+import type { UserDashboardData } from '@/lib/dashboard-types';
 import UserMobileHome from '@/components/mobile/UserMobileHome';
 import HealingScoreRing from '@/components/dashboard/HealingScoreRing';
 import StatCard from '@/components/dashboard/StatCard';
@@ -15,11 +19,61 @@ import styles from './page.module.css';
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
-export default function UserDashboardPage() {
-  const isMobile = useIsMobile();
-  if (isMobile) return <UserMobileHome />;
+const SPECIALIST_ROLES = ['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'];
 
-  const d = mockUserDashboard;
+export default function UserDashboardPage() {
+  const router = useRouter();
+  const isMobile = useIsMobile();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [data, setData] = useState<UserDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getMe()
+      .then((me) => {
+        if (cancelled) return;
+        if (me.role === 'ADMIN') {
+          router.replace('/dashboard/admin');
+          return;
+        }
+        if (SPECIALIST_ROLES.includes(me.role)) {
+          router.replace('/dashboard/therapist');
+          return;
+        }
+        setUserId(me.id);
+        return api.getUserDashboard(me.id);
+      })
+      .then((d) => {
+        if (d && !cancelled) setData(d as UserDashboardData);
+      })
+      .catch(() => { if (!cancelled) setData(mockUserDashboard); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [router]);
+
+  if (isMobile) {
+    if (loading && !userId) {
+      return (
+        <div className={styles.page}>
+          <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 24 }}>Loading…</p>
+        </div>
+      );
+    }
+    if (userId) return <UserMobileHome userId={userId} />;
+    return null;
+  }
+
+  const d = data || mockUserDashboard;
+  if (loading && !data) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.heroRow}><div className="dash-skeleton" style={{ height: 200 }} /></div>
+        <div className={styles.statsRow}><div className="dash-skeleton" style={{ height: 100 }} /><div className="dash-skeleton" style={{ height: 100 }} /><div className="dash-skeleton" style={{ height: 100 }} /><div className="dash-skeleton" style={{ height: 100 }} /></div>
+        <p style={{ color: 'var(--muted)', textAlign: 'center' }}>Loading your dashboard...</p>
+      </div>
+    );
+  }
   return (
     <motion.div
       className={styles.page}

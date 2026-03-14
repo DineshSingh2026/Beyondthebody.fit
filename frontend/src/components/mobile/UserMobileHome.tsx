@@ -1,7 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { mockUserDashboard } from '@/lib/mock-data';
+import { api } from '@/lib/api';
+import type { UserDashboardData } from '@/lib/dashboard-types';
 import MiniHealingRing from './MiniHealingRing';
 import MobileCard from './MobileCard';
 import HapticButton from './HapticButton';
@@ -16,8 +19,12 @@ function getGreeting() {
   return 'Good evening';
 }
 
-export default function UserMobileHome() {
-  const d = mockUserDashboard;
+export default function UserMobileHome({ userId }: { userId: string }) {
+  const [d, setD] = useState<UserDashboardData>(mockUserDashboard);
+  useEffect(() => {
+    if (!userId) return;
+    api.getUserDashboard(userId).then(setD).catch(() => {});
+  }, [userId]);
   const firstName = d.user.name.split(' ')[0] ?? 'there';
   const nextSession = d.upcomingSessions[0];
   const moodLast7 = d.moodLog.slice(-7);

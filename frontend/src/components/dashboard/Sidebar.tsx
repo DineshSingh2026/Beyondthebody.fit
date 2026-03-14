@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { clearToken } from '@/lib/api';
 import type { UserRole } from '@/lib/dashboard-types';
 import HealingScoreRing from './HealingScoreRing';
 import styles from './Sidebar.module.css';
@@ -48,8 +49,15 @@ interface SidebarProps {
 
 export default function Sidebar({ role, healingScore = 0 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const nav = getNav(role);
   const showHealingRing = role === 'USER' && healingScore > 0;
+
+  const handleLogout = () => {
+    clearToken();
+    router.push('/');
+  };
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.logo}>
@@ -83,6 +91,11 @@ export default function Sidebar({ role, healingScore = 0 }: SidebarProps) {
           </div>
         ))}
       </nav>
+      <div className={styles.footer}>
+        <button type="button" className={styles.logout} onClick={handleLogout}>
+          Log out
+        </button>
+      </div>
     </aside>
   );
 }

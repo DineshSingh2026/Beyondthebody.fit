@@ -45,8 +45,15 @@ async function run() {
 
   const schemaPath = path.join(__dirname, '..', 'database', 'schema.sql');
   const seedPath = path.join(__dirname, '..', 'database', 'seed.sql');
+  const schemaDashboardPath = path.join(__dirname, '..', 'database', 'schema-dashboard.sql');
+  const seedDashboardPath = path.join(__dirname, '..', 'database', 'seed-dashboard.sql');
 
-  for (const [label, filePath] of [['schema', schemaPath], ['seed', seedPath]]) {
+  for (const [label, filePath] of [
+    ['schema', schemaPath],
+    ['seed', seedPath],
+    ['schema-dashboard', schemaDashboardPath],
+    ['seed-dashboard', seedDashboardPath],
+  ]) {
     if (!fs.existsSync(filePath)) {
       console.log(`Skip ${label}: file not found`);
       continue;
