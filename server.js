@@ -964,91 +964,211 @@ app.get('/api/health', async (req, res) => {
   res.json({ ok: true, db: dbOk ? 'connected' : (db.connected ? 'error' : 'not configured') });
 });
 
-// ---------- Dev: seed testuser1 on demand (call once to refresh dashboard data) ----------
+// ---------- Dev: seed testuser1 — fully self-contained, every op wrapped ----------
 async function seedTestUser1() {
   if (!db.connected) return { ok: false, error: 'Database not connected' };
+  const log = [];
+  const safe = async (label, fn) => {
+    try { await fn(); log.push(`OK: ${label}`); }
+    catch (e) { log.push(`FAIL: ${label} — ${e.message}`); }
+  };
+
+  // 1. Ensure testuser1 exists (create if missing, update if exists)
+  await safe('upsert testuser1', async () => {
+    const hash = await bcrypt.hash('TestUser@123', 10);
+    const exists = await db.query("SELECT id FROM dashboard_users WHERE email = 'testuser1@test.btb.fit'");
+    if (exists.rows.length === 0) {
+      await db.query(
+        "INSERT INTO dashboard_users (name, email, password_hash, role, healing_score) VALUES ('Test User One', 'testuser1@test.btb.fit', $1, 'USER', 74)",
+        [hash]
+      );
+    } else {
+      await db.query(
+        "UPDATE dashboard_users SET healing_score = 74, password_hash = $1 WHERE email = 'testuser1@test.btb.fit'",
+        [hash]
+      );
+    }
+  });
+
+  // Get uid (abort if still not found)
+  let uid;
   try {
-    const t1 = await db.query("SELECT id FROM dashboard_users WHERE email = 'testuser1@test.btb.fit' LIMIT 1");
-    if (t1.rows.length === 0) return { ok: false, error: 'testuser1 not found — restart backend with DATABASE_URL so autoMigrate creates test users first' };
-    const uid = t1.rows[0].id;
-    const countR = await db.query('SELECT COUNT(*) as c FROM sessions WHERE user_id = $1', [uid]);
-    const sessionCount = parseInt(countR.rows[0]?.c || 0, 10);
-    const specialistIds = [2, 3, 4, 5];
+    const r = await db.query("SELECT id FROM dashboard_users WHERE email = 'testuser1@test.btb.fit'");
+    if (r.rows.length === 0) return { ok: false, error: 'Could not create testuser1', log };
+    uid = r.rows[0].id;
+  } catch (e) { return { ok: false, error: e.message, log }; }
+
+  // 2. Lookup specialist IDs by email (don't hardcode IDs)
+  let specialistIds = [];
+  await safe('find specialists', async () => {
+    const r = await db.query(
+      "SELECT id FROM dashboard_users WHERE role IN ('THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR') ORDER BY id"
+    );
+    specialistIds = r.rows.map(x => x.id);
+  });
+  if (specialistIds.length === 0) {
+    log.push('WARN: no specialists found — creating them');
+    await safe('create specialists', async () => {
+      const h = await bcrypt.hash('Therapist@BTB2026', 10);
+      for (const sp of [
+        { name: 'Dr. Sarah Chen', email: 'sarah@btb.fit', role: 'THERAPIST' },
+        { name: 'James Miller', email: 'james@btb.fit', role: 'LIFE_COACH' },
+        { name: 'Maya Foster', email: 'maya@btb.fit', role: 'HYPNOTHERAPIST' },
+        { name: 'Leo Torres', email: 'leo@btb.fit', role: 'MUSIC_TUTOR' },
+      ]) {
+        await db.query(
+          'INSERT INTO dashboard_users (name, email, password_hash, role, healing_score) VALUES ($1, $2, $3, $4, 0) ON CONFLICT (email) DO NOTHING',
+          [sp.name, sp.email, h, sp.role]
+        );
+      }
+      const r2 = await db.query("SELECT id FROM dashboard_users WHERE role IN ('THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR') ORDER BY id");
+      specialistIds = r2.rows.map(x => x.id);
+    });
+  }
+  if (specialistIds.length === 0) return { ok: false, error: 'No specialists in DB after creation attempt', log };
+
+  // 3. Link user to all specialists
+  await safe('link specialists', async () => {
     for (const sid of specialistIds) {
       await db.query(
-        'INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT (user_id, specialist_id) DO NOTHING',
+        'INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
         [uid, sid]
       );
     }
-    await db.query('UPDATE dashboard_users SET healing_score = 74 WHERE id = $1', [uid]);
+  });
+
+  // 4. Ensure at least 10 completed sessions exist
+  await safe('completed sessions', async () => {
+    const cr = await db.query("SELECT COUNT(*)::int as c FROM sessions WHERE user_id = $1 AND status = 'COMPLETED'", [uid]);
+    const have = cr.rows[0].c;
     const now = new Date();
-    for (let i = sessionCount; i < 10; i++) {
-      const d = new Date(now); d.setDate(d.getDate() - (14 + i * 4)); d.setHours(10, 0, 0, 0);
-      const spId = specialistIds[i % specialistIds.length];
+    const types = ['1:1 Therapy', 'Coaching', 'Hypnosis', 'Mindfulness', 'Follow-up', 'Deep Dive', 'Check-in'];
+    for (let i = have; i < 10; i++) {
+      const d = new Date(now); d.setDate(d.getDate() - (7 + i * 4)); d.setHours(10 + (i % 3), 0, 0, 0);
       await db.query(
         `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, completed_at, rating)
-         VALUES ($1, $2, '1:1 Therapy', $3, 50, 'COMPLETED', $3, 5)`,
-        [uid, spId, d]
+         VALUES ($1, $2, $3, $4, 50, 'COMPLETED', $4, $5)`,
+        [uid, specialistIds[i % specialistIds.length], types[i % types.length], d, 4 + (i % 2)]
       );
     }
+  });
+
+  // 5. Delete stale upcoming, add 4 fresh future sessions
+  await safe('upcoming sessions', async () => {
+    await db.query("DELETE FROM sessions WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()", [uid]);
+    const cr = await db.query("SELECT COUNT(*)::int as c FROM sessions WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at >= NOW()", [uid]);
+    const have = cr.rows[0].c;
+    const now = new Date();
+    const labels = ['1:1 Therapy', 'Coaching', 'Hypnosis', 'Mindfulness'];
+    for (let i = have; i < 4; i++) {
+      const d = new Date(now); d.setDate(d.getDate() + i + 1); d.setHours(10 + i, 0, 0, 0);
+      await db.query(
+        "INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status) VALUES ($1, $2, $3, $4, 50, 'UPCOMING')",
+        [uid, specialistIds[i % specialistIds.length], labels[i % labels.length], d]
+      );
+    }
+  });
+
+  // 6. Mood log — 30 days
+  await safe('mood log', async () => {
+    const now = new Date();
     for (let d = 0; d < 30; d++) {
       const dte = new Date(now); dte.setDate(dte.getDate() - d);
       const dateStr = dte.toISOString().slice(0, 10);
-      const value = 5 + Math.floor(Math.random() * 4);
+      const val = d < 7 ? 6 + (d % 3) : (5 + Math.floor(Math.random() * 4));
+      const note = ['Feeling calm', 'Good sleep', 'Productive day', 'Mindful morning', 'Grateful', null][d % 6];
       await db.query(
         'INSERT INTO mood_log (user_id, date, value, note) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, date) DO UPDATE SET value = $3, note = $4',
-        [uid, dateStr, value, d < 3 ? 'Feeling good' : null]
+        [uid, dateStr, val, note]
       );
     }
-    await db.query(
-      'INSERT INTO user_milestones (user_id, milestone_id, unlocked_at) VALUES ($1, 1, CURRENT_DATE - 60), ($1, 2, CURRENT_DATE - 20), ($1, 3, CURRENT_DATE - 8) ON CONFLICT (user_id, milestone_id) DO NOTHING',
-      [uid]
-    );
-    const postCountR = await db.query('SELECT COUNT(*) as c FROM community_posts WHERE user_id = $1', [uid]);
-    if (parseInt(postCountR.rows[0]?.c || 0, 10) < 3) {
-      const extraPosts = [
-        '10 sessions in — the consistency is paying off. To anyone just starting: stick with it.',
-        'Hit my 7-day streak today. The app reminders actually help.',
+  });
+
+  // 7. Milestones (find actual milestone IDs from DB, don't hardcode)
+  await safe('milestones', async () => {
+    const mr = await db.query('SELECT id FROM milestones ORDER BY id LIMIT 3');
+    for (const m of mr.rows) {
+      await db.query(
+        'INSERT INTO user_milestones (user_id, milestone_id, unlocked_at) VALUES ($1, $2, CURRENT_DATE - (RANDOM() * 60)::int) ON CONFLICT DO NOTHING',
+        [uid, m.id]
+      );
+    }
+  });
+
+  // 8. Community posts (only if few exist)
+  await safe('community posts', async () => {
+    const cr = await db.query('SELECT COUNT(*)::int as c FROM community_posts WHERE user_id = $1', [uid]);
+    if (cr.rows[0].c < 3) {
+      for (const content of [
+        'Grateful for this community. Small steps add up.',
+        '10 sessions in — the consistency is paying off.',
+        'Hit my 7-day streak today. The reminders help.',
+        'Morning meditation is game-changing. Share your routine!',
         'Shared my first milestone. The support here is real.',
-      ];
-      for (const content of extraPosts) {
+      ]) {
         await db.query(
-          'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, 10, 2)',
-          [uid, content]
+          'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, $3, $4)',
+          [uid, content, 5 + Math.floor(Math.random() * 20), 1 + Math.floor(Math.random() * 5)]
         );
       }
     }
-    // Always refresh upcoming sessions — delete stale past ones, add fresh future ones
-    await db.query(
-      "DELETE FROM sessions WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()",
+  });
+
+  // 9. Session notes + reviews for completed sessions
+  await safe('notes and reviews', async () => {
+    const sessR = await db.query(
+      "SELECT s.id, s.specialist_id FROM sessions s LEFT JOIN session_notes sn ON sn.session_id = s.id WHERE s.user_id = $1 AND s.status = 'COMPLETED' AND sn.id IS NULL LIMIT 6",
       [uid]
     );
-    const upcomingCount = await db.query(
-      "SELECT COUNT(*) as c FROM sessions WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at >= NOW()",
-      [uid]
-    );
-    const upcomingNeed = 4 - parseInt(upcomingCount.rows[0]?.c || 0, 10);
-    const sessionLabels = ['1:1 Therapy', 'Coaching', 'Hypnosis', 'Mindfulness'];
-    if (upcomingNeed > 0) {
-      for (let i = 0; i < upcomingNeed; i++) {
-        const d = new Date(now); d.setDate(d.getDate() + i + 1); d.setHours(10 + i, 0, 0, 0);
-        await db.query(
-          `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
-           VALUES ($1, $2, $3, $4, 50, 'UPCOMING')`,
-          [uid, specialistIds[i % specialistIds.length], sessionLabels[i % sessionLabels.length], d]
-        );
-      }
+    const noteTexts = ['Great progress today.', 'Explored breathing techniques.', 'Set action steps for the week.', 'Reflected on wins.', 'Reviewed homework.', 'Breakthrough moment.'];
+    const reviewTexts = ['Life-changing support.', 'So grateful.', 'Always feel heard.', 'Best decision I made.', 'Progress I never expected.', 'Thank you for the safe space.'];
+    for (let i = 0; i < sessR.rows.length; i++) {
+      const s = sessR.rows[i];
+      await db.query('INSERT INTO session_notes (session_id, specialist_id, user_id, content, is_private) VALUES ($1, $2, $3, $4, true)', [s.id, s.specialist_id, uid, noteTexts[i % noteTexts.length]]);
+      await db.query('INSERT INTO reviews (session_id, user_id, specialist_id, rating, excerpt) VALUES ($1, $2, $3, 5, $4)', [s.id, uid, s.specialist_id, reviewTexts[i % reviewTexts.length]]);
     }
-    return { ok: true, message: 'testuser1@test.btb.fit seeded/refreshed. Upcoming sessions updated to future dates. Refresh dashboard.' };
-  } catch (err) {
-    console.error('seedTestUser1 error:', err);
-    return { ok: false, error: err.message };
-  }
+  });
+
+  console.log('seedTestUser1:', log.join(' | '));
+  const failures = log.filter(l => l.startsWith('FAIL'));
+  return { ok: failures.length === 0, uid, log, failures: failures.length };
 }
 
 app.get('/api/dev/seed-testuser1', async (req, res) => {
   const result = await seedTestUser1();
   res.json(result);
+});
+
+app.get('/api/dev/debug-testuser1', async (req, res) => {
+  if (!db.connected) return res.json({ error: 'DB not connected' });
+  try {
+    const user = await db.query("SELECT id, name, email, role, healing_score FROM dashboard_users WHERE email = 'testuser1@test.btb.fit'");
+    if (user.rows.length === 0) return res.json({ error: 'testuser1 not found in DB' });
+    const uid = user.rows[0].id;
+    const sessions = await db.query('SELECT COUNT(*)::int as c FROM sessions WHERE user_id = $1', [uid]);
+    const completed = await db.query("SELECT COUNT(*)::int as c FROM sessions WHERE user_id = $1 AND status = 'COMPLETED'", [uid]);
+    const upcoming = await db.query("SELECT COUNT(*)::int as c FROM sessions WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at >= NOW()", [uid]);
+    const mood = await db.query('SELECT COUNT(*)::int as c FROM mood_log WHERE user_id = $1', [uid]);
+    const posts = await db.query('SELECT COUNT(*)::int as c FROM community_posts WHERE user_id = $1', [uid]);
+    const milestones = await db.query('SELECT COUNT(*)::int as c FROM user_milestones WHERE user_id = $1', [uid]);
+    const specialists = await db.query('SELECT COUNT(*)::int as c FROM user_specialists WHERE user_id = $1', [uid]);
+    const allSpecialists = await db.query("SELECT id, name, role FROM dashboard_users WHERE role IN ('THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR')");
+    const allMilestones = await db.query('SELECT id, title FROM milestones ORDER BY id');
+    res.json({
+      user: user.rows[0],
+      counts: {
+        totalSessions: sessions.rows[0].c,
+        completedSessions: completed.rows[0].c,
+        upcomingSessions: upcoming.rows[0].c,
+        moodEntries: mood.rows[0].c,
+        communityPosts: posts.rows[0].c,
+        milestones: milestones.rows[0].c,
+        linkedSpecialists: specialists.rows[0].c,
+      },
+      specialists: allSpecialists.rows,
+      milestonesInDb: allMilestones.rows,
+    });
+  } catch (e) { res.json({ error: e.message }); }
 });
 
 // ─── Auto-migrate: create schema + seed base users (idempotent) ─────────────
@@ -1233,119 +1353,14 @@ async function autoMigrate() {
       console.log(`autoMigrate: password set for ${u.email} (id=${u.id})`);
     }
 
-    // 5. Seed test data (user, admin, therapist) — idempotent, skip if test users already have sessions
-    const TEST_PASS = 'TestUser@123';
-    const testUserHash = await bcrypt.hash(TEST_PASS, 10);
-    const testUsers = [
-      { name: 'Test User One', email: 'testuser1@test.btb.fit', healing_score: 62 },
-      { name: 'Test User Two', email: 'testuser2@test.btb.fit', healing_score: 58 },
-      { name: 'Alex Demo', email: 'alex.demo@test.btb.fit', healing_score: 71 },
-    ];
-    for (const u of testUsers) {
-      await db.query(
-        `INSERT INTO dashboard_users (name, email, password_hash, role, healing_score) VALUES ($1, $2, $3, 'USER', $4)
-         ON CONFLICT (email) DO NOTHING`,
-        [u.name, u.email, testUserHash, u.healing_score]
-      );
-    }
-    const testUserRows = await db.query(
-      "SELECT id, email FROM dashboard_users WHERE email LIKE '%@test.btb.fit' ORDER BY id"
-    );
-    const specialistId = 2; // Dr. Sarah Chen
-    for (const u of testUserRows.rows) {
-      await db.query(
-        'INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT (user_id, specialist_id) DO NOTHING',
-        [u.id, specialistId]
-      );
-    }
-    const hasSessions = await db.query(
-      "SELECT 1 FROM sessions s JOIN dashboard_users u ON u.id = s.user_id WHERE u.email LIKE '%@test.btb.fit' LIMIT 1"
-    );
-    if (testUserRows.rows.length > 0 && hasSessions.rows.length === 0) {
-      const uid = testUserRows.rows[0].id;
-      const now = new Date();
-      const specialistIds = [2, 3, 4, 5]; // Dr. Sarah Chen, James Miller, Maya Foster, Leo Torres
-      for (const sid of specialistIds) {
-        await db.query(
-          'INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT (user_id, specialist_id) DO NOTHING',
-          [uid, sid]
-        );
-      }
-      await db.query('UPDATE dashboard_users SET healing_score = 74 WHERE id = $1', [uid]);
-      const sessionTypes = ['1:1 Therapy', 'Coaching', 'Hypnosis', 'Mindfulness', 'Follow-up', 'Deep Dive', 'Check-in'];
-      const completedSessions = [];
-      for (let i = 0; i < 10; i++) {
-        const d = new Date(now); d.setDate(d.getDate() - (14 + i * 4)); d.setHours(10 + (i % 3), 0, 0, 0);
-        const spId = specialistIds[i % specialistIds.length];
-        const r = await db.query(
-          `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, completed_at, rating)
-           VALUES ($1, $2, $3, $4, ${50 + (i % 3) * 5}, 'COMPLETED', $4, ${4 + (i % 2)}) RETURNING id`,
-          [uid, spId, sessionTypes[i % sessionTypes.length], d]
-        );
-        if (r.rows[0]?.id) {
-          completedSessions.push({ id: r.rows[0].id, specialistId: spId });
-        }
-      }
-      for (const s of completedSessions.slice(0, 6)) {
-        await db.query(
-          'INSERT INTO session_notes (session_id, specialist_id, user_id, content, is_private) VALUES ($1, $2, $3, $4, true)',
-          [s.id, s.specialistId, uid, ['Great progress on goals today.', 'Explored breathing techniques. Client engaged.', 'Set action steps for the week.', 'Reflected on wins. Mood improving.', 'Reviewed homework. On track.', 'Breakthrough moment — client shared openly.'][completedSessions.indexOf(s) % 6]]
-        );
-        await db.query(
-          'INSERT INTO reviews (session_id, user_id, specialist_id, rating, excerpt) VALUES ($1, $2, $3, 5, $4)',
-          [s.id, uid, s.specialistId, 5, ['Life-changing support.', 'So grateful for this space.', 'Always feel heard.', 'Best decision I made.', 'Progress I never thought possible.', 'Thank you for the safe space.'][completedSessions.indexOf(s) % 6]]
-        );
-      }
-      for (let i = 0; i < 6; i++) {
-        const d = new Date(now); d.setDate(d.getDate() + (i + 1)); d.setHours(9 + (i % 2) * 4, 30 * (i % 2), 0, 0);
-        await db.query(
-          `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
-           VALUES ($1, $2, $3, $4, 50, 'UPCOMING')`,
-          [uid, specialistIds[i % specialistIds.length], ['1:1 Therapy', 'Coaching', 'Check-in', 'Follow-up', 'Mindfulness', 'Hypnosis'][i], d]
-        );
-      }
-      for (let d = 0; d < 30; d++) {
-        const dte = new Date(now); dte.setDate(dte.getDate() - d);
-        const dateStr = dte.toISOString().slice(0, 10);
-        const value = d < 7 ? 6 + (d % 3) : (5 + Math.floor(Math.random() * 4));
-        const notes = ['Feeling calm', 'Good sleep', 'Productive day', 'Mindful morning', 'Grateful', 'Stayed present', 'Small win today', null, null, null];
-        await db.query(
-          'INSERT INTO mood_log (user_id, date, value, note) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, date) DO UPDATE SET value = $3, note = $4',
-          [uid, dateStr, value, notes[d % notes.length]]
-        );
-      }
-      await db.query(
-        'INSERT INTO user_milestones (user_id, milestone_id, unlocked_at) VALUES ($1, 1, CURRENT_DATE - 60), ($1, 2, CURRENT_DATE - 20), ($1, 3, CURRENT_DATE - 8) ON CONFLICT (user_id, milestone_id) DO NOTHING',
-        [uid]
-      );
-      const myPosts = [
-        'Grateful for this community and my progress this month. Small steps every day add up.',
-        'Anyone else find morning meditation game-changing? Share your routine!',
-        '10 sessions in with my therapist — the consistency is paying off. To anyone just starting: stick with it.',
-        'Hit my 7-day streak today. The app reminders actually help.',
-        'Shared my first milestone in the group. The support here is real.',
-      ];
-      for (const content of myPosts) {
-        await db.query(
-          'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, $3, $4)',
-          [uid, content, 8 + Math.floor(Math.random() * 15), 1 + Math.floor(Math.random() * 6)]
-        );
-      }
-      if (testUserRows.rows[1]) {
-        const others = [
-          'Second week in — already noticing a shift in how I handle stress.',
-          'This community gets it. No judgment, just growth.',
-          'Had a breakthrough in my last session. Sharing in case it helps someone.',
-        ];
-        for (const content of others) {
-          await db.query(
-            'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, $3, $4)',
-            [testUserRows.rows[1].id, content, 5 + Math.floor(Math.random() * 8), 1 + Math.floor(Math.random() * 3)]
-          );
-        }
-      }
-      const appCount = await db.query("SELECT COUNT(*) as c FROM specialist_applications WHERE email IN ('elena.v@example.com','marcus.r@example.com','priya.s@example.com')");
-      if (parseInt(appCount.rows[0]?.c || 0, 10) === 0) {
+    // 5. Seed testuser1 with full presentation data (bulletproof — each step wrapped)
+    const seedResult = await seedTestUser1();
+    console.log('autoMigrate: seedTestUser1 =>', JSON.stringify(seedResult));
+
+    // 6. Extra seed data (specialist applications, activity log) — each wrapped
+    try {
+      const appCount = await db.query("SELECT COUNT(*)::int as c FROM specialist_applications WHERE email IN ('elena.v@example.com','marcus.r@example.com','priya.s@example.com')");
+      if (appCount.rows[0].c === 0) {
         await db.query(
           `INSERT INTO specialist_applications (name, email, specialty, status) VALUES
            ('Elena Vasquez', 'elena.v@example.com', 'THERAPIST', 'PENDING'),
@@ -1353,99 +1368,19 @@ async function autoMigrate() {
            ('Priya Sharma', 'priya.s@example.com', 'HYPNOTHERAPIST', 'PENDING')`
         );
       }
-      const nextDay = new Date(now); nextDay.setDate(nextDay.getDate() + 2); nextDay.setHours(15, 0, 0, 0);
-      await db.query(
-        'INSERT INTO booking_requests (specialist_id, user_id, proposed_at, session_type, status) VALUES ($1, $2, $3, $4, $5)',
-        [specialistId, uid, nextDay, '1:1 Therapy', 'PENDING']
-      );
-      await db.query(
-        `INSERT INTO activity_log (type, message) VALUES
-         ('user_signup', 'New user signed up: testuser1@test.btb.fit'),
-         ('session_completed', 'Session completed — Test User One & Dr. Sarah Chen'),
-         ('application_submitted', 'New specialist application: Elena Vasquez (Therapist)')`
-      );
-      console.log('autoMigrate: test data seeded (users, sessions, mood, community, applications, activity). Login: testuser1@test.btb.fit / TestUser@123');
-    }
+    } catch (e) { console.log('autoMigrate: specialist_applications skip:', e.message); }
 
-    // 6. Top-up testuser1 every startup — refresh upcoming sessions + mood + ensure all data present
-    const t1 = await db.query("SELECT id, healing_score FROM dashboard_users WHERE email = 'testuser1@test.btb.fit' LIMIT 1");
-    if (t1.rows.length > 0) {
-      const uid = t1.rows[0].id;
-      const healingScore = t1.rows[0].healing_score == null ? 0 : parseInt(t1.rows[0].healing_score, 10);
-      const countR = await db.query('SELECT COUNT(*) as c FROM sessions WHERE user_id = $1', [uid]);
-      const sessionCount = parseInt(countR.rows[0]?.c || 0, 10);
-      // Always run to keep upcoming sessions fresh (past-dated upcoming sessions are deleted and recreated)
-      if (true) {
-        console.log(`autoMigrate: testuser1 (sessions=${sessionCount}, healing_score=${healingScore}) — refreshing presentation data.`);
-        const specialistIds = [2, 3, 4, 5];
-        for (const sid of specialistIds) {
-          await db.query(
-            'INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT (user_id, specialist_id) DO NOTHING',
-            [uid, sid]
-          );
-        }
-        await db.query('UPDATE dashboard_users SET healing_score = 74 WHERE id = $1', [uid]);
-        const now = new Date();
-        for (let i = sessionCount; i < 10; i++) {
-          const d = new Date(now); d.setDate(d.getDate() - (14 + i * 4)); d.setHours(10, 0, 0, 0);
-          const spId = specialistIds[i % specialistIds.length];
-          await db.query(
-            `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, completed_at, rating)
-             VALUES ($1, $2, '1:1 Therapy', $3, 50, 'COMPLETED', $3, 5)`,
-            [uid, spId, d]
-          );
-        }
-        for (let d = 0; d < 30; d++) {
-          const dte = new Date(now); dte.setDate(dte.getDate() - d);
-          const dateStr = dte.toISOString().slice(0, 10);
-          const value = 5 + Math.floor(Math.random() * 4);
-          await db.query(
-            'INSERT INTO mood_log (user_id, date, value, note) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, date) DO UPDATE SET value = $3, note = $4',
-            [uid, dateStr, value, d < 3 ? 'Feeling good' : null]
-          );
-        }
+    try {
+      const actCount = await db.query('SELECT COUNT(*)::int as c FROM activity_log');
+      if (actCount.rows[0].c < 3) {
         await db.query(
-          'INSERT INTO user_milestones (user_id, milestone_id, unlocked_at) VALUES ($1, 1, CURRENT_DATE - 60), ($1, 2, CURRENT_DATE - 20), ($1, 3, CURRENT_DATE - 8) ON CONFLICT (user_id, milestone_id) DO NOTHING',
-          [uid]
+          `INSERT INTO activity_log (type, message) VALUES
+           ('user_signup', 'New user signed up: testuser1@test.btb.fit'),
+           ('session_completed', 'Session completed — Test User One & Dr. Sarah Chen'),
+           ('application_submitted', 'New specialist application: Elena Vasquez (Therapist)')`
         );
-        const postCountR = await db.query('SELECT COUNT(*) as c FROM community_posts WHERE user_id = $1', [uid]);
-        if (parseInt(postCountR.rows[0]?.c || 0, 10) < 3) {
-          const extraPosts = [
-            '10 sessions in — the consistency is paying off. To anyone just starting: stick with it.',
-            'Hit my 7-day streak today. The app reminders actually help.',
-            'Shared my first milestone. The support here is real.',
-          ];
-          for (const content of extraPosts) {
-            await db.query(
-              'INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, 10, 2)',
-              [uid, content]
-            );
-          }
-        }
-        // Purge stale upcoming sessions (past dates), then fill to 4 fresh future ones
-        await db.query(
-          "DELETE FROM sessions WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()",
-          [uid]
-        );
-        const upcomingCount = await db.query(
-          "SELECT COUNT(*) as c FROM sessions WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at >= NOW()",
-          [uid]
-        );
-        const upcomingNeed = 4 - parseInt(upcomingCount.rows[0]?.c || 0, 10);
-        const sessionLabels = ['1:1 Therapy', 'Coaching', 'Hypnosis', 'Mindfulness'];
-        if (upcomingNeed > 0) {
-          for (let i = 0; i < upcomingNeed; i++) {
-            const d = new Date(now); d.setDate(d.getDate() + i + 1); d.setHours(10 + i, 0, 0, 0);
-            await db.query(
-              `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status)
-               VALUES ($1, $2, $3, $4, 50, 'UPCOMING')`,
-              [uid, specialistIds[i % specialistIds.length], sessionLabels[i % sessionLabels.length], d]
-            );
-          }
-        }
-        console.log('autoMigrate: testuser1 presentation data topped up (sessions, mood, milestones, community, upcoming sessions refreshed).');
       }
-    }
+    } catch (e) { console.log('autoMigrate: activity_log skip:', e.message); }
 
     console.log('autoMigrate: done');
   } catch (err) {
