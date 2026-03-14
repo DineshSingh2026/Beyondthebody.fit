@@ -839,11 +839,38 @@ app.get('/api/health', async (req, res) => {
   res.json({ ok: true, db: dbOk ? 'connected' : (db.connected ? 'error' : 'not configured') });
 });
 
+async function seedAdminPasswords() {
+  if (!db.connected) return;
+  try {
+    const r = await db.query(
+      "SELECT id, email, password_hash FROM dashboard_users WHERE id IN (1, 2) AND role IN ('ADMIN','THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR')"
+    );
+    const needsPassword = r.rows.filter(u => !u.password_hash);
+    if (needsPassword.length === 0) return;
+
+    const ADMIN_PASS    = process.env.ADMIN_PASSWORD     || 'Admin@BTB2026';
+    const THERAPIST_PASS = process.env.THERAPIST_PASSWORD || 'Therapist@BTB2026';
+
+    for (const u of needsPassword) {
+      const plain = u.id === 1 ? ADMIN_PASS : THERAPIST_PASS;
+      const hash  = await bcrypt.hash(plain, 10);
+      await db.query('UPDATE dashboard_users SET password_hash = $1 WHERE id = $2', [hash, u.id]);
+      console.log(`Auto-seeded password for user id=${u.id} (${u.email})`);
+    }
+  } catch (err) {
+    console.warn('seedAdminPasswords skipped (table may not exist yet):', err.message);
+  }
+}
+
 function startServer(port) {
-  const server = app.listen(port, () => {
+  const server = app.listen(port, async () => {
     console.log(`Beyond The Body server running on http://localhost:${port}`);
-    if (db.connected) console.log('PostgreSQL: connected');
-    else console.log('PostgreSQL: not configured (using in-memory data). Set DATABASE_URL to use DB.');
+    if (db.connected) {
+      console.log('PostgreSQL: connected');
+      await seedAdminPasswords();
+    } else {
+      console.log('PostgreSQL: not configured (using in-memory data). Set DATABASE_URL to use DB.');
+    }
   });
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {

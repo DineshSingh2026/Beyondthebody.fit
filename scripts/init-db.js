@@ -71,6 +71,15 @@ async function run() {
 
   await client.end();
   console.log('Database setup complete.');
+
+  // Set admin and therapist passwords (safe to run multiple times)
+  console.log('Setting admin/therapist passwords...');
+  const { execSync } = require('child_process');
+  try {
+    execSync('node scripts/set-dashboard-passwords.js', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+  } catch (err) {
+    console.warn('Password seeding skipped:', err.message);
+  }
 }
 
 run();
