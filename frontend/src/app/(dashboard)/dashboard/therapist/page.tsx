@@ -27,6 +27,16 @@ export default function TherapistDashboardPage() {
   const [role, setRole] = useState<SpecialistType>('THERAPIST');
   const [joinModal, setJoinModal] = useState<{ clientName: string } | null>(null);
   const [d, setD] = useState<TherapistDashboardData>(() => emptyTherapistDashboard('THERAPIST'));
+  const [actionId, setActionId] = useState<string | null>(null);
+
+  const loadDashboard = async (id: string) => {
+    try {
+      const dashboard = await api.getSpecialistDashboard(id);
+      setD(dashboard as TherapistDashboardData);
+    } catch {
+      /* keep current data */
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -36,16 +46,25 @@ export default function TherapistDashboardPage() {
         if (me.role === 'USER') { router.replace('/dashboard/user'); return; }
         if (SPECIALIST_ROLES.includes(me.role as SpecialistType)) {
           setSpecialistId(me.id);
-          const roleType = me.role as SpecialistType;
-          setRole(roleType);
-          const dashboard = await api.getSpecialistDashboard(me.id);
-          setD(dashboard as TherapistDashboardData);
+          setRole(me.role as SpecialistType);
+          await loadDashboard(me.id);
         }
       } catch {
         setD(emptyTherapistDashboard(role));
       }
     })();
   }, [router]);
+
+  const handleRequest = async (requestId: string, status: 'accepted' | 'declined') => {
+    if (!specialistId) return;
+    setActionId(requestId);
+    try {
+      await api.patchBookingRequest(specialistId, requestId, status);
+      await loadDashboard(specialistId);
+    } finally {
+      setActionId(null);
+    }
+  };
 
   if (isMobile && specialistId) return <TherapistMobileHome specialistId={specialistId} />;
   if (isMobile) return null;
@@ -148,20 +167,46 @@ export default function TherapistDashboardPage() {
             </div>
           </motion.section>
           <motion.section className={styles.section} variants={item}>
-            <h2 className={styles.sectionTitle}>Pending Requests</h2>
-            {d.pendingRequests.map((r) => (
-              <div key={r.id} className={styles.requestItem}>
-                <Avatar name={r.clientName} size="sm" />
-                <div>
-                  <span className={styles.requestName}>{r.clientName}</span>
-                  <span className={styles.muted}>{r.proposedTime} — {r.sessionType}</span>
+            <h2 className={styles.sectionTitle}>
+              Pending Requests
+              {d.pendingRequests.length > 0 && (
+                <span className={styles.badge}>{d.pendingRequests.length}</span>
+              )}
+            </h2>
+            {d.pendingRequests.length === 0 ? (
+              <p className={styles.muted}>No pending consultation requests.</p>
+            ) : (
+              d.pendingRequests.map((r) => (
+                <div key={r.id} className={styles.requestItem}>
+                  <Avatar name={r.clientName} size="sm" />
+                  <div style={{ flex: 1 }}>
+                    <span className={styles.requestName}>{r.clientName}</span>
+                    <span className={styles.muted}>{r.proposedTime} — {r.sessionType}</span>
+                    {(r as { message?: string }).message && (
+                      <p className={styles.requestMsg}>&ldquo;{(r as { message?: string }).message}&rdquo;</p>
+                    )}
+                  </div>
+                  <div className={styles.requestActions}>
+                    <button
+                      type="button"
+                      className={styles.btnAccept}
+                      disabled={actionId === r.id}
+                      onClick={() => handleRequest(r.id, 'accepted')}
+                    >
+                      {actionId === r.id ? '…' : 'Accept'}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.btnDecline}
+                      disabled={actionId === r.id}
+                      onClick={() => handleRequest(r.id, 'declined')}
+                    >
+                      {actionId === r.id ? '…' : 'Decline'}
+                    </button>
+                  </div>
                 </div>
-                <div className={styles.requestActions}>
-                  <button type="button" className={styles.btnAccept}>Accept</button>
-                  <button type="button" className={styles.btnDecline}>Decline</button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </motion.section>
           <motion.section className={styles.section} variants={item}>
             <h2 className={styles.sectionTitle}>Client Milestones</h2>

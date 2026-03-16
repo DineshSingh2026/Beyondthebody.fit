@@ -1099,14 +1099,21 @@ app.get('/api/specialists/:id/dashboard', async (req, res) => {
       `SELECT u.id, u.name, COUNT(s.id) as session_count, MAX(s.scheduled_at)::date as last_date
        FROM sessions s JOIN dashboard_users u ON u.id = s.user_id
        WHERE s.specialist_id = $1 AND s.status = 'COMPLETED'
-       GROUP BY u.id, u.name`
+       GROUP BY u.id, u.name`,
+      [id]
     );
     const notesR = await db.query(
       `SELECT n.id, n.content, n.created_at, u.name as client_name FROM session_notes n JOIN dashboard_users u ON u.id = n.user_id WHERE n.specialist_id = $1 ORDER BY n.created_at DESC LIMIT 10`,
       [id]
     );
     const requestsR = await db.query(
-      `SELECT br.id, u.name as client_name, br.proposed_at, br.session_type FROM booking_requests br JOIN dashboard_users u ON u.id = br.user_id WHERE br.specialist_id = $1 AND br.status = 'PENDING'`
+      `SELECT br.id, br.user_id, br.proposed_at, br.session_type, br.created_at, br.message,
+              u.name as client_name, u.email as client_email
+       FROM booking_requests br
+       JOIN dashboard_users u ON u.id = br.user_id
+       WHERE br.specialist_id = $1 AND br.status = 'PENDING'
+       ORDER BY br.created_at DESC`,
+      [id]
     );
     const reviewsR = await db.query(
       `SELECT r.id, r.rating, r.excerpt, r.created_at, u.name as client_name FROM reviews r JOIN dashboard_users u ON u.id = r.user_id WHERE r.specialist_id = $1 ORDER BY r.created_at DESC LIMIT 5`,
@@ -1138,10 +1145,13 @@ app.get('/api/specialists/:id/dashboard', async (req, res) => {
     }));
     const pendingRequests = requestsR.rows.map(r => ({
       id: String(r.id),
+      userId: String(r.user_id),
       clientName: r.client_name,
-      requestedAt: '1 hour ago',
+      clientEmail: r.client_email || '',
+      requestedAt: r.created_at ? new Date(r.created_at).toISOString() : '',
       proposedTime: r.proposed_at ? new Date(r.proposed_at).toLocaleString() : '',
       sessionType: r.session_type,
+      message: r.message || '',
     }));
     const reviews = reviewsR.rows.map(r => ({
       id: String(r.id),
