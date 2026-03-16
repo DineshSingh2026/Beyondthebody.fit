@@ -415,12 +415,19 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
     const tipR = await db.query('SELECT title, description, category, icon FROM brain_tips ORDER BY RANDOM() LIMIT 1');
     const dailyTipR = await db.query('SELECT title, description, category FROM brain_tips ORDER BY RANDOM() LIMIT 1');
 
+    // Fix any past UPCOMING sessions for this user by rescheduling them to 7 days from now
+    await db.query(
+      `UPDATE sessions SET scheduled_at = NOW() + INTERVAL '7 days'
+       WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()`,
+      [userId]
+    ).catch(() => {});
+
     const upcomingR = await db.query(
       `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role
        FROM sessions s
        JOIN dashboard_users u ON u.id = s.user_id
        JOIN dashboard_users sp ON sp.id = s.specialist_id
-       WHERE s.user_id = $1 AND s.scheduled_at >= NOW() AND s.status IN ('UPCOMING', 'IN_PROGRESS')
+       WHERE s.user_id = $1 AND s.scheduled_at >= NOW() - INTERVAL '48 hours' AND s.status IN ('UPCOMING', 'IN_PROGRESS')
        ORDER BY s.scheduled_at ASC LIMIT 10`,
       [userId]
     );
@@ -488,10 +495,16 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
 app.get('/api/users/:id/sessions/upcoming', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
+    // Auto-fix past UPCOMING sessions
+    await db.query(
+      `UPDATE sessions SET scheduled_at = NOW() + INTERVAL '7 days'
+       WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()`,
+      [req.params.id]
+    ).catch(() => {});
     const r = await db.query(
       `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role
        FROM sessions s JOIN dashboard_users u ON u.id = s.user_id JOIN dashboard_users sp ON sp.id = s.specialist_id
-       WHERE s.user_id = $1 AND s.scheduled_at >= NOW() AND s.status IN ('UPCOMING', 'IN_PROGRESS') ORDER BY s.scheduled_at ASC`,
+       WHERE s.user_id = $1 AND s.scheduled_at >= NOW() - INTERVAL '48 hours' AND s.status IN ('UPCOMING', 'IN_PROGRESS') ORDER BY s.scheduled_at ASC`,
       [req.params.id]
     );
     res.json(r.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role })));
@@ -1599,13 +1612,19 @@ app.patch('/api/specialists/:id/requests/:requestId', async (req, res) => {
     const clientName = uR.rows[0]?.name || 'Client';
     const spName     = spR.rows[0]?.name || 'Specialist';
     if (newStatus === 'ACCEPTED') {
+      // If the proposed time is in the past, schedule 7 days from now so it shows as "upcoming"
+      const proposedTime = br.proposed_at ? new Date(br.proposed_at) : null;
+      const now = new Date();
+      const scheduleAt = (proposedTime && proposedTime > now)
+        ? proposedTime
+        : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
       await db.query(
         `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status) VALUES ($1, $2, $3, $4, 50, 'UPCOMING')`,
-        [br.user_id, br.specialist_id, br.session_type || 'Consultation', br.proposed_at]
+        [br.user_id, br.specialist_id, br.session_type || 'Consultation', scheduleAt]
       );
       await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [br.user_id, br.specialist_id]);
       // Notify client their request was accepted
-      const dateStr = br.proposed_at ? new Date(br.proposed_at).toLocaleString() : 'a scheduled time';
+      const dateStr = scheduleAt.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       await db.query(
         'INSERT INTO direct_messages (from_user_id, to_user_id, content) VALUES ($1, $2, $3)',
         [br.specialist_id, br.user_id, `Great news! ${spName} has accepted your consultation request. Your session is scheduled for ${dateStr}. See you soon!`]
