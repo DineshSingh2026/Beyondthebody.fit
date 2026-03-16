@@ -23,9 +23,11 @@ const defaultNotifications: Notification[] = [
 
 interface NotificationPanelProps {
   role?: UserRole;
+  /** 'up' (default — opens above trigger, desktop) or 'down' (opens below, mobile top bar) */
+  direction?: 'up' | 'down';
 }
 
-export default function NotificationPanel({ role }: NotificationPanelProps) {
+export default function NotificationPanel({ role, direction = 'up' }: NotificationPanelProps) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(() =>
     role === 'ADMIN' ? [] : defaultNotifications.map((n) => ({ ...n }))
@@ -54,11 +56,15 @@ export default function NotificationPanel({ role }: NotificationPanelProps) {
 
   useEffect(() => {
     if (!open) return;
-    const handleClick = (e: MouseEvent) => {
+    const handleOutside = (e: MouseEvent | TouchEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+    };
   }, [open]);
 
   const clearAll = () => {
@@ -91,10 +97,10 @@ export default function NotificationPanel({ role }: NotificationPanelProps) {
       <AnimatePresence>
         {open && (
           <motion.div
-            className={styles.panel}
-            initial={{ opacity: 0, y: -8 }}
+            className={`${styles.panel} ${direction === 'down' ? styles.panelDown : ''}`}
+            initial={{ opacity: 0, y: direction === 'down' ? 8 : -8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
+            exit={{ opacity: 0, y: direction === 'down' ? 8 : -8 }}
             transition={{ duration: 0.2 }}
           >
             <div className={styles.header}>

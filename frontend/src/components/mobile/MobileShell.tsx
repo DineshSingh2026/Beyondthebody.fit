@@ -29,7 +29,6 @@ export default function MobileShell({ children }: { children: React.ReactNode })
       <TopAppBar
         role={role}
         userName={userName}
-        notificationCount={2}
       />
       <main className={styles.main}>
         <div className={styles.content}>{children}</div>

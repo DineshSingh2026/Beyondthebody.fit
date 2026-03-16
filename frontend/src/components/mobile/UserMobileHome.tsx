@@ -10,6 +10,11 @@ import MobileCard from './MobileCard';
 import HapticButton from './HapticButton';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
+import WellnessScore from '@/components/dashboard/WellnessScore';
+import SessionRecap from '@/components/dashboard/SessionRecap';
+import HealingGoals from '@/components/dashboard/HealingGoals';
+import MoodInsights from '@/components/dashboard/MoodInsights';
+import BodyBankSync from '@/components/dashboard/BodyBankSync';
 import styles from './UserMobileHome.module.css';
 
 function getGreeting() {
@@ -55,6 +60,14 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
           <div className={styles.progressFill} />
         </div>
       </section>
+
+      {/* Phase 1: Wellness Score */}
+      <section className={styles.section}>
+        <WellnessScore />
+      </section>
+
+      {/* Phase 1: Session Recap (self-hides when empty) */}
+      <SessionRecap />
 
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Next Session</h3>
@@ -120,6 +133,13 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
           ))}
         </div>
         <p className={styles.moodTrend}>Your mood trend is improving ↑</p>
+        {/* Phase 1: Mood Pattern Insights */}
+        <MoodInsights />
+      </section>
+
+      {/* Phase 1: Body Bank Sync */}
+      <section className={styles.section}>
+        <BodyBankSync />
       </section>
 
       <section className={styles.section}>
@@ -137,6 +157,11 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Phase 1: Healing Goals */}
+      <section className={styles.section}>
+        <HealingGoals />
       </section>
 
       <section className={styles.section}>
