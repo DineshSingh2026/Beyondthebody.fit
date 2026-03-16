@@ -35,7 +35,7 @@ function loadPracticed(): Set<string> {
 }
 
 function savePracticed(set: Set<string>) {
-  try { localStorage.setItem(TODAY_KEY, JSON.stringify([...set])); } catch { /* ignore */ }
+  try { localStorage.setItem(TODAY_KEY, JSON.stringify(Array.from(set))); } catch { /* ignore */ }
 }
 
 export default function TipsPage() {
