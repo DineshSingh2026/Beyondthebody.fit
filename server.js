@@ -245,30 +245,49 @@ const generateMeetingLink = () => {
 const recalculateHealingScore = async (userId) => {
   if (!db.connected) return;
   try {
-    const [sessR, moodR, tipsR, assignR] = await Promise.all([
+    const [completedR, upcomingR, moodR, tipsR, assignR, bookingR] = await Promise.all([
       db.query("SELECT COUNT(*) AS c FROM sessions WHERE user_id = $1 AND status = 'COMPLETED'", [userId]),
+      db.query("SELECT COUNT(*) AS c FROM sessions WHERE user_id = $1 AND status IN ('UPCOMING','IN_PROGRESS')", [userId]),
       db.query('SELECT COUNT(*) AS c FROM mood_log WHERE user_id = $1', [userId]),
       db.query('SELECT COALESCE(brain_tips_practiced, 0) AS c FROM dashboard_users WHERE id = $1', [userId]),
       db.query('SELECT COUNT(*) AS c FROM user_specialists WHERE user_id = $1', [userId]),
+      db.query("SELECT COUNT(*) AS c FROM booking_requests WHERE user_id = $1", [userId]),
     ]);
-    // Streak: consecutive days ending today
-    const streakData = await db.query(
-      `WITH days AS (
-         SELECT date FROM mood_log WHERE user_id = $1 ORDER BY date DESC
-       ),
-       numbered AS (
-         SELECT date, ROW_NUMBER() OVER (ORDER BY date DESC) AS rn FROM days
-       )
-       SELECT COUNT(*)::int AS streak FROM numbered
-       WHERE date = CURRENT_DATE - (rn - 1) * INTERVAL '1 day'`,
-      [userId]
-    );
-    const sessions   = Math.min(50, parseInt(sessR.rows[0]?.c  || 0, 10) * 10);
-    const moods      = Math.min(20, parseInt(moodR.rows[0]?.c  || 0, 10) * 2);
-    const tips       = Math.min(10, parseInt(tipsR.rows[0]?.c  || 0, 10));
-    const streak     = Math.min(10, parseInt(streakData.rows[0]?.streak || 0, 10));
-    const assigned   = Math.min(10, parseInt(assignR.rows[0]?.c || 0, 10) * 5);
-    const score      = Math.min(100, sessions + moods + tips + streak + assigned);
+    // Streak: consecutive days ending today with mood logs
+    let streak = 0;
+    try {
+      const streakData = await db.query(
+        `WITH days AS (
+           SELECT date FROM mood_log WHERE user_id = $1 ORDER BY date DESC
+         ),
+         numbered AS (
+           SELECT date, ROW_NUMBER() OVER (ORDER BY date DESC) AS rn FROM days
+         )
+         SELECT COUNT(*)::int AS streak FROM numbered
+         WHERE date = CURRENT_DATE - (rn - 1) * INTERVAL '1 day'`,
+        [userId]
+      );
+      streak = parseInt(streakData.rows[0]?.streak || 0, 10);
+    } catch { streak = 0; }
+
+    const completed  = parseInt(completedR.rows[0]?.c  || 0, 10);
+    const upcoming   = parseInt(upcomingR.rows[0]?.c   || 0, 10);
+    const moods      = parseInt(moodR.rows[0]?.c       || 0, 10);
+    const tips       = parseInt(tipsR.rows[0]?.c       || 0, 10);
+    const assigned   = parseInt(assignR.rows[0]?.c     || 0, 10);
+    const bookings   = parseInt(bookingR.rows[0]?.c    || 0, 10);
+
+    // Scoring — every user starts with at least 5 for signing up
+    const base        = 5;
+    const sessComp    = Math.min(50, completed * 10);   // 10 pts each completed session
+    const sessUp      = Math.min(15, upcoming  * 5);    // 5 pts each upcoming session (booked)
+    const moodPts     = Math.min(20, moods     * 2);    // 2 pts each mood log
+    const tipsPts     = Math.min(10, tips);              // 1 pt each brain tip practiced
+    const streakPts   = Math.min(10, streak);            // 1 pt per day streak
+    const assignedPts = Math.min(10, assigned  * 5);    // 5 pts per assigned specialist
+    const bookingPts  = Math.min(10, bookings  * 2);    // 2 pts per consultation request sent
+
+    const score = Math.min(100, base + sessComp + sessUp + moodPts + tipsPts + streakPts + assignedPts + bookingPts);
     await db.query('UPDATE dashboard_users SET healing_score = $1 WHERE id = $2', [score, userId]);
     return score;
   } catch (err) {
@@ -1229,7 +1248,7 @@ app.get('/api/admin/users/:id/metrics', async (req, res) => {
       db.query('SELECT COUNT(*) FILTER (WHERE status = \'COMPLETED\') as completed, COUNT(*) FILTER (WHERE status IN (\'UPCOMING\', \'IN_PROGRESS\') AND scheduled_at >= NOW()) as upcoming FROM sessions WHERE user_id = $1', [userId]),
       db.query('SELECT COALESCE(AVG(value), 0) as avg FROM mood_log WHERE user_id = $1 AND date >= CURRENT_DATE - 14', [userId]),
       db.query('SELECT sp.id, sp.name, sp.role, (SELECT COUNT(*) FROM sessions WHERE specialist_id = sp.id AND status = \'COMPLETED\') as sc FROM dashboard_users sp JOIN user_specialists us ON us.specialist_id = sp.id WHERE us.user_id = $1', [userId]),
-      db.query('SELECT s.id, s.type, s.scheduled_at, s.duration_minutes, sp.name as specialist_name FROM sessions s JOIN dashboard_users sp ON sp.id = s.specialist_id WHERE s.user_id = $1 AND s.scheduled_at >= NOW() AND s.status IN (\'UPCOMING\', \'IN_PROGRESS\') ORDER BY s.scheduled_at ASC LIMIT 10', [userId]),
+      db.query('SELECT s.id, s.type, s.scheduled_at, s.duration_minutes, s.meeting_link, sp.name as specialist_name FROM sessions s JOIN dashboard_users sp ON sp.id = s.specialist_id WHERE s.user_id = $1 AND s.scheduled_at >= NOW() AND s.status IN (\'UPCOMING\', \'IN_PROGRESS\') ORDER BY s.scheduled_at ASC LIMIT 10', [userId]),
     ]);
     const sessionsCompleted = parseInt(sessionsR.rows[0]?.completed || 0, 10);
     const sessionsUpcoming = parseInt(sessionsR.rows[0]?.upcoming || 0, 10);
@@ -1259,7 +1278,7 @@ app.get('/api/admin/specialists/:id/metrics', async (req, res) => {
       db.query('SELECT u.id, u.name, COUNT(s.id) as session_count, MAX(s.scheduled_at)::date as last_date FROM dashboard_users u JOIN sessions s ON s.user_id = u.id AND s.specialist_id = $1 AND s.status = \'COMPLETED\' GROUP BY u.id, u.name', [id]),
       db.query('SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE status = \'COMPLETED\') as completed FROM sessions WHERE specialist_id = $1', [id]),
       db.query('SELECT COUNT(*) as c FROM booking_requests WHERE specialist_id = $1 AND status = \'PENDING\'', [id]),
-      db.query('SELECT s.id, s.type, s.scheduled_at, u.name as user_name FROM sessions s JOIN dashboard_users u ON u.id = s.user_id WHERE s.specialist_id = $1 AND s.scheduled_at::date = CURRENT_DATE AND s.status IN (\'UPCOMING\', \'IN_PROGRESS\') ORDER BY s.scheduled_at', [id]),
+      db.query('SELECT s.id, s.type, s.scheduled_at, s.meeting_link, u.name as user_name FROM sessions s JOIN dashboard_users u ON u.id = s.user_id WHERE s.specialist_id = $1 AND s.scheduled_at::date = CURRENT_DATE AND s.status IN (\'UPCOMING\', \'IN_PROGRESS\') ORDER BY s.scheduled_at', [id]),
     ]);
     res.json({
       specialist: { id: String(sp.id), name: sp.name, email: sp.email, role: sp.role, suspended: !!sp.suspended },
@@ -1360,7 +1379,8 @@ app.get('/api/specialists/:id/dashboard', async (req, res) => {
     const [scheduleResult, clientsResult, notesResult, requestsResult, reviewsResult, earningsResult, weekSessionsResult] = await Promise.allSettled([
       // All upcoming + today sessions (next 30 days), not just today
       db.query(
-        `SELECT s.id, s.type, s.scheduled_at, s.duration_minutes, s.status, s.rating, u.name as user_name
+        `SELECT s.id, s.type, s.scheduled_at, s.duration_minutes, s.status, s.rating,
+                s.meeting_link, u.name as user_name
          FROM sessions s JOIN dashboard_users u ON u.id = s.user_id
          WHERE s.specialist_id = $1 AND s.scheduled_at >= NOW() - INTERVAL '2 hours'
          ORDER BY s.scheduled_at ASC LIMIT 50`,
@@ -2603,8 +2623,12 @@ async function autoMigrate() {
     }
     // Backfill meeting links for existing sessions that don't have one
     await db.query(
-      `UPDATE sessions SET meeting_link = 'https://meet.jit.si/BTB-' || substr(md5(id::text), 1, 4) || '-' || substr(md5(id::text), 5, 4) || '-' || substr(md5(id::text), 9, 4)
-       WHERE meeting_link IS NULL`
+      `UPDATE sessions
+       SET meeting_link = 'https://meet.jit.si/BTB-' ||
+         lower(substr(md5(random()::text || id::text), 1, 4)) || '-' ||
+         lower(substr(md5(random()::text || id::text), 5, 4)) || '-' ||
+         lower(substr(md5(random()::text || id::text), 9, 4))
+       WHERE meeting_link IS NULL OR meeting_link = ''`
     ).catch(() => {});
 
     // Phase 1 feature columns on dashboard_users
