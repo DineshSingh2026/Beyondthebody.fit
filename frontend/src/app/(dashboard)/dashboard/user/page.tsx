@@ -33,6 +33,7 @@ export default function UserDashboardPage() {
   const [userName, setUserName] = useState<string | null>(null);
   const [data, setData] = useState<UserDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [completingId, setCompletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,9 +128,21 @@ export default function UserDashboardPage() {
                   specialistName={s.specialistName}
                   type={s.type}
                   time={s.time}
+                  date={s.date}
                   duration={s.durationMinutes}
                   status={s.status}
-                  onJoin={() => {}}
+                  meetingLink={s.meetingLink}
+                  completing={completingId === s.id}
+                  onComplete={async () => {
+                    setCompletingId(s.id);
+                    try {
+                      await api.completeSession(s.id);
+                      const d2 = await api.getUserDashboard(userId!);
+                      setData(d2);
+                    } finally {
+                      setCompletingId(null);
+                    }
+                  }}
                 />
               ))}
             </div>

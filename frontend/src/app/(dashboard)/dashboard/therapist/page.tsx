@@ -38,6 +38,7 @@ export default function TherapistDashboardPage() {
   const [d, setD] = useState<TherapistDashboardData>(() => emptyTherapistDashboard('THERAPIST'));
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
 
   const loadRequests = async (id: string) => {
     try {
@@ -133,17 +134,27 @@ export default function TherapistDashboardPage() {
               <div className={styles.scheduleList}>
                 {d.todaySchedule.map((s) => (
                   <div key={s.id} className={styles.sessionRow}>
-                    {s.date && (
-                      <span className={styles.sessionDate}>{s.date}</span>
-                    )}
                     <SessionCard
                       clientName={s.clientName}
                       specialistName={s.clientName}
                       type={s.type}
                       time={s.time}
+                      date={s.date}
                       duration={s.durationMinutes}
                       status={s.status}
+                      meetingLink={s.meetingLink}
+                      completing={completingId === s.id}
                       onJoin={() => setJoinModal({ clientName: s.clientName })}
+                      onComplete={async () => {
+                        if (!specialistId) return;
+                        setCompletingId(s.id);
+                        try {
+                          await api.completeSession(s.id);
+                          await loadDashboard(specialistId);
+                        } finally {
+                          setCompletingId(null);
+                        }
+                      }}
                     />
                   </div>
                 ))}

@@ -339,6 +339,23 @@
   align-items: center;
 }
 
+.joinLinkAdmin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  background: rgba(212, 175, 55, 0.10);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  width: fit-content;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .sessionUser {
   font-size: 14px;
   font-weight: 500;

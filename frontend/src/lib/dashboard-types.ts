@@ -52,6 +52,7 @@ export interface SessionSummary {
   durationMinutes: number;
   status: SessionStatus;
   rating?: number;
+  meetingLink?: string | null;
 }
 
 export interface SpecialistSummary {

@@ -26,6 +26,13 @@ function getGreeting() {
 
 export default function UserMobileHome({ userId, userName }: { userId: string; userName?: string }) {
   const [d, setD] = useState<UserDashboardData | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
+
+  const refreshDashboard = () => {
+    if (!userId) return;
+    api.getUserDashboard(userId).then(setD).catch(() => {});
+  };
+
   useEffect(() => {
     if (!userId) return;
     api.getUserDashboard(userId)
@@ -36,6 +43,16 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
         });
       });
   }, [userId, userName]);
+
+  const handleComplete = async (sessionId: string) => {
+    setCompletingId(sessionId);
+    try {
+      await api.completeSession(sessionId);
+      refreshDashboard();
+    } finally {
+      setCompletingId(null);
+    }
+  };
   if (!d) {
     return (
       <div className={styles.hero}>
@@ -73,14 +90,34 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
         <h3 className={styles.sectionTitle}>Next Session</h3>
         {nextSession ? (
           <MobileCard accent="gold">
-            <span className={styles.timeChip}>Today, {nextSession.time}</span>
+            <span className={styles.timeChip}>{nextSession.date || 'Upcoming'}, {nextSession.time}</span>
             <div className={styles.specialistName}>{nextSession.specialistName}</div>
             <Badge variant={nextSession.specialistType === 'THERAPIST' ? 'green' : 'gold'}>
               {nextSession.type}
             </Badge>
             <div className={styles.ctaRow}>
-              <HapticButton variant="ghost" pill>Prepare</HapticButton>
-              <HapticButton variant="primary" pill>Join Session</HapticButton>
+              {nextSession.meetingLink ? (
+                <a
+                  href={nextSession.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.joinNowBtn}
+                >
+                  🎥 Join Now
+                </a>
+              ) : (
+                <HapticButton variant="primary" pill>Join Session</HapticButton>
+              )}
+              {nextSession.status !== 'COMPLETED' && (
+                <button
+                  type="button"
+                  className={styles.markCompleteBtn}
+                  onClick={() => handleComplete(nextSession.id)}
+                  disabled={completingId === nextSession.id}
+                >
+                  {completingId === nextSession.id ? '…' : '✓ Mark Complete'}
+                </button>
+              )}
             </div>
           </MobileCard>
         ) : (
@@ -167,13 +204,37 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
         ) : (
           d.upcomingSessions.map((s) => (
             <div key={s.id} className={styles.sessionItem}>
-              <span className={styles.sessionTime}>{s.time}</span>
               <Avatar name={s.specialistName} size="sm" />
               <div className={styles.sessionMeta}>
                 <div className={styles.specialistName}>{s.specialistName}</div>
                 <div className={styles.sessionType}>{s.type}</div>
+                <div className={styles.sessionTime}>{s.date ? `${s.date} · ` : ''}{s.time}</div>
               </div>
-              <span className={styles.chevron}>›</span>
+              <div className={styles.sessionActions}>
+                {s.meetingLink && s.status !== 'COMPLETED' && (
+                  <a
+                    href={s.meetingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.joinNowBtn}
+                  >
+                    🎥 Join
+                  </a>
+                )}
+                {s.status !== 'COMPLETED' && (
+                  <button
+                    type="button"
+                    className={styles.markCompleteBtn}
+                    onClick={() => handleComplete(s.id)}
+                    disabled={completingId === s.id}
+                  >
+                    {completingId === s.id ? '…' : '✓'}
+                  </button>
+                )}
+                {s.status === 'COMPLETED' && (
+                  <span className={styles.completedBadge}>Done</span>
+                )}
+              </div>
             </div>
           ))
         )}

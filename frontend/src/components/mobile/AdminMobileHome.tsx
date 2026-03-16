@@ -308,13 +308,27 @@ export default function AdminMobileHome() {
       {sessions.length > 0 && (
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Recent Sessions</h3>
-          {sessions.slice(0, 6).map((sess) => (
+          {sessions.slice(0, 8).map((sess: { id: string; userName: string; specialistName: string; durationMinutes: number; rating: number | null; status: string; scheduledDate?: string; scheduledTime?: string; meetingLink?: string | null }) => (
             <div key={sess.id} className={styles.sessionCard}>
               <div className={styles.sessionRow}>
                 <span className={styles.sessionUser}>{sess.userName}</span>
                 <Badge variant={sess.status === 'COMPLETED' ? 'green' : 'gold'}>{sess.status?.replace('_', ' ')}</Badge>
               </div>
-              <span className={styles.sessionMeta}>{sess.specialistName} · {sess.durationMinutes} min {sess.rating != null ? `· ★ ${sess.rating}` : ''}</span>
+              <span className={styles.sessionMeta}>
+                {sess.specialistName} · {sess.durationMinutes} min
+                {sess.rating != null ? ` · ★ ${sess.rating}` : ''}
+                {sess.scheduledDate ? ` · ${sess.scheduledDate}` : ''}
+              </span>
+              {sess.meetingLink && sess.status !== 'COMPLETED' && (
+                <a
+                  href={sess.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.joinLinkAdmin}
+                >
+                  🎥 Join Meeting
+                </a>
+              )}
             </div>
           ))}
         </section>

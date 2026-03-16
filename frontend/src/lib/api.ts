@@ -354,4 +354,9 @@ export const api = {
   async practiceBrainTip(userId: string): Promise<{ success: boolean; healingScore?: number; alreadyPracticed?: boolean }> {
     return fetchWithAuth(`${API_BASE}/api/users/${userId}/brain-tip-practiced`, { method: 'POST' });
   },
+
+  // Mark a session as completed (callable by user or therapist)
+  async completeSession(sessionId: string): Promise<{ success: boolean }> {
+    return fetchWithAuth(`${API_BASE}/api/sessions/${sessionId}/complete`, { method: 'PATCH' });
+  },
 };

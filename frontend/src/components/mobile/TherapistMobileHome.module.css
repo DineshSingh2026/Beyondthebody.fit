@@ -150,7 +150,7 @@
 }
 
 .scheduleCard {
-  flex: 0 0 160px;
+  flex: 0 0 180px;
   scroll-snap-align: start;
   background: var(--card);
   border: 1px solid var(--border);
@@ -160,6 +160,54 @@
   flex-direction: column;
   gap: 8px;
 }
+
+.scheduleLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.scheduleActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.joinNowBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.markCompleteBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.markCompleteBtn:disabled { opacity: 0.5; }
 
 .scheduleDateTime {
   display: flex;
@@ -197,6 +245,9 @@
 .nextBtns {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 4px;
 }
 
 .clientName {

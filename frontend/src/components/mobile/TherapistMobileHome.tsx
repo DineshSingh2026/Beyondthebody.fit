@@ -26,6 +26,7 @@ export default function TherapistMobileHome({ specialistId }: { specialistId: st
   const [d, setD] = useState<TherapistDashboardData>(() => emptyTherapistDashboard('THERAPIST'));
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
 
   const loadDashboard = () => {
     if (!specialistId) return;
@@ -126,15 +127,42 @@ export default function TherapistMobileHome({ specialistId }: { specialistId: st
           <div className={styles.scheduleScroll}>
             {d.todaySchedule.map((s) => (
               <div key={s.id} className={styles.scheduleCard}>
-                <div className={styles.scheduleDateTime}>
-                  {s.date && <span className={styles.scheduleDate}>{s.date}</span>}
-                  <span className={styles.time}>{s.time}</span>
+                <div className={styles.scheduleLeft}>
+                  <div className={styles.scheduleDateTime}>
+                    {s.date && <span className={styles.scheduleDate}>{s.date}</span>}
+                    <span className={styles.time}>{s.time}</span>
+                  </div>
+                  <Avatar name={s.clientName} size="sm" />
+                  <span className={styles.type}>{s.type}</span>
+                  <Badge variant={s.status === 'IN_PROGRESS' ? 'green' : s.status === 'COMPLETED' ? 'muted' : 'gold'}>
+                    {s.status.replace('_', ' ')}
+                  </Badge>
                 </div>
-                <Avatar name={s.clientName} size="sm" />
-                <span className={styles.type}>{s.type}</span>
-                <Badge variant={s.status === 'IN_PROGRESS' ? 'green' : s.status === 'COMPLETED' ? 'muted' : 'gold'}>
-                  {s.status.replace('_', ' ')}
-                </Badge>
+                {s.status !== 'COMPLETED' && (
+                  <div className={styles.scheduleActions}>
+                    {s.meetingLink && (
+                      <a
+                        href={s.meetingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.joinNowBtn}
+                      >
+                        🎥 Join
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.markCompleteBtn}
+                      onClick={() => {
+                        setCompletingId(s.id);
+                        api.completeSession(s.id).then(() => { loadDashboard(); loadRequests(); }).finally(() => setCompletingId(null));
+                      }}
+                      disabled={completingId === s.id}
+                    >
+                      {completingId === s.id ? '…' : '✓'}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -160,7 +188,31 @@ export default function TherapistMobileHome({ specialistId }: { specialistId: st
               <Link href="/dashboard/therapist/messages">
                 <HapticButton variant="ghost" pill>Message</HapticButton>
               </Link>
-              <HapticButton variant="primary" pill>Join Session</HapticButton>
+              {nextSession.meetingLink ? (
+                <a
+                  href={nextSession.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.joinNowBtn}
+                >
+                  🎥 Join Now
+                </a>
+              ) : (
+                <HapticButton variant="primary" pill>Join Session</HapticButton>
+              )}
+              {nextSession.status !== 'COMPLETED' && (
+                <button
+                  type="button"
+                  className={styles.markCompleteBtn}
+                  onClick={() => {
+                    setCompletingId(nextSession.id);
+                    api.completeSession(nextSession.id).then(() => { loadDashboard(); loadRequests(); }).finally(() => setCompletingId(null));
+                  }}
+                  disabled={completingId === nextSession.id}
+                >
+                  {completingId === nextSession.id ? '…' : '✓ Mark Complete'}
+                </button>
+              )}
             </div>
           </MobileCard>
         </section>

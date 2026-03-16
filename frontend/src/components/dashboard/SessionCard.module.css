@@ -38,9 +38,22 @@
 
 .footer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.timeGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date {
+  font-size: 11px;
+  color: var(--gold);
+  font-weight: 500;
 }
 
 .time {
@@ -54,20 +67,53 @@
   color: var(--muted);
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .joinBtn {
-  margin-left: auto;
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
   border-radius: 8px;
   border: 1px solid var(--gold);
   background: var(--gold2);
   color: var(--gold);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .joinBtn:hover {
   background: var(--gold);
-  color: var(--bg);
+  color: #0a1a0f;
+}
+
+.completeBtn {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--green);
+  background: rgba(74, 222, 128, 0.08);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.completeBtn:hover:not(:disabled) {
+  background: rgba(74, 222, 128, 0.18);
+}
+
+.completeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

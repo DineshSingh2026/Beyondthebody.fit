@@ -293,19 +293,38 @@ export default function AdminDashboardPage() {
                 <tr>
                   <th>User</th>
                   <th>Specialist</th>
+                  <th>Scheduled</th>
                   <th>Duration</th>
                   <th>Rating</th>
                   <th>Status</th>
+                  <th>Meeting</th>
                 </tr>
               </thead>
               <tbody>
-                {sessions.map((sess) => (
+                {sessions.map((sess: { id: string; userName: string; specialistName: string; durationMinutes: number; rating: number | null; status: string; scheduledDate?: string; scheduledTime?: string; meetingLink?: string | null }) => (
                   <tr key={sess.id}>
                     <td>{sess.userName}</td>
                     <td>{sess.specialistName}</td>
+                    <td style={{ whiteSpace: 'nowrap', fontSize: 12, color: 'var(--muted)' }}>
+                      {sess.scheduledDate && <>{sess.scheduledDate}<br />{sess.scheduledTime}</>}
+                    </td>
                     <td>{sess.durationMinutes} min</td>
                     <td className={styles.gold}>{sess.rating != null ? `★ ${sess.rating}` : '—'}</td>
                     <td><Badge variant={sess.status === 'COMPLETED' ? 'green' : 'gold'}>{sess.status.replace('_', ' ')}</Badge></td>
+                    <td>
+                      {sess.meetingLink ? (
+                        <a
+                          href={sess.meetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: 'var(--gold)', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          🎥 Join
+                        </a>
+                      ) : (
+                        <span style={{ color: 'var(--muted)', fontSize: 12 }}>—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

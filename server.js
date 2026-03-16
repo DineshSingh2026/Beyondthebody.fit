@@ -228,6 +228,13 @@ const hasDashboard = async () => {
   }
 };
 
+// ── Generate a unique Jitsi Meet link for a session ────────────────────────
+const generateMeetingLink = () => {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const rand = (n) => Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  return `https://meet.jit.si/BTB-${rand(4)}-${rand(4)}-${rand(4)}`;
+};
+
 // ── Healing Score: recalculate and persist for a user ──────────────────────
 // Formula (capped at 100):
 //   Sessions completed  × 10  (max 50)
@@ -289,6 +296,7 @@ const formatSession = (row, userRow, specialistRow) => {
     durationMinutes: row.duration_minutes,
     status: row.status,
     rating: row.rating ? Number(row.rating) : undefined,
+    meetingLink: row.meeting_link || null,
   };
 };
 
@@ -925,19 +933,28 @@ app.get('/api/admin/sessions', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query(
-      `SELECT s.id, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role, s.duration_minutes, s.rating, s.status
+      `SELECT s.id, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role,
+              s.duration_minutes, s.rating, s.status, s.scheduled_at, s.meeting_link
        FROM sessions s JOIN dashboard_users u ON u.id = s.user_id JOIN dashboard_users sp ON sp.id = s.specialist_id
        ORDER BY s.scheduled_at DESC LIMIT 50`
     );
-    res.json(r.rows.map(rr => ({
-      id: String(rr.id),
-      userName: rr.user_name,
-      specialistName: rr.specialist_name,
-      specialty: rr.specialist_role,
-      durationMinutes: rr.duration_minutes,
-      rating: rr.rating ? Number(rr.rating) : null,
-      status: rr.status,
-    })));
+    res.json(r.rows.map(rr => {
+      const dt = rr.scheduled_at ? new Date(rr.scheduled_at) : null;
+      const dateLabel = dt ? dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+      const timeLabel = dt ? dt.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' }) : '';
+      return {
+        id: String(rr.id),
+        userName: rr.user_name,
+        specialistName: rr.specialist_name,
+        specialty: rr.specialist_role,
+        durationMinutes: rr.duration_minutes,
+        rating: rr.rating ? Number(rr.rating) : null,
+        status: rr.status,
+        scheduledDate: dateLabel,
+        scheduledTime: timeLabel,
+        meetingLink: rr.meeting_link || null,
+      };
+    }));
   } catch (err) {
     console.error('GET /api/admin/sessions', err);
     res.json([]);
@@ -1275,7 +1292,8 @@ app.post('/api/admin/sessions', async (req, res) => {
     if (isNaN(at.getTime())) return res.status(400).json({ error: 'Invalid scheduledAt' });
     const dur = Math.min(120, Math.max(15, parseInt(durationMinutes, 10) || 50));
     const type = (sessionType || 'Session').toString().trim().slice(0, 100);
-    await db.query('INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status) VALUES ($1, $2, $3, $4, $5, \'UPCOMING\')', [userId, specialistId, type, at, dur]);
+    const adminMeetLink = generateMeetingLink();
+    await db.query('INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, meeting_link) VALUES ($1, $2, $3, $4, $5, \'UPCOMING\', $6)', [userId, specialistId, type, at, dur, adminMeetLink]);
     await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, specialistId]);
     const adminId = 1;
     const dateStr = at.toLocaleDateString();
@@ -1618,9 +1636,10 @@ app.patch('/api/specialists/:id/requests/:requestId', async (req, res) => {
       const scheduleAt = (proposedTime && proposedTime > now)
         ? proposedTime
         : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+      const meetLink = generateMeetingLink();
       await db.query(
-        `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status) VALUES ($1, $2, $3, $4, 50, 'UPCOMING')`,
-        [br.user_id, br.specialist_id, br.session_type || 'Consultation', scheduleAt]
+        `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, meeting_link) VALUES ($1, $2, $3, $4, 50, 'UPCOMING', $5)`,
+        [br.user_id, br.specialist_id, br.session_type || 'Consultation', scheduleAt, meetLink]
       );
       await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [br.user_id, br.specialist_id]);
       // Notify client their request was accepted
@@ -1665,15 +1684,53 @@ app.post('/api/specialists/:id/sessions', async (req, res) => {
     if (isNaN(at.getTime())) return res.status(400).json({ error: 'Invalid scheduledAt' });
     const dur = Math.min(120, Math.max(15, parseInt(durationMinutes, 10) || 50));
     const type = (sessionType || 'Consultation').toString().trim().slice(0, 100);
+    const spMeetLink = generateMeetingLink();
     await db.query(
-      `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status) VALUES ($1, $2, $3, $4, $5, 'UPCOMING')`,
-      [userId, req.params.id, type, at, dur]
+      `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, meeting_link) VALUES ($1, $2, $3, $4, $5, 'UPCOMING', $6)`,
+      [userId, req.params.id, type, at, dur, spMeetLink]
     );
     await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, req.params.id]);
     await db.query("INSERT INTO activity_log (type, message) VALUES ('session_scheduled', $1)", [`${spR.rows[0].name} scheduled session with ${uR.rows[0].name} — ${type}`]);
     res.status(201).json({ success: true, message: 'Session scheduled.' });
   } catch (err) {
     console.error('POST /api/specialists/:id/sessions', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Mark a session as completed (callable by user OR therapist)
+app.patch('/api/sessions/:id/complete', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const sessR = await db.query(
+      'SELECT id, user_id, specialist_id, type, scheduled_at FROM sessions WHERE id = $1',
+      [req.params.id]
+    );
+    if (sessR.rows.length === 0) return res.status(404).json({ error: 'Session not found' });
+    const sess = sessR.rows[0];
+    // Only the user or the therapist of this session can mark it complete
+    const callerId = String(payload.id);
+    if (callerId !== String(sess.user_id) && callerId !== String(sess.specialist_id)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    await db.query(
+      "UPDATE sessions SET status = 'COMPLETED', completed_at = NOW() WHERE id = $1",
+      [req.params.id]
+    );
+    // Recalculate healing score for the user
+    recalculateHealingScore(sess.user_id).catch(() => {});
+    // Log activity
+    const uR  = await db.query('SELECT name FROM dashboard_users WHERE id = $1', [sess.user_id]);
+    const spR = await db.query('SELECT name FROM dashboard_users WHERE id = $1', [sess.specialist_id]);
+    await db.query(
+      "INSERT INTO activity_log (type, message) VALUES ('session_completed', $1)",
+      [`Session completed: ${uR.rows[0]?.name || 'User'} with ${spR.rows[0]?.name || 'Specialist'}`]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PATCH /api/sessions/:id/complete', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -2538,6 +2595,17 @@ async function autoMigrate() {
     } catch (e) {
       if (e.code !== '42701') throw e;
     }
+    // meeting_link on sessions
+    try {
+      await db.query('ALTER TABLE sessions ADD COLUMN meeting_link VARCHAR(500)');
+    } catch (e) {
+      if (e.code !== '42701') throw e;
+    }
+    // Backfill meeting links for existing sessions that don't have one
+    await db.query(
+      `UPDATE sessions SET meeting_link = 'https://meet.jit.si/BTB-' || substr(md5(id::text), 1, 4) || '-' || substr(md5(id::text), 5, 4) || '-' || substr(md5(id::text), 9, 4)
+       WHERE meeting_link IS NULL`
+    ).catch(() => {});
 
     // Phase 1 feature columns on dashboard_users
     for (const col of [
