@@ -672,6 +672,22 @@ app.post('/api/users/:userId/booking-request', async (req, res) => {
     if (userR.rows.length === 0) return res.status(400).json({ error: 'Not a user account' });
     const spR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1 AND role IN (\'THERAPIST\',\'LIFE_COACH\',\'HYPNOTHERAPIST\',\'MUSIC_TUTOR\')', [specialistId]);
     if (spR.rows.length === 0) return res.status(404).json({ error: 'Specialist not found' });
+    // Enforce max 2 consultations per specialist
+    const existingR = await db.query(
+      "SELECT COUNT(*) as c FROM booking_requests WHERE user_id = $1 AND specialist_id = $2 AND status IN ('ACCEPTED','COMPLETED')",
+      [req.params.userId, specialistId]
+    );
+    if (parseInt(existingR.rows[0]?.c || '0', 10) >= 2) {
+      return res.status(400).json({ error: 'You have already completed 2 consultations with this specialist. Use "Get Assigned to Therapist" to continue.' });
+    }
+    // Prevent duplicate pending requests
+    const pendingR = await db.query(
+      "SELECT COUNT(*) as c FROM booking_requests WHERE user_id = $1 AND specialist_id = $2 AND status = 'PENDING'",
+      [req.params.userId, specialistId]
+    );
+    if (parseInt(pendingR.rows[0]?.c || '0', 10) > 0) {
+      return res.status(400).json({ error: 'You already have a pending consultation request with this specialist.' });
+    }
     const proposed = new Date(proposedAt);
     if (isNaN(proposed.getTime())) return res.status(400).json({ error: 'Invalid proposedAt date.' });
     const insertCols = 'specialist_id, user_id, proposed_at, session_type, status';

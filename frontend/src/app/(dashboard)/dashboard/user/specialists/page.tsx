@@ -70,8 +70,12 @@ export default function UserSpecialistsPage() {
           api.getAssignmentRequests(me.id).catch(() => [] as { specialistId: string; status: string }[]),
         ]);
         setSpecialists(list);
-        // Track any existing consultation request (pending)
-        const pendingReqIds = new Set((requests || []).map((r: { specialistId: string }) => r.specialistId));
+        // Only track PENDING booking requests — accepted/completed ones free the slot for re-booking
+        const pendingReqIds = new Set(
+          (requests || [])
+            .filter((r: { status: string }) => r.status === 'PENDING')
+            .map((r: { specialistId: string }) => r.specialistId)
+        );
         setRequestedIds(pendingReqIds);
         // Count accepted/completed consultations per specialist
         const counts: Record<string, number> = {};
@@ -239,7 +243,7 @@ export default function UserSpecialistsPage() {
                   onClick={() => openRequestModal(sp)}
                   disabled={!userId}
                 >
-                  Request for consultation
+                  {(consultCounts[sp.id] || 0) === 1 ? 'Book 2nd Consultation' : 'Request for consultation'}
                 </button>
               )}
             </div>
