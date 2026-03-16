@@ -6,7 +6,7 @@ export default function Loader() {
   const [hidden, setHidden] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dots, setDots] = useState('');
-  const DURATION = 1800;
+  const DURATION = 650;
 
   useEffect(() => {
     const start = performance.now();

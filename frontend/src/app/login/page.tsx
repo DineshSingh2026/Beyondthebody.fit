@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { login, signup, setToken } from '@/lib/api';
 import PasswordInput from '@/components/ui/PasswordInput';
 import styles from './page.module.css';
@@ -18,7 +18,6 @@ function dashboardPathForRole(role: string): string {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const showSignup = searchParams.get('signup') === '1';
 
@@ -42,7 +41,7 @@ function LoginForm() {
     try {
       const { user, token } = await login(email.trim(), password);
       setToken(token);
-      router.push(dashboardPathForRole(user.role));
+      window.location.href = dashboardPathForRole(user.role);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed. Please try again.';
       setError(msg === 'Failed to fetch' ? 'Cannot reach the server. Check that NEXT_PUBLIC_API_URL points to your backend (e.g. https://api.beyondthebody.fit) and the API service is running, then redeploy the frontend.' : msg);
@@ -67,7 +66,7 @@ function LoginForm() {
       const name = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ') || 'User';
       const { user, token } = await signup(name, email.trim(), signupPassword, mobile.trim() || undefined, country || undefined);
       setToken(token);
-      router.push('/dashboard/user');
+      window.location.href = '/dashboard/user';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign up failed. Please try again.');
     } finally {

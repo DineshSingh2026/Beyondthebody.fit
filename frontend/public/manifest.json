@@ -2,7 +2,7 @@
   "name": "Beyond The Body",
   "short_name": "BTB",
   "description": "Your safe space to heal beyond the body",
-  "start_url": "/dashboard/user",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#060e09",
