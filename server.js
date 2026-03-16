@@ -270,7 +270,8 @@ const generateMeetingLink = () => {
 const recalculateHealingScore = async (userId) => {
   if (!db.connected) return;
   try {
-    const [completedR, upcomingR, moodR, tipsR, assignR, bookingR] = await Promise.all([
+    const safeCount = (p) => { const r = p.status === 'fulfilled' ? p.value : null; return parseInt(r?.rows?.[0]?.c || 0, 10); };
+    const results = await Promise.allSettled([
       db.query("SELECT COUNT(*) AS c FROM sessions WHERE user_id = $1 AND status = 'COMPLETED'", [userId]),
       db.query("SELECT COUNT(*) AS c FROM sessions WHERE user_id = $1 AND status IN ('UPCOMING','IN_PROGRESS')", [userId]),
       db.query('SELECT COUNT(*) AS c FROM mood_log WHERE user_id = $1', [userId]),
@@ -278,7 +279,7 @@ const recalculateHealingScore = async (userId) => {
       db.query('SELECT COUNT(*) AS c FROM user_specialists WHERE user_id = $1', [userId]),
       db.query("SELECT COUNT(*) AS c FROM booking_requests WHERE user_id = $1", [userId]),
     ]);
-    // Streak: consecutive days ending today with mood logs
+
     let streak = 0;
     try {
       const streakData = await db.query(
@@ -295,28 +296,28 @@ const recalculateHealingScore = async (userId) => {
       streak = parseInt(streakData.rows[0]?.streak || 0, 10);
     } catch { streak = 0; }
 
-    const completed  = parseInt(completedR.rows[0]?.c  || 0, 10);
-    const upcoming   = parseInt(upcomingR.rows[0]?.c   || 0, 10);
-    const moods      = parseInt(moodR.rows[0]?.c       || 0, 10);
-    const tips       = parseInt(tipsR.rows[0]?.c       || 0, 10);
-    const assigned   = parseInt(assignR.rows[0]?.c     || 0, 10);
-    const bookings   = parseInt(bookingR.rows[0]?.c    || 0, 10);
+    const completed = safeCount(results[0]);
+    const upcoming  = safeCount(results[1]);
+    const moods     = safeCount(results[2]);
+    const tips      = safeCount(results[3]);
+    const assigned  = safeCount(results[4]);
+    const bookings  = safeCount(results[5]);
 
-    // Scoring — every user starts with at least 5 for signing up
     const base        = 5;
-    const sessComp    = Math.min(50, completed * 10);   // 10 pts each completed session
-    const sessUp      = Math.min(15, upcoming  * 5);    // 5 pts each upcoming session (booked)
-    const moodPts     = Math.min(20, moods     * 2);    // 2 pts each mood log
-    const tipsPts     = Math.min(10, tips);              // 1 pt each brain tip practiced
-    const streakPts   = Math.min(10, streak);            // 1 pt per day streak
-    const assignedPts = Math.min(10, assigned  * 5);    // 5 pts per assigned specialist
-    const bookingPts  = Math.min(10, bookings  * 2);    // 2 pts per consultation request sent
+    const sessComp    = Math.min(50, completed * 10);
+    const sessUp      = Math.min(15, upcoming  * 5);
+    const moodPts     = Math.min(20, moods     * 2);
+    const tipsPts     = Math.min(10, tips);
+    const streakPts   = Math.min(10, streak);
+    const assignedPts = Math.min(10, assigned  * 5);
+    const bookingPts  = Math.min(10, bookings  * 2);
 
     const score = Math.min(100, base + sessComp + sessUp + moodPts + tipsPts + streakPts + assignedPts + bookingPts);
-    await db.query('UPDATE dashboard_users SET healing_score = $1 WHERE id = $2', [score, userId]);
+    await db.query('UPDATE dashboard_users SET healing_score = $1 WHERE id = $2', [score, userId]).catch(() => {});
     return score;
   } catch (err) {
     console.error('recalculateHealingScore error:', err.message);
+    return 5;
   }
 };
 
@@ -445,66 +446,80 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
     const user = userR.rows[0];
     if (user.role !== 'USER') return res.status(400).json({ error: 'Not a user account' });
 
-    // Recalculate healing score fresh on every dashboard load
+    // Recalculate healing score — always returns a number (minimum 5)
     const freshScore = await recalculateHealingScore(userId);
-    if (freshScore !== undefined) user.healing_score = freshScore;
+    const healingValue = freshScore ?? user.healing_score ?? 0;
 
-    const statsR = await db.query(
-      `SELECT COUNT(*) FILTER (WHERE status = 'COMPLETED') as sessions_completed FROM sessions WHERE user_id = $1`,
-      [userId]
-    );
-    const moodR = await db.query(
-      'SELECT COALESCE(AVG(value), 0) as avg FROM mood_log WHERE user_id = $1 AND date >= CURRENT_DATE - 14',
-      [userId]
-    );
-    const postsR = await db.query('SELECT COUNT(*) as c FROM community_posts WHERE user_id = $1', [userId]);
-    const sessionsCompleted = parseInt(statsR.rows[0]?.sessions_completed || 0, 10);
-    const moodAvg = parseFloat(moodR.rows[0]?.avg || 0).toFixed(1);
-    const communityPosts = parseInt(postsR.rows[0]?.c || 0, 10);
-    const streak = 7;
-
-    const affR = await db.query('SELECT text FROM affirmations ORDER BY RANDOM() LIMIT 1');
-    const tipR = await db.query('SELECT title, description, category, icon FROM brain_tips ORDER BY RANDOM() LIMIT 1');
-    const dailyTipR = await db.query('SELECT title, description, category FROM brain_tips ORDER BY RANDOM() LIMIT 1');
-
-    // Fix any past UPCOMING sessions for this user by rescheduling them to 7 days from now
+    // Self-heal: reschedule past UPCOMING sessions and backfill missing meeting links
     await db.query(
       `UPDATE sessions SET scheduled_at = NOW() + INTERVAL '7 days'
        WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()`,
       [userId]
     ).catch(() => {});
+    await db.query(
+      `UPDATE sessions SET meeting_link = 'https://meet.jit.si/BTB-' ||
+         lower(substr(md5(random()::text || id::text), 1, 4)) || '-' ||
+         lower(substr(md5(random()::text || id::text), 5, 4)) || '-' ||
+         lower(substr(md5(random()::text || id::text), 9, 4))
+       WHERE user_id = $1 AND (meeting_link IS NULL OR meeting_link = '')`,
+      [userId]
+    ).catch(() => {});
 
-    const upcomingR = await db.query(
-      `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role
-       FROM sessions s
-       JOIN dashboard_users u ON u.id = s.user_id
-       JOIN dashboard_users sp ON sp.id = s.specialist_id
-       WHERE s.user_id = $1 AND s.scheduled_at >= NOW() - INTERVAL '48 hours' AND s.status IN ('UPCOMING', 'IN_PROGRESS')
-       ORDER BY s.scheduled_at ASC LIMIT 10`,
-      [userId]
-    );
-    const specialistsR = await db.query(
-      `SELECT sp.id, sp.name, sp.role,
-        (SELECT COUNT(*) FROM sessions WHERE specialist_id = sp.id AND status = 'COMPLETED') as session_count,
-        (SELECT ROUND(AVG(rating)::numeric, 1) FROM sessions WHERE specialist_id = sp.id AND rating IS NOT NULL) as avg_rating
-       FROM dashboard_users sp
-       JOIN user_specialists us ON us.specialist_id = sp.id
-       WHERE us.user_id = $1`,
-      [userId]
-    );
-    const moodLogR = await db.query(
-      'SELECT date::text, value, note FROM mood_log WHERE user_id = $1 ORDER BY date DESC LIMIT 14',
-      [userId]
-    );
-    const milestonesR = await db.query(
-      `SELECT m.id, m.title, m.description, m.icon, um.unlocked_at as date
-       FROM user_milestones um JOIN milestones m ON m.id = um.milestone_id WHERE um.user_id = $1 ORDER BY um.unlocked_at DESC`,
-      [userId]
-    );
-    const feedR = await db.query(
-      `SELECT p.id, u.name as author_name, p.content, p.likes, p.comments, p.created_at
-       FROM community_posts p JOIN dashboard_users u ON u.id = p.user_id ORDER BY p.created_at DESC LIMIT 10`
-    );
+    // Run all remaining queries in parallel with resilient handling
+    const settled = await Promise.allSettled([
+      db.query(`SELECT COUNT(*) FILTER (WHERE status = 'COMPLETED') as sessions_completed FROM sessions WHERE user_id = $1`, [userId]),
+      db.query('SELECT COALESCE(AVG(value), 0) as avg FROM mood_log WHERE user_id = $1 AND date >= CURRENT_DATE - 14', [userId]),
+      db.query('SELECT COUNT(*) as c FROM community_posts WHERE user_id = $1', [userId]),
+      db.query('SELECT text FROM affirmations ORDER BY RANDOM() LIMIT 1'),
+      db.query('SELECT title, description, category, icon FROM brain_tips ORDER BY RANDOM() LIMIT 1'),
+      db.query('SELECT title, description, category FROM brain_tips ORDER BY RANDOM() LIMIT 1'),
+      db.query(
+        `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role
+         FROM sessions s
+         JOIN dashboard_users u ON u.id = s.user_id
+         JOIN dashboard_users sp ON sp.id = s.specialist_id
+         WHERE s.user_id = $1 AND s.scheduled_at >= NOW() - INTERVAL '48 hours' AND s.status IN ('UPCOMING', 'IN_PROGRESS')
+         ORDER BY s.scheduled_at ASC LIMIT 10`,
+        [userId]
+      ),
+      db.query(
+        `SELECT sp.id, sp.name, sp.role,
+          (SELECT COUNT(*) FROM sessions WHERE specialist_id = sp.id AND status = 'COMPLETED') as session_count,
+          (SELECT ROUND(AVG(rating)::numeric, 1) FROM sessions WHERE specialist_id = sp.id AND rating IS NOT NULL) as avg_rating
+         FROM dashboard_users sp
+         JOIN user_specialists us ON us.specialist_id = sp.id
+         WHERE us.user_id = $1`,
+        [userId]
+      ),
+      db.query('SELECT date::text, value, note FROM mood_log WHERE user_id = $1 ORDER BY date DESC LIMIT 14', [userId]),
+      db.query(
+        `SELECT m.id, m.title, m.description, m.icon, um.unlocked_at as date
+         FROM user_milestones um JOIN milestones m ON m.id = um.milestone_id WHERE um.user_id = $1 ORDER BY um.unlocked_at DESC`,
+        [userId]
+      ),
+      db.query(
+        `SELECT p.id, u.name as author_name, p.content, p.likes, p.comments, p.created_at
+         FROM community_posts p JOIN dashboard_users u ON u.id = p.user_id ORDER BY p.created_at DESC LIMIT 10`
+      ),
+    ]);
+
+    const val = (i) => settled[i].status === 'fulfilled' ? settled[i].value : { rows: [] };
+    const statsR     = val(0);
+    const moodR      = val(1);
+    const postsR     = val(2);
+    const affR       = val(3);
+    const tipR       = val(4);
+    const dailyTipR  = val(5);
+    const upcomingR  = val(6);
+    const specialistsR = val(7);
+    const moodLogR   = val(8);
+    const milestonesR = val(9);
+    const feedR      = val(10);
+
+    const sessionsCompleted = parseInt(statsR.rows[0]?.sessions_completed || 0, 10);
+    const moodAvg = parseFloat(moodR.rows[0]?.avg || 0).toFixed(1);
+    const communityPosts = parseInt(postsR.rows[0]?.c || 0, 10);
+    const streak = 7;
 
     const upcomingSessions = upcomingR.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role }));
     const specialists = specialistsR.rows.map(r => ({
@@ -527,7 +542,7 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
 
     res.json({
       user: { id: String(user.id), name: user.name, email: user.email, role: user.role },
-      healingScore: { value: user.healing_score || 0, label: 'Healing Journey' },
+      healingScore: { value: healingValue, label: 'Healing Journey' },
       stats: { sessionsCompleted, streak: Number(streak), moodAverage: Number(moodAvg), communityPosts },
       affirmation: affR.rows[0]?.text || 'I am worthy of healing and growth.',
       brainTip: tipR.rows[0] ? { title: tipR.rows[0].title, description: tipR.rows[0].description, icon: tipR.rows[0].icon } : { title: 'Box Breathing', description: 'Inhale 4s, hold 4s, exhale 4s.', icon: '🫁' },
@@ -547,17 +562,20 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
 app.get('/api/users/:id/sessions/upcoming', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
-    // Auto-fix past UPCOMING sessions
+    const uid = req.params.id;
+    await db.query(`UPDATE sessions SET scheduled_at = NOW() + INTERVAL '7 days' WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()`, [uid]).catch(() => {});
     await db.query(
-      `UPDATE sessions SET scheduled_at = NOW() + INTERVAL '7 days'
-       WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()`,
-      [req.params.id]
+      `UPDATE sessions SET meeting_link = 'https://meet.jit.si/BTB-' ||
+         lower(substr(md5(random()::text || id::text), 1, 4)) || '-' ||
+         lower(substr(md5(random()::text || id::text), 5, 4)) || '-' ||
+         lower(substr(md5(random()::text || id::text), 9, 4))
+       WHERE user_id = $1 AND (meeting_link IS NULL OR meeting_link = '')`, [uid]
     ).catch(() => {});
     const r = await db.query(
       `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role
        FROM sessions s JOIN dashboard_users u ON u.id = s.user_id JOIN dashboard_users sp ON sp.id = s.specialist_id
        WHERE s.user_id = $1 AND s.scheduled_at >= NOW() - INTERVAL '48 hours' AND s.status IN ('UPCOMING', 'IN_PROGRESS') ORDER BY s.scheduled_at ASC`,
-      [req.params.id]
+      [uid]
     );
     res.json(r.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role })));
   } catch (err) {
