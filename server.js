@@ -704,7 +704,7 @@ app.post('/api/users/:id/brain-tip-practiced', async (req, res) => {
       const u = await db.query(
         'SELECT brain_tips_practiced_dates FROM dashboard_users WHERE id = $1', [req.params.id]
       );
-      const dates: string[] = u.rows[0]?.brain_tips_practiced_dates || [];
+      const dates = u.rows[0]?.brain_tips_practiced_dates || [];
       if (dates.includes(today)) {
         const score = await recalculateHealingScore(req.params.id);
         return res.json({ success: true, alreadyPracticed: true, healingScore: score });
@@ -1969,17 +1969,16 @@ app.get('/api/wellness-score', async (req, res) => {
   try {
     const userId = payload.id;
     const [moodData, sessionData, tipData] = await Promise.all([
+      // Average mood over last 30 days
       db.query(
-        `SELECT AVG(value) as avg_mood FROM mood_log
+        `SELECT COALESCE(AVG(value), 0) AS avg_mood FROM mood_log
          WHERE user_id = $1 AND date >= CURRENT_DATE - INTERVAL '30 days'`,
         [userId]
       ),
+      // ALL-TIME completed sessions (not limited to 30 days — avoids 0 for new users with upcoming sessions)
       db.query(
-        `SELECT
-           COUNT(*) FILTER (WHERE status = 'COMPLETED') AS completed,
-           COUNT(*) AS total
-         FROM sessions
-         WHERE user_id = $1 AND scheduled_at >= NOW() - INTERVAL '30 days'`,
+        `SELECT COUNT(*) FILTER (WHERE status = 'COMPLETED') AS completed
+         FROM sessions WHERE user_id = $1`,
         [userId]
       ),
       db.query(
@@ -2001,16 +2000,16 @@ app.get('/api/wellness-score', async (req, res) => {
       [userId]
     );
 
-    const avgMood    = parseFloat(moodData.rows[0]?.avg_mood || '0');
-    const completed  = parseInt(sessionData.rows[0]?.completed || '0');
-    const total      = parseInt(sessionData.rows[0]?.total || '1');
-    const streak     = parseInt(streakData.rows[0]?.streak || '0');
-    const tips       = parseInt(tipData.rows[0]?.tips || '0');
+    const avgMood   = parseFloat(moodData.rows[0]?.avg_mood || '0');
+    const completed = parseInt(sessionData.rows[0]?.completed || '0');
+    const streak    = parseInt(streakData.rows[0]?.streak || '0');
+    const tips      = parseInt(tipData.rows[0]?.tips || '0');
 
+    // Each completed session = 10 pts (max 5 sessions = 100%)
     const moodComp    = Math.min(100, Math.round((avgMood / 10) * 100));
-    const sessionComp = Math.min(100, Math.round((completed / Math.max(total, 1)) * 100));
+    const sessionComp = Math.min(100, completed * 20);
     const streakComp  = Math.min(100, Math.round((Math.min(streak, 30) / 30) * 100));
-    const tipsComp    = Math.min(100, Math.round((Math.min(tips, 30) / 30) * 100));
+    const tipsComp    = Math.min(100, tips * 10);
 
     const score = Math.round(
       moodComp * 0.30 + sessionComp * 0.30 + streakComp * 0.20 + tipsComp * 0.20

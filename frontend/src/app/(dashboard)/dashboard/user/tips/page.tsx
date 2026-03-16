@@ -24,12 +24,31 @@ function categoryColor(cat: string) {
   return categoryColors[cat] ?? '#9ca89e';
 }
 
+const TODAY_KEY = `btb_tips_practiced_${new Date().toISOString().slice(0, 10)}`;
+
+function loadPracticed(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(TODAY_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+
+function savePracticed(set: Set<string>) {
+  try { localStorage.setItem(TODAY_KEY, JSON.stringify([...set])); } catch { /* ignore */ }
+}
+
 export default function TipsPage() {
   const [tips, setTips] = useState<BrainTip[]>([]);
   const [loading, setLoading] = useState(true);
   const [practiced, setPracticed] = useState<Set<string>>(new Set());
   const [userId, setUserId] = useState<string | null>(null);
   const [scoreFlash, setScoreFlash] = useState<number | null>(null);
+
+  // Load persisted practiced state from localStorage on mount
+  useEffect(() => {
+    setPracticed(loadPracticed());
+  }, []);
 
   useEffect(() => {
     api.getMe().then((me) => setUserId(me.id)).catch(() => {});
@@ -50,10 +69,11 @@ export default function TipsPage() {
 
   const togglePracticed = async (title: string) => {
     const alreadyDone = practiced.has(title);
-    // Optimistic UI update
+    // Optimistic UI + persist to localStorage
     setPracticed((prev) => {
       const next = new Set(prev);
       if (alreadyDone) next.delete(title); else next.add(title);
+      savePracticed(next);
       return next;
     });
     // If marking as practiced (not un-marking), call backend to increment & recalculate score
@@ -65,7 +85,7 @@ export default function TipsPage() {
           setTimeout(() => setScoreFlash(null), 3000);
         }
       } catch {
-        // fail silently — UI already updated
+        // fail silently — UI already updated optimistically
       }
     }
   };
