@@ -9,7 +9,7 @@ const API_BASE = typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_API_UR
 
 const AUTH_TOKEN_KEY = 'btb_token';
 const AUTH_COOKIE_NAME = 'btb_token';
-const AUTH_COOKIE_MAX_AGE_DAYS = 1;
+const AUTH_COOKIE_MAX_AGE_DAYS = 30;
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
