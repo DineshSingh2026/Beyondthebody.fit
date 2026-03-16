@@ -13,6 +13,7 @@ const roleTitles: Record<string, string> = {
   '/dashboard/user/specialists': 'My Specialists',
   '/dashboard/user/mood': 'Mood',
   '/dashboard/user/community': 'Community',
+  '/dashboard/user/tips': 'Brain Tips',
   '/dashboard/user/profile': 'Profile',
   '/dashboard/user/messages': 'Messages',
   '/dashboard/admin': 'Command Centre',

@@ -116,6 +116,10 @@ export const api = {
     return fetchWithAuth<AuthUser>(`${API_BASE}/api/auth/me`);
   },
 
+  async getBrainTips(): Promise<{ title: string; description: string; category: string; icon: string }[]> {
+    return fetchBrainTips();
+  },
+
   async getUserDashboard(userId: string): Promise<import('./dashboard-types').UserDashboardData> {
     return fetchWithAuth(`${API_BASE}/api/users/${userId}/dashboard`);
   },

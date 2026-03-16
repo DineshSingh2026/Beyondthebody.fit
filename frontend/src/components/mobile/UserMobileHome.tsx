@@ -108,10 +108,10 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
             <span className={styles.quickIcon}>💚</span>
             Mood Log
           </Link>
-          <button type="button" className={styles.quickBtn}>
+          <Link href="/dashboard/user/tips" className={styles.quickBtn}>
             <span className={styles.quickIcon}>✨</span>
             Tips
-          </button>
+          </Link>
         </div>
       </section>
 

@@ -17,7 +17,7 @@ const userNav: NavSection[] = [
   { title: 'My Sanctuary', items: [{ label: 'Dashboard', href: '/dashboard/user' }] },
   { title: 'Specialists', items: [{ label: 'Find a Specialist', href: '/dashboard/user/specialists' }, { label: 'My Specialists', href: '/dashboard/user' }, { label: 'Messages', href: '/dashboard/user/messages' }] },
   { title: 'Sessions', items: [{ label: 'Upcoming & Past', href: '/dashboard/user/sessions' }] },
-  { title: 'Wellness', items: [{ label: 'Mood Tracker', href: '/dashboard/user/mood' }, { label: 'Profile', href: '/dashboard/user/profile' }] },
+  { title: 'Wellness', items: [{ label: 'Mood Tracker', href: '/dashboard/user/mood' }, { label: 'Brain Tips', href: '/dashboard/user/tips' }, { label: 'Profile', href: '/dashboard/user/profile' }] },
   { title: 'Community', items: [{ label: 'Feed', href: '/dashboard/user/community' }] },
 ];
 
