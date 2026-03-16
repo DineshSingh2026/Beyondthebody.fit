@@ -98,20 +98,30 @@
 }
 
 .logout {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  padding: 10px 12px;
-  border: none;
+  padding: 11px 14px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
   border-radius: 8px;
   font-size: 13px;
-  color: var(--muted);
-  background: transparent;
+  font-weight: 500;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.07);
   cursor: pointer;
   text-align: left;
   transition: var(--transition);
+  font-family: inherit;
 }
 
 .logout:hover {
-  color: var(--text);
-  background: var(--bg3);
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #fca5a5;
+}
+
+.logoutIcon {
+  font-size: 15px;
+  flex-shrink: 0;
 }

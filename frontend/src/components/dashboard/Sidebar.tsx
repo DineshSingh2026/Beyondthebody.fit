@@ -90,6 +90,7 @@ export default function Sidebar({ role, healingScore = 0 }: SidebarProps) {
       </nav>
       <div className={styles.footer}>
         <button type="button" className={styles.logout} onClick={handleLogout}>
+          <span className={styles.logoutIcon}>⏻</span>
           Log out
         </button>
       </div>
