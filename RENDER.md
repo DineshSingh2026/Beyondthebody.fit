@@ -36,6 +36,8 @@ The repo uses a **two-service** setup: **Backend (NestJS)** and **Frontend (Next
    - **Value:** `https://beyond-the-body-api.onrender.com`
 3. Save, then **Manual Deploy** → **Deploy latest commit** (so the build uses the new value).
 
+**If login shows "Failed to fetch":** The frontend cannot reach the backend. Set **NEXT_PUBLIC_API_URL** to your backend URL (e.g. `https://api.beyondthebody.fit` or `https://beyond-the-body-api.onrender.com`), then trigger a **Manual Deploy** on the frontend (required—this env is baked in at build time).
+
 ### Step 3: Initialize the database (once)
 
 1. Open the **Backend** service (`beyond-the-body-api`) → **Shell**.

@@ -62,8 +62,8 @@ services:
     startCommand: npm run start
 
     envVars:
-      # REQUIRED: paste the API service public URL here after first deploy,
-      # e.g. https://beyond-the-body-api.onrender.com
-      # Then click "Manual Deploy" on this service.
+      # REQUIRED for login/dashboard: backend API URL (no trailing slash).
+      # Without this, login shows "Failed to fetch". Set then redeploy frontend.
+      # e.g. https://api.beyondthebody.fit or https://beyond-the-body-api.onrender.com
       - key: NEXT_PUBLIC_API_URL
         sync: false

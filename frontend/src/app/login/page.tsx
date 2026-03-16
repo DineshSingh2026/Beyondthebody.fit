@@ -44,7 +44,8 @@ function LoginForm() {
       setToken(token);
       router.push(dashboardPathForRole(user.role));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      const msg = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      setError(msg === 'Failed to fetch' ? 'Cannot reach the server. Check that NEXT_PUBLIC_API_URL points to your backend (e.g. https://api.beyondthebody.fit) and the API service is running, then redeploy the frontend.' : msg);
     } finally {
       setLoading(false);
     }
