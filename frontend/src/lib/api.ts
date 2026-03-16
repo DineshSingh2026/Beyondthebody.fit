@@ -162,7 +162,7 @@ export const api = {
   },
 
   async getSpecialists(userId: string) {
-    return fetchWithAuth(`${API_BASE}/api/users/${userId}/specialists`);
+    return fetchWithAuth<{ id: string; name: string; role: string }[]>(`${API_BASE}/api/users/${userId}/specialists`);
   },
 
   async getConversationPartners(userId: string) {
