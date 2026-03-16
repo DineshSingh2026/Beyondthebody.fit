@@ -228,6 +228,47 @@ const hasDashboard = async () => {
   }
 };
 
+// ── Healing Score: recalculate and persist for a user ──────────────────────
+// Formula (capped at 100):
+//   Sessions completed  × 10  (max 50)
+//   Mood logs total     × 2   (max 20)
+//   Brain tips practiced× 1   (max 10)
+//   Streak (consecutive daily mood logs) × 1 (max 10)
+//   Assigned therapists × 5   (max 10)
+const recalculateHealingScore = async (userId) => {
+  if (!db.connected) return;
+  try {
+    const [sessR, moodR, tipsR, assignR] = await Promise.all([
+      db.query("SELECT COUNT(*) AS c FROM sessions WHERE user_id = $1 AND status = 'COMPLETED'", [userId]),
+      db.query('SELECT COUNT(*) AS c FROM mood_log WHERE user_id = $1', [userId]),
+      db.query('SELECT COALESCE(brain_tips_practiced, 0) AS c FROM dashboard_users WHERE id = $1', [userId]),
+      db.query('SELECT COUNT(*) AS c FROM user_specialists WHERE user_id = $1', [userId]),
+    ]);
+    // Streak: consecutive days ending today
+    const streakData = await db.query(
+      `WITH days AS (
+         SELECT date FROM mood_log WHERE user_id = $1 ORDER BY date DESC
+       ),
+       numbered AS (
+         SELECT date, ROW_NUMBER() OVER (ORDER BY date DESC) AS rn FROM days
+       )
+       SELECT COUNT(*)::int AS streak FROM numbered
+       WHERE date = CURRENT_DATE - (rn - 1) * INTERVAL '1 day'`,
+      [userId]
+    );
+    const sessions   = Math.min(50, parseInt(sessR.rows[0]?.c  || 0, 10) * 10);
+    const moods      = Math.min(20, parseInt(moodR.rows[0]?.c  || 0, 10) * 2);
+    const tips       = Math.min(10, parseInt(tipsR.rows[0]?.c  || 0, 10));
+    const streak     = Math.min(10, parseInt(streakData.rows[0]?.streak || 0, 10));
+    const assigned   = Math.min(10, parseInt(assignR.rows[0]?.c || 0, 10) * 5);
+    const score      = Math.min(100, sessions + moods + tips + streak + assigned);
+    await db.query('UPDATE dashboard_users SET healing_score = $1 WHERE id = $2', [score, userId]);
+    return score;
+  } catch (err) {
+    console.error('recalculateHealingScore error:', err.message);
+  }
+};
+
 const formatSession = (row, userRow, specialistRow) => {
   const dt = row.scheduled_at ? new Date(row.scheduled_at) : null;
   const now = new Date();
@@ -351,6 +392,10 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
     if (userR.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     const user = userR.rows[0];
     if (user.role !== 'USER') return res.status(400).json({ error: 'Not a user account' });
+
+    // Recalculate healing score fresh on every dashboard load
+    const freshScore = await recalculateHealingScore(userId);
+    if (freshScore !== undefined) user.healing_score = freshScore;
 
     const statsR = await db.query(
       `SELECT COUNT(*) FILTER (WHERE status = 'COMPLETED') as sessions_completed FROM sessions WHERE user_id = $1`,
@@ -642,6 +687,49 @@ app.get('/api/users/:id/mood-log', async (req, res) => {
   }
 });
 
+// Mark a brain tip as practiced — increments count and recalculates healing score
+app.post('/api/users/:id/brain-tip-practiced', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (String(payload.id) !== String(req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    // Check column exists (safe for older DBs)
+    const colCheck = await db.query(
+      "SELECT 1 FROM information_schema.columns WHERE table_name = 'dashboard_users' AND column_name = 'brain_tips_practiced_dates'"
+    );
+    if (colCheck.rows.length > 0) {
+      // Prevent double-counting the same day
+      const u = await db.query(
+        'SELECT brain_tips_practiced_dates FROM dashboard_users WHERE id = $1', [req.params.id]
+      );
+      const dates: string[] = u.rows[0]?.brain_tips_practiced_dates || [];
+      if (dates.includes(today)) {
+        const score = await recalculateHealingScore(req.params.id);
+        return res.json({ success: true, alreadyPracticed: true, healingScore: score });
+      }
+      await db.query(
+        `UPDATE dashboard_users
+         SET brain_tips_practiced = COALESCE(brain_tips_practiced, 0) + 1,
+             brain_tips_practiced_dates = COALESCE(brain_tips_practiced_dates, '[]'::jsonb) || $2::jsonb
+         WHERE id = $1`,
+        [req.params.id, JSON.stringify([today])]
+      );
+    } else {
+      await db.query(
+        'UPDATE dashboard_users SET brain_tips_practiced = COALESCE(brain_tips_practiced, 0) + 1 WHERE id = $1',
+        [req.params.id]
+      );
+    }
+    const score = await recalculateHealingScore(req.params.id);
+    res.json({ success: true, healingScore: score });
+  } catch (err) {
+    console.error('POST /api/users/:id/brain-tip-practiced', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/users/:id/mood-log', async (req, res) => {
   const { date, value, note } = req.body;
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
@@ -651,6 +739,8 @@ app.post('/api/users/:id/mood-log', async (req, res) => {
       'INSERT INTO mood_log (user_id, date, value, note) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, date) DO UPDATE SET value = $3, note = $4',
       [req.params.id, date, Math.min(10, Math.max(1, parseInt(value, 10) || 5)), note || null]
     );
+    // Update healing score after mood log
+    recalculateHealingScore(req.params.id).catch(() => {});
     res.json({ success: true });
   } catch (err) {
     console.error('POST /api/users/:id/mood-log', err);
@@ -1521,6 +1611,8 @@ app.patch('/api/specialists/:id/requests/:requestId', async (req, res) => {
         [br.specialist_id, br.user_id, `Great news! ${spName} has accepted your consultation request. Your session is scheduled for ${dateStr}. See you soon!`]
       );
       await db.query("INSERT INTO activity_log (type, message) VALUES ('booking_accepted', $1)", [`${spName} accepted consultation request from ${clientName} — session scheduled`]);
+      // Update client healing score (new therapist assigned = +5 pts)
+      recalculateHealingScore(br.user_id).catch(() => {});
     } else {
       // Notify client their request was declined
       await db.query(

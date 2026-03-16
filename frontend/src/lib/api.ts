@@ -349,4 +349,9 @@ export const api = {
   async patchHealingGoal(data: { action: 'log_progress'; goal_id: string; rating: number } | { action: 'deactivate'; goal_id: string }) {
     return fetchWithAuth(`${API_BASE}/api/healing-goals`, { method: 'PATCH', body: JSON.stringify(data) });
   },
+
+  // Mark a brain tip as practiced — increments count & recalculates healing score
+  async practiceBrainTip(userId: string): Promise<{ success: boolean; healingScore?: number; alreadyPracticed?: boolean }> {
+    return fetchWithAuth(`${API_BASE}/api/users/${userId}/brain-tip-practiced`, { method: 'POST' });
+  },
 };

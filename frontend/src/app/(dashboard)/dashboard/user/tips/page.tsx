@@ -11,7 +11,6 @@ interface BrainTip {
   icon: string;
 }
 
-// Category colour map
 const categoryColors: Record<string, string> = {
   'Anxiety Relief':    '#60a5fa',
   'Grounding':         '#4ade80',
@@ -29,34 +28,55 @@ export default function TipsPage() {
   const [tips, setTips] = useState<BrainTip[]>([]);
   const [loading, setLoading] = useState(true);
   const [practiced, setPracticed] = useState<Set<string>>(new Set());
+  const [userId, setUserId] = useState<string | null>(null);
+  const [scoreFlash, setScoreFlash] = useState<number | null>(null);
 
   useEffect(() => {
+    api.getMe().then((me) => setUserId(me.id)).catch(() => {});
     api.getBrainTips()
       .then((data) => { setTips(Array.isArray(data) ? data : []); })
       .catch(() => {
-        // Inline fallback so page is never empty
         setTips([
-          { title: 'Box Breathing',        description: 'Inhale 4s → Hold 4s → Exhale 4s → Hold 4s. Repeat for instant calm.',                                        category: 'Anxiety Relief',   icon: '🫁' },
-          { title: '5-4-3-2-1 Grounding',  description: 'Name 5 things you see, 4 you can touch, 3 you hear, 2 you smell, 1 you taste.',                              category: 'Grounding',         icon: '🌿' },
-          { title: 'Cognitive Reframing',   description: 'Ask: Is this thought 100% true? What would I tell a friend in this situation?',                               category: 'Mental Clarity',   icon: '🧠' },
-          { title: 'Progressive Relaxation',description: 'Tense each muscle group for 5 seconds, then release. Start from your toes.',                                  category: 'Stress Relief',    icon: '💪' },
-          { title: 'Body Scan Meditation',  description: 'Close your eyes and scan from head to toe, releasing tension you find.',                                      category: 'Mindfulness',       icon: '✨' },
-          { title: 'Journaling Reset',      description: 'Write 3 feelings, 3 gratitudes, 1 intention. Takes 5 minutes, shifts everything.',                            category: 'Emotional Health', icon: '📝' },
+          { title: 'Box Breathing',         description: 'Inhale 4s → Hold 4s → Exhale 4s → Hold 4s. Repeat for instant calm.',                   category: 'Anxiety Relief',   icon: '🫁' },
+          { title: '5-4-3-2-1 Grounding',   description: 'Name 5 things you see, 4 you can touch, 3 you hear, 2 you smell, 1 you taste.',         category: 'Grounding',        icon: '🌿' },
+          { title: 'Cognitive Reframing',    description: 'Ask: Is this thought 100% true? What would I tell a friend in this situation?',          category: 'Mental Clarity',   icon: '🧠' },
+          { title: 'Progressive Relaxation', description: 'Tense each muscle group for 5 seconds, then release. Start from your toes.',            category: 'Stress Relief',    icon: '💪' },
+          { title: 'Body Scan Meditation',   description: 'Close your eyes and scan from head to toe, releasing tension you find.',                 category: 'Mindfulness',      icon: '✨' },
+          { title: 'Journaling Reset',       description: 'Write 3 feelings, 3 gratitudes, 1 intention. Takes 5 minutes, shifts everything.',      category: 'Emotional Health', icon: '📝' },
         ]);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const togglePracticed = (title: string) => {
+  const togglePracticed = async (title: string) => {
+    const alreadyDone = practiced.has(title);
+    // Optimistic UI update
     setPracticed((prev) => {
       const next = new Set(prev);
-      if (next.has(title)) next.delete(title); else next.add(title);
+      if (alreadyDone) next.delete(title); else next.add(title);
       return next;
     });
+    // If marking as practiced (not un-marking), call backend to increment & recalculate score
+    if (!alreadyDone && userId) {
+      try {
+        const result = await api.practiceBrainTip(userId);
+        if (result.healingScore !== undefined) {
+          setScoreFlash(result.healingScore);
+          setTimeout(() => setScoreFlash(null), 3000);
+        }
+      } catch {
+        // fail silently — UI already updated
+      }
+    }
   };
 
   return (
     <div className={styles.page}>
+      {scoreFlash !== null && (
+        <div className={styles.scoreToast}>
+          🌱 Healing score updated — <strong>{scoreFlash}</strong>/100
+        </div>
+      )}
       <div className={styles.header}>
         <h1 className={styles.title}>✨ Brain Tips</h1>
         <p className={styles.subtitle}>
