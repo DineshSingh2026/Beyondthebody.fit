@@ -238,7 +238,7 @@ export const api = {
     return fetchWithAuth(`${API_BASE}/api/admin/activity-log`);
   },
 
-  async getAdminNotifications(): Promise<{ notifications: { id: string; type: string; title: string; message: string; timestamp: string; createdAt: string }[]; pendingApplications: number; pendingBookingRequests: number }> {
+  async getAdminNotifications(): Promise<{ notifications: { id: string; type: string; title: string; message: string; timestamp: string; createdAt: string }[]; pendingApplications: number; pendingBookingRequests: number; pendingAssignments: number }> {
     return fetchWithAuth(`${API_BASE}/api/admin/notifications`);
   },
 
