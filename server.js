@@ -154,7 +154,15 @@ app.get('/api/services', async (req, res) => {
 
 // ---------- POST: Specialist / therapist applications → specialist_applications ----------
 app.post('/api/specialist-applications', async (req, res) => {
-  const { name, email, specialty, message } = req.body || {};
+  const {
+    name, email, specialty, message,
+    professionalTitle, yearsExperience, location,
+    qualification, certifications, licenseNumber,
+    specializations, bio,
+    services, availableDays, availableTimes,
+    profilePhotoUrl, introVideoUrl, certDocsUrl,
+    clientReviews, successStories,
+  } = req.body || {};
   if (!name || !email || !specialty) return res.status(400).json({ success: false, message: 'Name, email and specialty are required.' });
   if (!db.connected || !(await hasDashboard())) {
     console.log('Specialist application (no DB):', { name, email, specialty });
@@ -162,8 +170,25 @@ app.post('/api/specialist-applications', async (req, res) => {
   }
   try {
     await db.query(
-      'INSERT INTO specialist_applications (name, email, specialty) VALUES ($1, $2, $3)',
-      [name.trim(), email.trim().toLowerCase(), specialty.trim()]
+      `INSERT INTO specialist_applications
+         (name, email, specialty, message, professional_title, years_experience, location,
+          qualification, certifications, license_number, specializations, bio,
+          services, available_days, available_times,
+          profile_photo_url, intro_video_url, cert_docs_url,
+          client_reviews, success_stories)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+      [
+        name.trim(), email.trim().toLowerCase(), (specialty || '').trim(), (message || '').trim(),
+        (professionalTitle || '').trim(), yearsExperience || null, (location || '').trim(),
+        (qualification || '').trim(), (certifications || '').trim(), (licenseNumber || '').trim(),
+        JSON.stringify(Array.isArray(specializations) ? specializations : []),
+        (bio || '').trim(),
+        JSON.stringify(Array.isArray(services) ? services : []),
+        JSON.stringify(Array.isArray(availableDays) ? availableDays : []),
+        (availableTimes || '').trim(),
+        (profilePhotoUrl || '').trim(), (introVideoUrl || '').trim(), (certDocsUrl || '').trim(),
+        (clientReviews || '').trim(), (successStories || '').trim(),
+      ]
     );
     res.json({ success: true, message: "Application received! We'll review it and be in touch within 48 hours." });
   } catch (err) {
@@ -875,12 +900,38 @@ app.get('/api/admin/platform-stats', async (req, res) => {
   }
 });
 
+const mapAppRow = (rr) => ({
+  id: String(rr.id),
+  name: rr.name,
+  email: rr.email,
+  specialty: rr.specialty,
+  status: rr.status,
+  appliedAt: rr.applied_at,
+  professionalTitle: rr.professional_title || '',
+  yearsExperience: rr.years_experience || null,
+  location: rr.location || '',
+  qualification: rr.qualification || '',
+  certifications: rr.certifications || '',
+  licenseNumber: rr.license_number || '',
+  specializations: rr.specializations || [],
+  bio: rr.bio || '',
+  services: rr.services || [],
+  availableDays: rr.available_days || [],
+  availableTimes: rr.available_times || '',
+  profilePhotoUrl: rr.profile_photo_url || '',
+  introVideoUrl: rr.intro_video_url || '',
+  certDocsUrl: rr.cert_docs_url || '',
+  clientReviews: rr.client_reviews || '',
+  successStories: rr.success_stories || '',
+  message: rr.message || '',
+});
+
 app.get('/api/admin/applications', async (req, res) => {
   if (requireAdmin(req, res) === undefined) return;
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
-    const r = await db.query('SELECT id, name, email, specialty, status, applied_at FROM specialist_applications ORDER BY applied_at DESC');
-    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, email: rr.email, specialty: rr.specialty, status: rr.status, appliedAt: rr.applied_at })));
+    const r = await db.query('SELECT * FROM specialist_applications ORDER BY applied_at DESC');
+    res.json(r.rows.map(mapAppRow));
   } catch (err) {
     console.error('GET /api/admin/applications', err);
     res.json([]);
@@ -891,10 +942,9 @@ app.get('/api/admin/applications/:id', async (req, res) => {
   if (requireAdmin(req, res) === undefined) return;
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
   try {
-    const r = await db.query('SELECT id, name, email, specialty, status, applied_at FROM specialist_applications WHERE id = $1', [req.params.id]);
+    const r = await db.query('SELECT * FROM specialist_applications WHERE id = $1', [req.params.id]);
     if (r.rows.length === 0) return res.status(404).json({ error: 'Application not found' });
-    const rr = r.rows[0];
-    res.json({ id: String(rr.id), name: rr.name, email: rr.email, specialty: rr.specialty, status: rr.status, appliedAt: rr.applied_at });
+    res.json(mapAppRow(r.rows[0]));
   } catch (err) {
     console.error('GET /api/admin/applications/:id', err);
     res.status(500).json({ error: err.message });
@@ -929,9 +979,27 @@ app.patch('/api/admin/applications/:id', async (req, res) => {
         if (existing.rows.length === 0) {
           const TEMP_PASS = process.env.THERAPIST_TEMP_PASSWORD || 'Welcome@BTB2026';
           const hash = await bcrypt.hash(TEMP_PASS, 10);
+          const profileData = {
+            professionalTitle: app.professional_title || '',
+            yearsExperience: app.years_experience || null,
+            location: app.location || '',
+            qualification: app.qualification || '',
+            certifications: app.certifications || '',
+            licenseNumber: app.license_number || '',
+            specializations: app.specializations || [],
+            bio: app.bio || '',
+            services: app.services || [],
+            availableDays: app.available_days || [],
+            availableTimes: app.available_times || '',
+            profilePhotoUrl: app.profile_photo_url || '',
+            introVideoUrl: app.intro_video_url || '',
+            certDocsUrl: app.cert_docs_url || '',
+            clientReviews: app.client_reviews || '',
+            successStories: app.success_stories || '',
+          };
           const uR = await db.query(
-            'INSERT INTO dashboard_users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-            [app.name.trim(), app.email.trim().toLowerCase(), hash, role]
+            'INSERT INTO dashboard_users (name, email, password_hash, role, profile_data) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role',
+            [app.name.trim(), app.email.trim().toLowerCase(), hash, role, JSON.stringify(profileData)]
           );
           newUser = { id: String(uR.rows[0].id), name: uR.rows[0].name, email: uR.rows[0].email, role, tempPassword: TEMP_PASS };
           await db.query("INSERT INTO activity_log (type, message) VALUES ('specialist_approved', $1)", [`${app.name} (${app.email}) approved as ${role} — account created`]);
@@ -1169,7 +1237,15 @@ app.get('/api/admin/specialists', async (req, res) => {
 
 app.post('/api/admin/specialists', async (req, res) => {
   if (requireAdmin(req, res) === undefined) return;
-  const { name, email, password, role } = req.body || {};
+  const {
+    name, email, password, role,
+    professionalTitle, yearsExperience, location,
+    qualification, certifications, licenseNumber,
+    specializations, bio,
+    services, availableDays, availableTimes,
+    profilePhotoUrl, introVideoUrl, certDocsUrl,
+    clientReviews, successStories,
+  } = req.body || {};
   if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password are required.' });
   const allowedRoles = ['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'];
   const specialistRole = allowedRoles.includes(role) ? role : 'THERAPIST';
@@ -1178,9 +1254,27 @@ app.post('/api/admin/specialists', async (req, res) => {
     const existing = await db.query('SELECT id FROM dashboard_users WHERE LOWER(email) = LOWER($1)', [email.trim()]);
     if (existing.rows.length > 0) return res.status(409).json({ error: 'A user with this email already exists.' });
     const hash = await bcrypt.hash(password, 10);
+    const profileData = {
+      professionalTitle: (professionalTitle || '').trim(),
+      yearsExperience: yearsExperience || null,
+      location: (location || '').trim(),
+      qualification: (qualification || '').trim(),
+      certifications: (certifications || '').trim(),
+      licenseNumber: (licenseNumber || '').trim(),
+      specializations: Array.isArray(specializations) ? specializations : [],
+      bio: (bio || '').trim(),
+      services: Array.isArray(services) ? services : [],
+      availableDays: Array.isArray(availableDays) ? availableDays : [],
+      availableTimes: (availableTimes || '').trim(),
+      profilePhotoUrl: (profilePhotoUrl || '').trim(),
+      introVideoUrl: (introVideoUrl || '').trim(),
+      certDocsUrl: (certDocsUrl || '').trim(),
+      clientReviews: (clientReviews || '').trim(),
+      successStories: (successStories || '').trim(),
+    };
     const uR = await db.query(
-      'INSERT INTO dashboard_users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-      [name.trim(), email.trim().toLowerCase(), hash, specialistRole]
+      'INSERT INTO dashboard_users (name, email, password_hash, role, profile_data) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role',
+      [name.trim(), email.trim().toLowerCase(), hash, specialistRole, JSON.stringify(profileData)]
     );
     const row = uR.rows[0];
     await db.query("INSERT INTO activity_log (type, message) VALUES ('specialist_added', $1)", [`${row.name} (${row.email}) added as ${row.role} by admin`]);
@@ -2618,6 +2712,35 @@ async function autoMigrate() {
     // meeting_link on sessions
     try {
       await db.query('ALTER TABLE sessions ADD COLUMN meeting_link VARCHAR(500)');
+    } catch (e) {
+      if (e.code !== '42701') throw e;
+    }
+    // Extended fields on specialist_applications
+    const saNewCols = [
+      `ALTER TABLE specialist_applications ADD COLUMN message TEXT`,
+      `ALTER TABLE specialist_applications ADD COLUMN professional_title VARCHAR(200)`,
+      `ALTER TABLE specialist_applications ADD COLUMN years_experience INT`,
+      `ALTER TABLE specialist_applications ADD COLUMN location VARCHAR(200)`,
+      `ALTER TABLE specialist_applications ADD COLUMN qualification TEXT`,
+      `ALTER TABLE specialist_applications ADD COLUMN certifications TEXT`,
+      `ALTER TABLE specialist_applications ADD COLUMN license_number VARCHAR(100)`,
+      `ALTER TABLE specialist_applications ADD COLUMN specializations JSONB DEFAULT '[]'`,
+      `ALTER TABLE specialist_applications ADD COLUMN bio TEXT`,
+      `ALTER TABLE specialist_applications ADD COLUMN services JSONB DEFAULT '[]'`,
+      `ALTER TABLE specialist_applications ADD COLUMN available_days JSONB DEFAULT '[]'`,
+      `ALTER TABLE specialist_applications ADD COLUMN available_times VARCHAR(500)`,
+      `ALTER TABLE specialist_applications ADD COLUMN profile_photo_url TEXT`,
+      `ALTER TABLE specialist_applications ADD COLUMN intro_video_url TEXT`,
+      `ALTER TABLE specialist_applications ADD COLUMN cert_docs_url TEXT`,
+      `ALTER TABLE specialist_applications ADD COLUMN client_reviews TEXT`,
+      `ALTER TABLE specialist_applications ADD COLUMN success_stories TEXT`,
+    ];
+    for (const sql of saNewCols) {
+      try { await db.query(sql); } catch (e) { if (e.code !== '42701') console.warn('migrate col:', e.message); }
+    }
+    // profile_data on dashboard_users
+    try {
+      await db.query(`ALTER TABLE dashboard_users ADD COLUMN profile_data JSONB DEFAULT '{}'`);
     } catch (e) {
       if (e.code !== '42701') throw e;
     }

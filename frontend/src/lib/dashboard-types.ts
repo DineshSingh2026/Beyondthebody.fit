@@ -107,14 +107,39 @@ export interface AdminPlatformStats {
   newApplications: number;
 }
 
+export interface SpecialistService {
+  name: string;
+  duration: string;
+  price: string;
+  type: 'Online' | 'In-Person' | 'Both';
+}
+
 export interface SpecialistApplication {
   id: string;
   name: string;
   email: string;
   avatar?: string;
-  specialty: SpecialistType;
+  specialty: string;
   appliedAt: string;
   status: ApplicationStatus;
+  // Extended profile fields
+  professionalTitle?: string;
+  yearsExperience?: number | null;
+  location?: string;
+  qualification?: string;
+  certifications?: string;
+  licenseNumber?: string;
+  specializations?: string[];
+  bio?: string;
+  services?: SpecialistService[];
+  availableDays?: string[];
+  availableTimes?: string;
+  profilePhotoUrl?: string;
+  introVideoUrl?: string;
+  certDocsUrl?: string;
+  clientReviews?: string;
+  successStories?: string;
+  message?: string;
 }
 
 export interface AdminSessionRow {

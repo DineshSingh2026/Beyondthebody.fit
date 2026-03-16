@@ -87,22 +87,125 @@ export default function AdminApplicationsPage() {
       {viewApp && (
         <div className={styles.overlay} onClick={() => !actionLoading && setViewApp(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3 className={styles.modalTitle}>Application profile</h3>
+            <h3 className={styles.modalTitle}>Application — {viewApp.name}</h3>
             <div className={styles.modalBody}>
               <Avatar name={viewApp.name} size="lg" />
-              <dl className={styles.profileList}>
-                <dt>Name</dt><dd>{viewApp.name}</dd>
-                <dt>Email</dt><dd>{viewApp.email}</dd>
-                <dt>Specialty</dt><dd><Badge variant={variant[viewApp.specialty] ?? 'muted'}>{viewApp.specialty.replace('_', ' ')}</Badge></dd>
-                <dt>Applied</dt><dd>{new Date(viewApp.appliedAt).toLocaleString()}</dd>
-                <dt>Status</dt><dd>{viewApp.status}</dd>
-              </dl>
+
+              {/* ── Basic ── */}
+              <div className={styles.modalSection}>
+                <div className={styles.modalSectionTitle}>Basic Information</div>
+                <dl className={styles.profileList}>
+                  <dt>Name</dt><dd>{viewApp.name}</dd>
+                  <dt>Email</dt><dd>{viewApp.email}</dd>
+                  <dt>Specialty</dt><dd><Badge variant={variant[viewApp.specialty] ?? 'muted'}>{viewApp.specialty.replace('_', ' ')}</Badge></dd>
+                  <dt>Applied</dt><dd>{new Date(viewApp.appliedAt).toLocaleDateString()}</dd>
+                  <dt>Status</dt><dd><Badge variant={viewApp.status === 'APPROVED' ? 'green' : viewApp.status === 'REJECTED' ? 'muted' : 'gold'}>{viewApp.status}</Badge></dd>
+                  {viewApp.professionalTitle && <><dt>Title</dt><dd>{viewApp.professionalTitle}</dd></>}
+                  {viewApp.yearsExperience != null && <><dt>Experience</dt><dd>{viewApp.yearsExperience} years</dd></>}
+                  {viewApp.location && <><dt>Location</dt><dd>{viewApp.location}</dd></>}
+                </dl>
+              </div>
+
+              {/* ── Credentials ── */}
+              {(viewApp.qualification || viewApp.certifications || viewApp.licenseNumber) && (
+                <div className={styles.modalSection}>
+                  <div className={styles.modalSectionTitle}>Credentials</div>
+                  <dl className={styles.profileList}>
+                    {viewApp.qualification && <><dt>Qualification</dt><dd>{viewApp.qualification}</dd></>}
+                    {viewApp.licenseNumber && <><dt>License No.</dt><dd>{viewApp.licenseNumber}</dd></>}
+                    {viewApp.certifications && <><dt>Certifications</dt><dd style={{ whiteSpace: 'pre-wrap' }}>{viewApp.certifications}</dd></>}
+                  </dl>
+                </div>
+              )}
+
+              {/* ── Specializations ── */}
+              {viewApp.specializations && viewApp.specializations.length > 0 && (
+                <div className={styles.modalSection}>
+                  <div className={styles.modalSectionTitle}>Specializations</div>
+                  <div className={styles.chipRow}>
+                    {viewApp.specializations.map((s) => (
+                      <span key={s} className={styles.chip}>{s}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Services ── */}
+              {viewApp.services && viewApp.services.length > 0 && (
+                <div className={styles.modalSection}>
+                  <div className={styles.modalSectionTitle}>Services</div>
+                  <table className={styles.serviceTable}>
+                    <thead><tr><th>Service</th><th>Duration</th><th>Price</th><th>Type</th></tr></thead>
+                    <tbody>
+                      {viewApp.services.map((s, i) => (
+                        <tr key={i}>
+                          <td>{s.name}</td>
+                          <td>{s.duration} min</td>
+                          <td>{s.price ? `£${s.price}` : '—'}</td>
+                          <td>{s.type}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* ── Availability ── */}
+              {(viewApp.availableDays?.length || viewApp.availableTimes) && (
+                <div className={styles.modalSection}>
+                  <div className={styles.modalSectionTitle}>Availability</div>
+                  {viewApp.availableDays && viewApp.availableDays.length > 0 && (
+                    <div className={styles.chipRow}>
+                      {viewApp.availableDays.map((d) => <span key={d} className={styles.chip}>{d}</span>)}
+                    </div>
+                  )}
+                  {viewApp.availableTimes && <p className={styles.modalText}>{viewApp.availableTimes}</p>}
+                </div>
+              )}
+
+              {/* ── Bio ── */}
+              {viewApp.bio && (
+                <div className={styles.modalSection}>
+                  <div className={styles.modalSectionTitle}>Bio</div>
+                  <p className={styles.modalText}>{viewApp.bio}</p>
+                </div>
+              )}
+
+              {/* ── Media links ── */}
+              {(viewApp.profilePhotoUrl || viewApp.introVideoUrl || viewApp.certDocsUrl) && (
+                <div className={styles.modalSection}>
+                  <div className={styles.modalSectionTitle}>Profile Media</div>
+                  <div className={styles.linkRow}>
+                    {viewApp.profilePhotoUrl && <a href={viewApp.profilePhotoUrl} target="_blank" rel="noreferrer" className={styles.mediaLink}>📷 Profile Photo</a>}
+                    {viewApp.introVideoUrl && <a href={viewApp.introVideoUrl} target="_blank" rel="noreferrer" className={styles.mediaLink}>🎥 Intro Video</a>}
+                    {viewApp.certDocsUrl && <a href={viewApp.certDocsUrl} target="_blank" rel="noreferrer" className={styles.mediaLink}>📄 Cert Docs</a>}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Social Proof ── */}
+              {(viewApp.clientReviews || viewApp.successStories) && (
+                <div className={styles.modalSection}>
+                  <div className={styles.modalSectionTitle}>Social Proof</div>
+                  {viewApp.clientReviews && <><p className={styles.modalLabel}>Client Reviews</p><p className={styles.modalText}>{viewApp.clientReviews}</p></>}
+                  {viewApp.successStories && <><p className={styles.modalLabel}>Success Stories</p><p className={styles.modalText}>{viewApp.successStories}</p></>}
+                </div>
+              )}
+
+              {/* ── Message ── */}
+              {viewApp.message && (
+                <div className={styles.modalSection}>
+                  <div className={styles.modalSectionTitle}>Message</div>
+                  <p className={styles.modalText}>{viewApp.message}</p>
+                </div>
+              )}
             </div>
+
             <div className={styles.modalActions}>
               {viewApp.status === 'PENDING' && (
                 <>
-                  <HapticButton variant="primary" pill onClick={() => handleStatus(viewApp.id, 'APPROVED', true)} disabled={actionLoading}>Approve</HapticButton>
-                  <HapticButton variant="ghost" pill onClick={() => handleStatus(viewApp.id, 'REJECTED', true)} disabled={actionLoading}>Reject</HapticButton>
+                  <HapticButton variant="primary" pill onClick={() => handleStatus(viewApp.id, 'APPROVED', true)} disabled={actionLoading}>✓ Approve</HapticButton>
+                  <HapticButton variant="ghost" pill onClick={() => handleStatus(viewApp.id, 'REJECTED', true)} disabled={actionLoading}>✕ Reject</HapticButton>
                 </>
               )}
               <HapticButton variant="ghost" pill onClick={() => !actionLoading && setViewApp(null)}>Close</HapticButton>

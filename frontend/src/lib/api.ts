@@ -75,7 +75,27 @@ export async function postConsultation(data: { name: string; email: string; phon
   return fetchJson<{ success: boolean; message: string }>(`${API_BASE}/api/consultation`, { method: 'POST', body: JSON.stringify(data) });
 }
 
-export async function postSpecialistApplication(data: { name: string; email: string; specialty: string; message?: string }) {
+export interface SpecialistProfileData {
+  professionalTitle?: string;
+  yearsExperience?: number | null;
+  location?: string;
+  qualification?: string;
+  certifications?: string;
+  licenseNumber?: string;
+  specializations?: string[];
+  bio?: string;
+  services?: { name: string; duration: string; price: string; type: string }[];
+  availableDays?: string[];
+  availableTimes?: string;
+  profilePhotoUrl?: string;
+  introVideoUrl?: string;
+  certDocsUrl?: string;
+  clientReviews?: string;
+  successStories?: string;
+  message?: string;
+}
+
+export async function postSpecialistApplication(data: { name: string; email: string; specialty: string } & SpecialistProfileData) {
   return fetchJson<{ success: boolean; message: string }>(`${API_BASE}/api/specialist-applications`, { method: 'POST', body: JSON.stringify(data) });
 }
 
@@ -227,7 +247,7 @@ export const api = {
     return fetchWithAuth(`${API_BASE}/api/admin/specialists`);
   },
 
-  async postAdminCreateSpecialist(data: { name: string; email: string; password: string; role: string }): Promise<{ id: string; name: string; email: string; role: string }> {
+  async postAdminCreateSpecialist(data: { name: string; email: string; password: string; role: string } & SpecialistProfileData): Promise<{ id: string; name: string; email: string; role: string }> {
     return fetchWithAuth(`${API_BASE}/api/admin/specialists`, {
       method: 'POST',
       body: JSON.stringify(data),

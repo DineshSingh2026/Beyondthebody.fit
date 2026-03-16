@@ -3785,6 +3785,163 @@ textarea.form-input {
 }
 
 /* ============================================
+   JOIN SECTION — Multi-step application form
+   ============================================ */
+.join-form-card--wide { max-width: 600px; width: 100%; }
+
+.join-steps {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.join-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 80px;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+.join-step.active, .join-step.done { opacity: 1; }
+.join-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 0.2s, color 0.2s;
+}
+.join-step.active .join-step-num { background: var(--accent, #d4af37); color: #0a1a0f; }
+.join-step.done .join-step-num { background: var(--green, #4ade80); color: #0a1a0f; }
+.join-step-label { font-size: 10px; color: var(--muted); text-align: center; white-space: nowrap; }
+.join-step.active .join-step-label { color: var(--text); }
+
+.join-step-panel { display: flex; flex-direction: column; gap: 10px; }
+
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 600px) { .form-row-2 { grid-template-columns: 1fr; } }
+
+.join-field-label { font-size: 13px; color: var(--muted); margin: 0; }
+
+.join-spec-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.join-spec-chip {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+  background: transparent;
+}
+.join-spec-chip.active {
+  border-color: var(--accent, #d4af37);
+  color: var(--accent, #d4af37);
+  background: rgba(212,175,55,0.08);
+}
+
+.join-service-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.join-svc-name { flex: 1; min-width: 130px; }
+.join-svc-sm { width: 100px; flex-shrink: 0; }
+.join-remove-btn {
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid #f87171;
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 12px;
+  cursor: pointer;
+}
+.join-add-btn {
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px dashed var(--accent, #d4af37);
+  border-radius: 8px;
+  color: var(--accent, #d4af37);
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+  width: fit-content;
+}
+.join-add-btn:hover { background: rgba(212,175,55,0.06); }
+
+.join-days { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+.join-day-chip {
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+  background: transparent;
+}
+.join-day-chip.active {
+  border-color: var(--accent, #d4af37);
+  color: var(--accent, #d4af37);
+  background: rgba(212,175,55,0.08);
+}
+
+.join-form-nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.join-back-btn {
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+.join-next-btn { min-width: 140px; }
+
+.join-success-state {
+  text-align: center;
+  padding: 60px 20px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.join-success-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--green, #4ade80);
+  color: #0a1a0f;
+  font-size: 28px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+/* ============================================
    RESPONSIVE: New sections
    ============================================ */
 @media (max-width: 900px) {
