@@ -43,7 +43,6 @@ export default function Nav() {
               src="/img/btb-logo.png"
               alt="Beyond The Body"
               className="nav-logo-img"
-              style={{ height: '36px', width: 'auto', display: 'block' }}
             />
           </button>
           <ul className="nav-links">
