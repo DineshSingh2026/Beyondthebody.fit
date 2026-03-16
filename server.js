@@ -1251,7 +1251,8 @@ app.get('/api/specialists/:id/requests', async (req, res) => {
     const r = await db.query(
       `SELECT br.id, br.user_id, br.proposed_at, br.session_type, br.created_at, br.message,
         u.name as client_name, u.email as client_email
-       FROM booking_requests br JOIN dashboard_users u ON u.id = br.user_id WHERE br.specialist_id = $1 AND br.status = 'PENDING' ORDER BY br.created_at DESC`
+       FROM booking_requests br JOIN dashboard_users u ON u.id = br.user_id WHERE br.specialist_id = $1 AND br.status = 'PENDING' ORDER BY br.created_at DESC`,
+      [req.params.id]
     );
     res.json(r.rows.map(rr => ({
       id: String(rr.id),
