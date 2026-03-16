@@ -114,6 +114,7 @@ export default function TopAppBar({
   };
 
   return (
+    <>
     <header className={`${styles.bar} ${scrolled ? styles.scrolled : ''}`}>
       <div className={styles.left}>
         {canBack ? (
@@ -132,7 +133,6 @@ export default function TopAppBar({
             className={styles.logoImg}
           />
         )}
-        <h1 className={styles.title}>{displayTitle}</h1>
       </div>
 
       <div className={styles.right}>
@@ -211,5 +211,11 @@ export default function TopAppBar({
         </div>
       </div>
     </header>
+
+    {/* Page title — sits cleanly below the action bar */}
+    <div className={styles.pageTitleBar}>
+      <h1 className={styles.pageTitle}>{displayTitle}</h1>
+    </div>
+    </>
   );
 }

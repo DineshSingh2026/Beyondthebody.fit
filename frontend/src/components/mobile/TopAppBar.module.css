@@ -45,19 +45,29 @@
 }
 
 .logoImg {
-  height: 28px;
+  height: 38px;
   width: auto;
-  max-width: 110px;
+  max-width: 140px;
   object-fit: contain;
   display: block;
 }
 
-.title {
+/* Page title banner — rendered below the action bar */
+.pageTitleBar {
+  padding: 10px 16px 8px;
+  background: rgba(6, 14, 9, 0.92);
+  border-bottom: 1px solid var(--border);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+.pageTitle {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 500;
   color: var(--cream);
   margin: 0;
+  line-height: 1.2;
 }
 
 .right {
