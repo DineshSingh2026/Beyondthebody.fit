@@ -448,3 +448,72 @@
   font-size: 13px;
   padding: 8px 0;
 }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--gold, #d4af37);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+.assignCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.assignCard:last-child { border-bottom: none; }
+
+.assignInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.assignClient {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.assignEmail {
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assignSp {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.assignCount {
+  font-size: 12px;
+  color: var(--green, #4ade80);
+  font-weight: 500;
+}
+
+.assignActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}

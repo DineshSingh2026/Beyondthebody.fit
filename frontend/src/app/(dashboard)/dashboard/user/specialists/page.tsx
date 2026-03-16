@@ -40,6 +40,14 @@ export default function UserSpecialistsPage() {
   const [filter, setFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
+  // consultation count per specialist (accepted/completed booking requests)
+  const [consultCounts, setConsultCounts] = useState<Record<string, number>>({});
+  // specialist IDs already assigned via user_specialists
+  const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set());
+  // specialist IDs where an assignment request is pending
+  const [assignmentPendingIds, setAssignmentPendingIds] = useState<Set<string>>(new Set());
+  const [assignLoading, setAssignLoading] = useState<string | null>(null);
+  const [assignSuccess, setAssignSuccess] = useState<string | null>(null);
   const [showModal, setShowModal] = useState<SpecialistBrowse | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
@@ -55,10 +63,33 @@ export default function UserSpecialistsPage() {
         if (me.role === 'ADMIN') { router.replace('/dashboard/admin'); return; }
         if (['THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR'].includes(me.role)) { router.replace('/dashboard/therapist'); return; }
         setUserId(me.id);
-        const [list, requests] = await Promise.all([browseSpecialists(), api.getBookingRequests(me.id).catch(() => [])]);
+        const [list, requests, assigned, assignReqs] = await Promise.all([
+          browseSpecialists(),
+          api.getBookingRequests(me.id).catch(() => [] as { specialistId: string; status: string }[]),
+          api.getSpecialists(me.id).catch(() => [] as { id: string }[]),
+          api.getAssignmentRequests(me.id).catch(() => [] as { specialistId: string; status: string }[]),
+        ]);
         setSpecialists(list);
-        const pending = new Set((requests || []).map((r: { specialistId: string }) => r.specialistId));
-        setRequestedIds(pending);
+        // Track any existing consultation request (pending)
+        const pendingReqIds = new Set((requests || []).map((r: { specialistId: string }) => r.specialistId));
+        setRequestedIds(pendingReqIds);
+        // Count accepted/completed consultations per specialist
+        const counts: Record<string, number> = {};
+        (requests || []).forEach((r: { specialistId: string; status: string }) => {
+          if (r.status === 'ACCEPTED' || r.status === 'COMPLETED') {
+            counts[r.specialistId] = (counts[r.specialistId] || 0) + 1;
+          }
+        });
+        setConsultCounts(counts);
+        // Already assigned
+        setAssignedIds(new Set((assigned || []).map((s: { id: string }) => s.id)));
+        // Pending assignment requests
+        const pendingAssign = new Set(
+          (assignReqs || [])
+            .filter((r: { status: string }) => r.status === 'PENDING')
+            .map((r: { specialistId: string }) => r.specialistId)
+        );
+        setAssignmentPendingIds(pendingAssign);
       } catch {
         // fallback stays empty
       } finally {
@@ -100,6 +131,21 @@ export default function UserSpecialistsPage() {
       setError(e instanceof Error ? e.message : 'Request failed. Try again.');
     } finally {
       setSubmitLoading(false);
+    }
+  };
+
+  const handleAssignmentRequest = async (sp: SpecialistBrowse) => {
+    if (!userId) return;
+    setAssignLoading(sp.id);
+    setAssignSuccess(null);
+    try {
+      await api.postAssignmentRequest(userId, sp.id);
+      setAssignmentPendingIds(prev => new Set(prev).add(sp.id));
+      setAssignSuccess(sp.id);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Request failed. Try again.');
+    } finally {
+      setAssignLoading(null);
     }
   };
 
@@ -159,9 +205,32 @@ export default function UserSpecialistsPage() {
                 <span className={styles.trustBadge}>✓ Vetted</span>
                 {sp.rating != null && sp.rating >= 4.8 && <span className={styles.trustBadge}>⭐ Top Rated</span>}
               </div>
-              {requestedIds.has(sp.id) ? (
+              {/* Consultation count hint */}
+              {!assignedIds.has(sp.id) && (consultCounts[sp.id] || 0) > 0 && (consultCounts[sp.id] || 0) < 2 && (
+                <div className={styles.consultHint}>
+                  {consultCounts[sp.id]}/2 consultations completed
+                </div>
+              )}
+              {assignedIds.has(sp.id) ? (
+                <div className={styles.assignedTag}>
+                  ✓ Your Therapist
+                </div>
+              ) : assignmentPendingIds.has(sp.id) || assignSuccess === sp.id ? (
                 <div className={styles.requested}>
-                  <span>💚</span> Request sent — the specialist will respond shortly.
+                  🕐 Assignment request pending admin approval
+                </div>
+              ) : (consultCounts[sp.id] || 0) >= 2 ? (
+                <button
+                  className={styles.assignBtn}
+                  type="button"
+                  disabled={assignLoading === sp.id || !userId}
+                  onClick={() => handleAssignmentRequest(sp)}
+                >
+                  {assignLoading === sp.id ? 'Sending…' : '🤝 Get Assigned to Therapist'}
+                </button>
+              ) : requestedIds.has(sp.id) ? (
+                <div className={styles.requested}>
+                  💚 Request sent — the specialist will respond shortly.
                 </div>
               ) : (
                 <button

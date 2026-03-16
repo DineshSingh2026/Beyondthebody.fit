@@ -139,6 +139,28 @@ export const api = {
     });
   },
 
+  async getAssignmentRequests(userId: string) {
+    return fetchWithAuth<{ id: string; specialistId: string; status: string; createdAt: string }[]>(`${API_BASE}/api/users/${userId}/assignment-requests`);
+  },
+
+  async postAssignmentRequest(userId: string, specialistId: string) {
+    return fetchWithAuth<{ success: boolean; message: string }>(`${API_BASE}/api/users/${userId}/assignment-request`, {
+      method: 'POST',
+      body: JSON.stringify({ specialistId }),
+    });
+  },
+
+  async getAdminAssignmentRequests() {
+    return fetchWithAuth<{ id: string; userId: string; specialistId: string; clientName: string; clientEmail: string; specialistName: string; specialistRole: string; consultationCount: number; createdAt: string }[]>(`${API_BASE}/api/admin/assignment-requests`);
+  },
+
+  async patchAdminAssignmentRequest(id: string, status: 'approved' | 'rejected') {
+    return fetchWithAuth<{ success: boolean }>(`${API_BASE}/api/admin/assignment-requests/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
   async getSpecialists(userId: string) {
     return fetchWithAuth(`${API_BASE}/api/users/${userId}/specialists`);
   },

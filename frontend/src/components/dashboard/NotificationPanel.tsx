@@ -32,7 +32,7 @@ export default function NotificationPanel({ role, direction = 'up' }: Notificati
   const [notifications, setNotifications] = useState<Notification[]>(() =>
     role === 'ADMIN' ? [] : defaultNotifications.map((n) => ({ ...n }))
   );
-  const [adminPending, setAdminPending] = useState({ applications: 0, bookings: 0 });
+  const [adminPending, setAdminPending] = useState({ applications: 0, bookings: 0, assignments: 0 });
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,12 +47,12 @@ export default function NotificationPanel({ role, direction = 'up' }: Notificati
             unread: true,
           }))
         );
-        setAdminPending({ applications: res.pendingApplications || 0, bookings: res.pendingBookingRequests || 0 });
+        setAdminPending({ applications: res.pendingApplications || 0, bookings: res.pendingBookingRequests || 0, assignments: res.pendingAssignments || 0 });
       }).catch(() => {});
     }
   }, [role, open]);
 
-  const unreadCount = role === 'ADMIN' ? notifications.length + (adminPending.applications + adminPending.bookings) : notifications.filter((n) => n.unread).length;
+  const unreadCount = role === 'ADMIN' ? notifications.length + (adminPending.applications + adminPending.bookings + adminPending.assignments) : notifications.filter((n) => n.unread).length;
 
   useEffect(() => {
     if (!open) return;
@@ -106,9 +106,13 @@ export default function NotificationPanel({ role, direction = 'up' }: Notificati
             <div className={styles.header}>
               <span>Notifications</span>
               <div className={styles.headerActions}>
-                {role === 'ADMIN' && (adminPending.applications > 0 || adminPending.bookings > 0) && (
+                {role === 'ADMIN' && (adminPending.applications > 0 || adminPending.bookings > 0 || adminPending.assignments > 0) && (
                   <span className={styles.pendingSummary}>
-                    {adminPending.applications} pending applications · {adminPending.bookings} pending requests
+                    {adminPending.applications > 0 && `${adminPending.applications} applications`}
+                    {adminPending.applications > 0 && (adminPending.bookings > 0 || adminPending.assignments > 0) && ' · '}
+                    {adminPending.bookings > 0 && `${adminPending.bookings} booking requests`}
+                    {adminPending.bookings > 0 && adminPending.assignments > 0 && ' · '}
+                    {adminPending.assignments > 0 && `${adminPending.assignments} assignment requests`}
                   </span>
                 )}
                 {role !== 'ADMIN' && unreadCount > 0 && (

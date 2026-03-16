@@ -32,6 +32,8 @@ export default function AdminDashboardPage() {
   const [applications, setApplications] = useState(emptyApplications);
   const [sessions, setSessions] = useState(emptyAdminSessions);
   const [bookingRequests, setBookingRequests] = useState<any[]>([]);
+  const [assignmentRequests, setAssignmentRequests] = useState<{ id: string; clientName: string; clientEmail: string; specialistName: string; specialistRole: string; consultationCount: number; createdAt: string }[]>([]);
+  const [assignActionId, setAssignActionId] = useState<string | null>(null);
   const [roster, setRoster] = useState(emptySpecialistRoster);
   const [activityLog, setActivityLog] = useState(emptyActivityLog);
 
@@ -55,11 +57,23 @@ export default function AdminDashboardPage() {
     api.getAdminApplications().then(setApplications).catch(() => setApplications(emptyApplications));
     api.getAdminSessions().then(setSessions).catch(() => setSessions(emptyAdminSessions));
     api.getAdminBookingRequests().then(setBookingRequests).catch(() => setBookingRequests([]));
+    api.getAdminAssignmentRequests().then(setAssignmentRequests).catch(() => setAssignmentRequests([]));
     api.getAdminSpecialists().then(setRoster).catch(() => setRoster(emptySpecialistRoster));
     api.getAdminActivityLog().then(setActivityLog).catch(() => setActivityLog(emptyActivityLog));
   }, []);
 
   const [approvedAlert, setApprovedAlert] = useState<{ name: string; email: string; role: string; tempPassword: string } | null>(null);
+
+  const handleAssignmentAction = async (id: string, status: 'approved' | 'rejected') => {
+    setAssignActionId(id);
+    try {
+      await api.patchAdminAssignmentRequest(id, status);
+      api.getAdminAssignmentRequests().then(setAssignmentRequests).catch(() => {});
+      api.getAdminPlatformStats().then(setStats).catch(() => {});
+    } finally {
+      setAssignActionId(null);
+    }
+  };
 
   const handleApplicationStatus = (id: string, status: string) => {
     api.patchApplication(id, status).then((res) => {
@@ -171,6 +185,77 @@ export default function AdminDashboardPage() {
               </tbody>
             </table>
           </motion.section>
+          <motion.section className={styles.section} variants={item}>
+            <h2 className={styles.sectionTitle}>
+              Assignment Requests
+              {assignmentRequests.length > 0 && <span className={styles.badge}>{assignmentRequests.length}</span>}
+            </h2>
+            <p className={styles.sectionSub}>Clients requesting formal assignment to a therapist after completing 2+ consultations. Approving links the client as a permanent client of that specialist.</p>
+            {assignmentRequests.length === 0 ? (
+              <p className={styles.muted}>No pending assignment requests.</p>
+            ) : (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Client</th>
+                    <th>Therapist</th>
+                    <th>Consultations Done</th>
+                    <th>Requested</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignmentRequests.map((ar) => (
+                    <tr key={ar.id}>
+                      <td>
+                        <div className={styles.tableUser}>
+                          <Avatar name={ar.clientName} size="sm" />
+                          <div>
+                            <span>{ar.clientName}</span>
+                            <span className={styles.muted} style={{ display: 'block', fontSize: 11 }}>{ar.clientEmail}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.tableUser}>
+                          <Avatar name={ar.specialistName} size="sm" />
+                          <div>
+                            <span>{ar.specialistName}</span>
+                            <Badge variant={ar.specialistRole === 'THERAPIST' ? 'green' : ar.specialistRole === 'LIFE_COACH' ? 'gold' : 'purple'}>
+                              {ar.specialistRole.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span style={{ color: '#4ade80', fontWeight: 600 }}>{ar.consultationCount}</span>/2</td>
+                      <td className={styles.muted}>{ar.createdAt ? new Date(ar.createdAt).toLocaleDateString() : '—'}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button
+                            type="button"
+                            className={styles.btnApprove}
+                            disabled={assignActionId === ar.id}
+                            onClick={() => handleAssignmentAction(ar.id, 'approved')}
+                          >
+                            {assignActionId === ar.id ? '…' : 'Approve'}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.btnReject}
+                            disabled={assignActionId === ar.id}
+                            onClick={() => handleAssignmentAction(ar.id, 'rejected')}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </motion.section>
+
           <motion.section className={styles.section} variants={item}>
             <h2 className={styles.sectionTitle}>Consultation requests</h2>
             <p className={styles.sectionSub}>All user requests for consultation. Status: PENDING → specialist reviews; ACCEPTED → session scheduled; DECLINED.</p>

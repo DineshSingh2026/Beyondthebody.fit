@@ -560,6 +560,66 @@ app.post('/api/users/:userId/booking-request', async (req, res) => {
   }
 });
 
+// User requests formal assignment to a specialist (after 2 consultations)
+app.post('/api/users/:userId/assignment-request', async (req, res) => {
+  const bearer = req.headers.authorization;
+  const token = bearer && bearer.startsWith('Bearer ') ? bearer.slice(7) : null;
+  const payload = token ? verifyToken(token) : null;
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (String(payload.id) !== String(req.params.userId)) return res.status(403).json({ error: 'Forbidden' });
+  const { specialistId } = req.body || {};
+  if (!specialistId) return res.status(400).json({ error: 'specialistId is required' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const userR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1', [req.params.userId]);
+    if (userR.rows.length === 0) return res.status(400).json({ error: 'User not found' });
+    const spR = await db.query("SELECT id, name FROM dashboard_users WHERE id = $1 AND role IN ('THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR')", [specialistId]);
+    if (spR.rows.length === 0) return res.status(404).json({ error: 'Specialist not found' });
+    // Check already assigned
+    const alreadyR = await db.query('SELECT 1 FROM user_specialists WHERE user_id = $1 AND specialist_id = $2', [req.params.userId, specialistId]);
+    if (alreadyR.rows.length > 0) return res.status(400).json({ error: 'Already assigned to this specialist' });
+    // Check existing pending/approved assignment request
+    const existingR = await db.query("SELECT id, status FROM assignment_requests WHERE user_id = $1 AND specialist_id = $2", [req.params.userId, specialistId]);
+    if (existingR.rows.length > 0) {
+      const st = existingR.rows[0].status;
+      if (st === 'PENDING') return res.status(400).json({ error: 'Assignment request already pending' });
+      if (st === 'APPROVED') return res.status(400).json({ error: 'Already assigned' });
+    }
+    // Check consultation count (accepted booking requests)
+    const countR = await db.query("SELECT COUNT(*) as c FROM booking_requests WHERE user_id = $1 AND specialist_id = $2 AND status IN ('ACCEPTED','COMPLETED')", [req.params.userId, specialistId]);
+    const consultCount = parseInt(countR.rows[0]?.c || '0', 10);
+    if (consultCount < 2) return res.status(400).json({ error: `You need at least 2 accepted consultations before requesting assignment. You have ${consultCount}.` });
+    // Insert assignment request (upsert on conflict to handle rejected ones being re-requested)
+    await db.query(
+      `INSERT INTO assignment_requests (user_id, specialist_id, status) VALUES ($1, $2, 'PENDING')
+       ON CONFLICT (user_id, specialist_id) DO UPDATE SET status='PENDING', resolved_at=NULL, created_at=NOW()`,
+      [req.params.userId, specialistId]
+    );
+    await db.query("INSERT INTO activity_log (type, message) VALUES ('pending_assignment', $1)", [`${userR.rows[0].name} requested assignment to ${spR.rows[0].name}`]);
+    res.status(201).json({ success: true, message: 'Assignment request sent to admin for approval.' });
+  } catch (err) {
+    console.error('POST /api/users/:userId/assignment-request', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get user's assignment requests (to know status per specialist)
+app.get('/api/users/:userId/assignment-requests', async (req, res) => {
+  const bearer = req.headers.authorization;
+  const token = bearer && bearer.startsWith('Bearer ') ? bearer.slice(7) : null;
+  const payload = token ? verifyToken(token) : null;
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (String(payload.id) !== String(req.params.userId)) return res.status(403).json({ error: 'Forbidden' });
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query('SELECT id, specialist_id, status, created_at FROM assignment_requests WHERE user_id = $1 ORDER BY created_at DESC', [req.params.userId]);
+    res.json(r.rows.map(rr => ({ id: String(rr.id), specialistId: String(rr.specialist_id), status: rr.status, createdAt: rr.created_at })));
+  } catch (err) {
+    console.error('GET /api/users/:userId/assignment-requests', err);
+    res.json([]);
+  }
+});
+
 app.get('/api/users/:id/mood-log', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
@@ -800,17 +860,88 @@ app.get('/api/admin/booking-requests', async (req, res) => {
   }
 });
 
+// Admin: list pending assignment requests
+app.get('/api/admin/assignment-requests', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT ar.id, ar.user_id, ar.specialist_id, ar.status, ar.created_at,
+        u.name as client_name, u.email as client_email,
+        sp.name as specialist_name, sp.role as specialist_role,
+        (SELECT COUNT(*) FROM booking_requests br
+          WHERE br.user_id = ar.user_id AND br.specialist_id = ar.specialist_id
+          AND br.status IN ('ACCEPTED','COMPLETED')) as consultation_count
+       FROM assignment_requests ar
+       JOIN dashboard_users u ON u.id = ar.user_id
+       JOIN dashboard_users sp ON sp.id = ar.specialist_id
+       WHERE ar.status = 'PENDING'
+       ORDER BY ar.created_at DESC`
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      userId: String(rr.user_id),
+      specialistId: String(rr.specialist_id),
+      clientName: rr.client_name,
+      clientEmail: rr.client_email,
+      specialistName: rr.specialist_name,
+      specialistRole: rr.specialist_role,
+      consultationCount: parseInt(rr.consultation_count || '0', 10),
+      createdAt: rr.created_at,
+    })));
+  } catch (err) {
+    console.error('GET /api/admin/assignment-requests', err);
+    res.json([]);
+  }
+});
+
+// Admin: approve or reject an assignment request
+app.patch('/api/admin/assignment-requests/:id', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  const { status } = req.body || {};
+  if (!status || !['approved', 'rejected'].includes(status)) return res.status(400).json({ error: 'status must be approved or rejected' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const arR = await db.query('SELECT ar.*, u.name as client_name, sp.name as specialist_name FROM assignment_requests ar JOIN dashboard_users u ON u.id = ar.user_id JOIN dashboard_users sp ON sp.id = ar.specialist_id WHERE ar.id = $1', [req.params.id]);
+    if (arR.rows.length === 0) return res.status(404).json({ error: 'Assignment request not found' });
+    const ar = arR.rows[0];
+    const adminR = await db.query("SELECT id FROM dashboard_users WHERE role = 'ADMIN' LIMIT 1");
+    const adminId = adminR.rows[0]?.id;
+    const newStatus = status === 'approved' ? 'APPROVED' : 'REJECTED';
+    await db.query('UPDATE assignment_requests SET status = $1, resolved_at = NOW() WHERE id = $2', [newStatus, req.params.id]);
+    if (status === 'approved') {
+      await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [ar.user_id, ar.specialist_id]);
+      if (adminId) {
+        await db.query('INSERT INTO direct_messages (from_user_id, to_user_id, content) VALUES ($1, $2, $3)', [adminId, ar.user_id, `Great news! Your request to be assigned to ${ar.specialist_name} has been approved. They are now your specialist.`]);
+        await db.query('INSERT INTO direct_messages (from_user_id, to_user_id, content) VALUES ($1, $2, $3)', [adminId, ar.specialist_id, `${ar.client_name} has been assigned to you as a new client by the admin.`]);
+      }
+      await db.query("INSERT INTO activity_log (type, message) VALUES ('assignment_approved', $1)", [`Admin approved assignment: ${ar.client_name} → ${ar.specialist_name}`]);
+    } else {
+      if (adminId) {
+        await db.query('INSERT INTO direct_messages (from_user_id, to_user_id, content) VALUES ($1, $2, $3)', [adminId, ar.user_id, `Your assignment request to ${ar.specialist_name} was not approved at this time. Please contact support for more details.`]);
+      }
+      await db.query("INSERT INTO activity_log (type, message) VALUES ('assignment_rejected', $1)", [`Admin rejected assignment: ${ar.client_name} → ${ar.specialist_name}`]);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PATCH /api/admin/assignment-requests/:id', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/admin/notifications', async (req, res) => {
   if (requireAdmin(req, res) === undefined) return;
-  if (!db.connected || !(await hasDashboard())) return res.json({ notifications: [], pendingApplications: 0, pendingBookingRequests: 0 });
+  if (!db.connected || !(await hasDashboard())) return res.json({ notifications: [], pendingApplications: 0, pendingBookingRequests: 0, pendingAssignments: 0 });
   try {
-    const [logR, appR, brR] = await Promise.all([
+    const [logR, appR, brR, assignR] = await Promise.all([
       db.query('SELECT id, type, message, created_at FROM activity_log ORDER BY created_at DESC LIMIT 50'),
       db.query("SELECT COUNT(*)::int as c FROM specialist_applications WHERE status = 'PENDING'"),
       db.query("SELECT COUNT(*)::int as c FROM booking_requests WHERE status = 'PENDING'"),
+      db.query("SELECT COUNT(*)::int as c FROM assignment_requests WHERE status = 'PENDING'"),
     ]);
     const pendingApplications = appR.rows[0]?.c || 0;
     const pendingBookingRequests = brR.rows[0]?.c || 0;
+    const pendingAssignments = assignR.rows[0]?.c || 0;
     const notifications = logR.rows.map(rr => {
       const d = rr.created_at ? new Date(rr.created_at) : new Date();
       const ts = (() => { const m = Math.round((Date.now() - d) / 60000); if (m < 1) return 'Just now'; if (m < 60) return m + ' min ago'; if (m < 1440) return Math.floor(m / 60) + ' hours ago'; return Math.floor(m / 1440) + ' days ago'; })();
@@ -823,10 +954,10 @@ app.get('/api/admin/notifications', async (req, res) => {
         createdAt: rr.created_at,
       };
     });
-    res.json({ notifications, pendingApplications, pendingBookingRequests });
+    res.json({ notifications, pendingApplications, pendingBookingRequests, pendingAssignments });
   } catch (err) {
     console.error('GET /api/admin/notifications', err);
-    res.json({ notifications: [], pendingApplications: 0, pendingBookingRequests: 0 });
+    res.json({ notifications: [], pendingApplications: 0, pendingBookingRequests: 0, pendingAssignments: 0 });
   }
 });
 
@@ -2131,6 +2262,15 @@ async function autoMigrate() {
         session_type  VARCHAR(100) NOT NULL,
         status        VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
         created_at    TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS assignment_requests (
+        id            SERIAL PRIMARY KEY,
+        user_id       INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        specialist_id INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        status        VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+        created_at    TIMESTAMPTZ DEFAULT NOW(),
+        resolved_at   TIMESTAMPTZ,
+        UNIQUE (user_id, specialist_id)
       );
       CREATE TABLE IF NOT EXISTS reviews (
         id            SERIAL PRIMARY KEY,

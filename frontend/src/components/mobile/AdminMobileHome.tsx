@@ -35,9 +35,11 @@ export default function AdminMobileHome() {
   const [applications, setApps]   = useState(emptyApplications);
   const [activityLog, setLog]     = useState(mockActivityLog);
   const [bookingReqs, setBooking] = useState<any[]>([]);
+  const [assignReqs, setAssignReqs] = useState<{ id: string; clientName: string; clientEmail: string; specialistName: string; specialistRole: string; consultationCount: number; createdAt: string }[]>([]);
   const [specialists, setSpec]    = useState<SpecialistRow[]>([]);
   const [sessions, setSessions]   = useState<any[]>([]);
   const [actionId, setActionId]   = useState<string | null>(null);
+  const [assignActionId, setAssignActionId] = useState<string | null>(null);
   const [approvedAlert, setApprovedAlert] = useState<{ name: string; email: string; tempPassword: string } | null>(null);
 
   const loadAll = () => {
@@ -45,6 +47,7 @@ export default function AdminMobileHome() {
     api.getAdminApplications().then(setApps).catch(() => {});
     api.getAdminActivityLog().then(setLog).catch(() => {});
     api.getAdminBookingRequests().then(setBooking).catch(() => {});
+    api.getAdminAssignmentRequests().then(setAssignReqs).catch(() => {});
     api.getAdminSpecialists().then((d: SpecialistRow[]) => setSpec(Array.isArray(d) ? d : [])).catch(() => {});
     api.getAdminSessions().then((d: any[]) => setSessions(Array.isArray(d) ? d : [])).catch(() => {});
   };
@@ -68,8 +71,19 @@ export default function AdminMobileHome() {
       .finally(() => setActionId(null));
   };
 
-  const pendingApps     = applications.filter((a) => a.status === 'PENDING').length;
-  const pendingBookings = bookingReqs.filter((b) => b.status === 'PENDING').length;
+  const pendingApps      = applications.filter((a) => a.status === 'PENDING').length;
+  const pendingBookings  = bookingReqs.filter((b) => b.status === 'PENDING').length;
+  const pendingAssignments = assignReqs.length;
+
+  const handleAssignmentAction = (id: string, status: 'approved' | 'rejected') => {
+    setAssignActionId(id);
+    api.patchAdminAssignmentRequest(id, status)
+      .then(() => {
+        api.getAdminAssignmentRequests().then(setAssignReqs).catch(() => {});
+        api.getAdminPlatformStats().then(setS).catch(() => {});
+      })
+      .finally(() => setAssignActionId(null));
+  };
 
   return (
     <div className="mobile-card-enter">
@@ -113,10 +127,16 @@ export default function AdminMobileHome() {
       </section>
 
       {/* Pending Actions summary */}
-      {(pendingApps > 0 || pendingBookings > 0) && (
+      {(pendingApps > 0 || pendingBookings > 0 || pendingAssignments > 0) && (
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Pending Actions</h3>
           <div className={styles.pendingRow}>
+            {pendingAssignments > 0 && (
+              <div className={styles.pendingChip} style={{ borderColor: '#d4af37', color: '#d4af37' }}>
+                <span className={styles.pendingNum}>{pendingAssignments}</span>
+                <span>Assignments</span>
+              </div>
+            )}
             {pendingApps > 0 && (
               <Link href="/dashboard/admin/applications" className={styles.pendingChip}>
                 <span className={styles.pendingNum}>{pendingApps}</span>
@@ -186,6 +206,45 @@ export default function AdminMobileHome() {
                     <button type="button" className={styles.btnReject} onClick={() => handleApplicationStatus(app.id, 'REJECTED')}>✕ Reject</button>
                   </div>
                 )}
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+
+      {/* Assignment Requests */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>
+          Assignment Requests{assignReqs.length > 0 && <span className={styles.badge}>{assignReqs.length}</span>}
+        </h3>
+        {assignReqs.length === 0 ? (
+          <p className={styles.empty}>No pending assignment requests.</p>
+        ) : (
+          assignReqs.map((ar) => (
+            <div key={ar.id} className={styles.assignCard}>
+              <div className={styles.assignInfo}>
+                <span className={styles.assignClient}>{ar.clientName}</span>
+                <span className={styles.assignEmail}>{ar.clientEmail}</span>
+                <span className={styles.assignSp}>{ar.specialistName} · <Badge variant={ar.specialistRole === 'THERAPIST' ? 'green' : ar.specialistRole === 'LIFE_COACH' ? 'gold' : 'purple'}>{ar.specialistRole.replace('_', ' ')}</Badge></span>
+                <span className={styles.assignCount}>{ar.consultationCount} consultations done</span>
+              </div>
+              <div className={styles.assignActions}>
+                <button
+                  type="button"
+                  className={styles.btnApprove}
+                  disabled={assignActionId === ar.id}
+                  onClick={() => handleAssignmentAction(ar.id, 'approved')}
+                >
+                  {assignActionId === ar.id ? '…' : '✓'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.btnReject}
+                  disabled={assignActionId === ar.id}
+                  onClick={() => handleAssignmentAction(ar.id, 'rejected')}
+                >
+                  ✕
+                </button>
               </div>
             </div>
           ))
