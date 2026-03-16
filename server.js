@@ -228,17 +228,28 @@ const hasDashboard = async () => {
   }
 };
 
-const formatSession = (row, userRow, specialistRow) => ({
-  id: String(row.id),
-  clientName: userRow ? userRow.name.split(' ')[0] : 'Client',
-  specialistName: specialistRow ? specialistRow.name : '',
-  specialistType: specialistRow ? specialistRow.role : 'THERAPIST',
-  type: row.type,
-  time: row.scheduled_at ? new Date(row.scheduled_at).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' }) : '',
-  durationMinutes: row.duration_minutes,
-  status: row.status,
-  rating: row.rating ? Number(row.rating) : undefined,
-});
+const formatSession = (row, userRow, specialistRow) => {
+  const dt = row.scheduled_at ? new Date(row.scheduled_at) : null;
+  const now = new Date();
+  const isToday = dt && dt.toDateString() === now.toDateString();
+  const dateLabel = dt
+    ? (isToday ? 'Today' : dt.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))
+    : '';
+  const timeLabel = dt ? dt.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' }) : '';
+  return {
+    id: String(row.id),
+    clientName: userRow ? (userRow.name || 'Client').split(' ')[0] : 'Client',
+    specialistName: specialistRow ? specialistRow.name : '',
+    specialistType: specialistRow ? specialistRow.role : 'THERAPIST',
+    type: row.type,
+    time: timeLabel,
+    date: dateLabel,
+    scheduledAt: dt ? dt.toISOString() : '',
+    durationMinutes: row.duration_minutes,
+    status: row.status,
+    rating: row.rating ? Number(row.rating) : undefined,
+  };
+};
 
 // ---------- Auth: login, signup, me ----------
 app.post('/api/auth/login', async (req, res) => {
@@ -1219,54 +1230,101 @@ app.get('/api/specialists/:id/dashboard', async (req, res) => {
     const spR = await db.query('SELECT id, name, email, role FROM dashboard_users WHERE id = $1 AND role IN (\'THERAPIST\', \'LIFE_COACH\', \'HYPNOTHERAPIST\', \'MUSIC_TUTOR\')', [id]);
     if (spR.rows.length === 0) return res.status(404).json({ error: 'Specialist not found' });
     const sp = spR.rows[0];
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
-    const scheduleR = await db.query(
-      `SELECT s.*, u.name as user_name FROM sessions s JOIN dashboard_users u ON u.id = s.user_id
-       WHERE s.specialist_id = $1 AND s.scheduled_at >= $2 AND s.scheduled_at <= $3 ORDER BY s.scheduled_at`,
-      [id, todayStart, todayEnd]
-    );
-    const clientsR = await db.query(
-      `SELECT u.id, u.name, COUNT(s.id) as session_count, MAX(s.scheduled_at)::date as last_date
-       FROM sessions s JOIN dashboard_users u ON u.id = s.user_id
-       WHERE s.specialist_id = $1 AND s.status = 'COMPLETED'
-       GROUP BY u.id, u.name`,
-      [id]
-    );
-    const notesR = await db.query(
-      `SELECT n.id, n.content, n.created_at, u.name as client_name FROM session_notes n JOIN dashboard_users u ON u.id = n.user_id WHERE n.specialist_id = $1 ORDER BY n.created_at DESC LIMIT 10`,
-      [id]
-    );
-    const requestsR = await db.query(
-      `SELECT br.id, br.user_id, br.proposed_at, br.session_type, br.created_at, br.message,
-              u.name as client_name, u.email as client_email
-       FROM booking_requests br
-       JOIN dashboard_users u ON u.id = br.user_id
-       WHERE br.specialist_id = $1 AND br.status = 'PENDING'
-       ORDER BY br.created_at DESC`,
-      [id]
-    );
-    const reviewsR = await db.query(
-      `SELECT r.id, r.rating, r.excerpt, r.created_at, u.name as client_name FROM reviews r JOIN dashboard_users u ON u.id = r.user_id WHERE r.specialist_id = $1 ORDER BY r.created_at DESC LIMIT 5`,
-      [id]
-    );
-    const earningsR = await db.query(
-      "SELECT COUNT(*) as cnt FROM sessions WHERE specialist_id = $1 AND status = 'COMPLETED' AND scheduled_at >= date_trunc('month', CURRENT_DATE)",
-      [id]
-    );
-    const sessionsCount = parseInt(earningsR.rows[0]?.cnt || 0, 10);
+
+    // Run all queries with allSettled so one failure doesn't kill the whole dashboard
+    const now = new Date();
+    const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekAhead = new Date(now); weekAhead.setDate(weekAhead.getDate() + 30);
+
+    const [scheduleResult, clientsResult, notesResult, requestsResult, reviewsResult, earningsResult, weekSessionsResult] = await Promise.allSettled([
+      // All upcoming + today sessions (next 30 days), not just today
+      db.query(
+        `SELECT s.id, s.type, s.scheduled_at, s.duration_minutes, s.status, s.rating, u.name as user_name
+         FROM sessions s JOIN dashboard_users u ON u.id = s.user_id
+         WHERE s.specialist_id = $1 AND s.scheduled_at >= NOW() - INTERVAL '2 hours'
+         ORDER BY s.scheduled_at ASC LIMIT 50`,
+        [id]
+      ),
+      // All clients who ever had a session (any status)
+      db.query(
+        `SELECT u.id, u.name,
+           COUNT(s.id) as session_count,
+           COUNT(s.id) FILTER (WHERE s.status = 'COMPLETED') as completed_count,
+           MAX(s.scheduled_at)::date as last_date
+         FROM sessions s JOIN dashboard_users u ON u.id = s.user_id
+         WHERE s.specialist_id = $1
+         GROUP BY u.id, u.name`,
+        [id]
+      ),
+      // Session notes
+      db.query(
+        `SELECT n.id, n.content, n.created_at, u.name as client_name
+         FROM session_notes n JOIN dashboard_users u ON u.id = n.user_id
+         WHERE n.specialist_id = $1 ORDER BY n.created_at DESC LIMIT 10`,
+        [id]
+      ),
+      // Pending booking requests — no message column (fetched separately by mobile)
+      db.query(
+        `SELECT br.id, br.user_id, br.proposed_at, br.session_type, br.created_at,
+                u.name as client_name, u.email as client_email
+         FROM booking_requests br
+         JOIN dashboard_users u ON u.id = br.user_id
+         WHERE br.specialist_id = $1 AND br.status = 'PENDING'
+         ORDER BY br.created_at DESC`,
+        [id]
+      ),
+      // Reviews (LEFT JOIN to be safe)
+      db.query(
+        `SELECT r.id, r.rating, r.created_at, u.name as client_name
+         FROM reviews r JOIN dashboard_users u ON u.id = r.user_id
+         WHERE r.specialist_id = $1 ORDER BY r.created_at DESC LIMIT 5`,
+        [id]
+      ),
+      // Monthly completed sessions for earnings
+      db.query(
+        `SELECT COUNT(*) as cnt FROM sessions WHERE specialist_id = $1 AND status = 'COMPLETED'
+         AND scheduled_at >= date_trunc('month', CURRENT_DATE)`,
+        [id]
+      ),
+      // This week sessions (all statuses)
+      db.query(
+        `SELECT COUNT(*) as cnt FROM sessions WHERE specialist_id = $1
+         AND scheduled_at >= NOW() - INTERVAL '7 days' AND scheduled_at <= NOW() + INTERVAL '7 days'`,
+        [id]
+      ),
+    ]);
+
+    const scheduleRows  = scheduleResult.status  === 'fulfilled' ? scheduleResult.value.rows  : [];
+    const clientRows    = clientsResult.status   === 'fulfilled' ? clientsResult.value.rows   : [];
+    const notesRows     = notesResult.status     === 'fulfilled' ? notesResult.value.rows     : [];
+    const requestRows   = requestsResult.status  === 'fulfilled' ? requestsResult.value.rows  : [];
+    const reviewRows    = reviewsResult.status   === 'fulfilled' ? reviewsResult.value.rows   : [];
+    const earningsRows  = earningsResult.status  === 'fulfilled' ? earningsResult.value.rows  : [];
+    const weekRows      = weekSessionsResult.status === 'fulfilled' ? weekSessionsResult.value.rows : [];
+
+    // Log any failures for debugging
+    [scheduleResult, clientsResult, notesResult, requestsResult, reviewsResult, earningsResult, weekSessionsResult].forEach((r, i) => {
+      if (r.status === 'rejected') console.error(`Dashboard query ${i} failed:`, r.reason?.message || r.reason);
+    });
+
+    const sessionsCount  = parseInt(earningsRows[0]?.cnt || 0, 10);
+    const weekCount      = parseInt(weekRows[0]?.cnt || 0, 10);
     const rate = 75;
-    const todaySchedule = scheduleR.rows.map(row => formatSession(row, { name: row.user_name }, sp));
-    const clients = clientsR.rows.map(r => ({
+
+    const todaySchedule = scheduleRows.map(row => formatSession(row, { name: row.user_name }, sp));
+
+    const clients = clientRows.map(r => ({
       id: String(r.id),
       name: r.name,
       sessionCount: parseInt(r.session_count || 0, 10),
+      completedCount: parseInt(r.completed_count || 0, 10),
       lastSessionDate: r.last_date,
       progressScore: 60 + Math.floor(Math.random() * 30),
-      metricLabel: 'Progress',
-      metricValue: 'Improving',
+      metricLabel: 'Sessions',
+      metricValue: String(parseInt(r.session_count || 0, 10)),
     }));
-    const recentNotes = notesR.rows.map(r => ({
+
+    const recentNotes = notesRows.map(r => ({
       id: String(r.id),
       clientName: r.client_name,
       date: r.created_at ? new Date(r.created_at).toISOString().slice(0, 10) : '',
@@ -1274,7 +1332,8 @@ app.get('/api/specialists/:id/dashboard', async (req, res) => {
       tags: [],
       isPrivate: true,
     }));
-    const pendingRequests = requestsR.rows.map(r => ({
+
+    const pendingRequests = requestRows.map(r => ({
       id: String(r.id),
       userId: String(r.user_id),
       clientName: r.client_name,
@@ -1282,23 +1341,46 @@ app.get('/api/specialists/:id/dashboard', async (req, res) => {
       requestedAt: r.created_at ? new Date(r.created_at).toISOString() : '',
       proposedTime: r.proposed_at ? new Date(r.proposed_at).toLocaleString() : '',
       sessionType: r.session_type,
-      message: r.message || '',
+      message: '',
     }));
-    const reviews = reviewsR.rows.map(r => ({
+
+    const reviews = reviewRows.map(r => ({
       id: String(r.id),
       clientName: r.client_name,
       date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : '',
       rating: r.rating,
-      excerpt: r.excerpt || '',
+      excerpt: '',
     }));
+
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd   = new Date(); todayEnd.setHours(23, 59, 59, 999);
+    const todayCount = scheduleRows.filter(r => {
+      const t = new Date(r.scheduled_at);
+      return t >= todayStart && t <= todayEnd;
+    }).length;
+    const totalHoursToday = scheduleRows
+      .filter(r => { const t = new Date(r.scheduled_at); return t >= todayStart && t <= todayEnd; })
+      .reduce((a, r) => a + (r.duration_minutes || 0), 0) / 60;
+
     res.json({
       specialist: { id: String(sp.id), name: sp.name, email: sp.email, role: sp.role },
       practiceScore: 96,
-      todayStats: { sessionsToday: scheduleR.rows.length, hoursBooked: (scheduleR.rows.reduce((a, r) => a + r.duration_minutes, 0) / 60).toFixed(1), newRequests: requestsR.rows.length, completionRate: 94 },
+      todayStats: {
+        sessionsToday: todayCount,
+        hoursBooked: totalHoursToday.toFixed(1),
+        newRequests: requestRows.length,
+        completionRate: 94,
+      },
       earningsThisMonth: sessionsCount * rate,
       earningsDeltaPercent: 12,
-      earningsSparkline: [sessionsCount * rate - 400, sessionsCount * rate - 200, sessionsCount * rate],
-      stats: { activeClients: clients.length, sessionsThisWeek: sessionsCount, avgRating: 4.8, completionRate: 94, responseTimeMinutes: 45 },
+      earningsSparkline: [Math.max(0, sessionsCount * rate - 400), Math.max(0, sessionsCount * rate - 200), sessionsCount * rate],
+      stats: {
+        activeClients: clients.length,
+        sessionsThisWeek: weekCount,
+        avgRating: 4.8,
+        completionRate: 94,
+        responseTimeMinutes: 45,
+      },
       todaySchedule,
       clients,
       recentNotes,
@@ -1379,17 +1461,26 @@ app.get('/api/specialists/:id/notes', async (req, res) => {
 app.get('/api/specialists/:id/requests', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
-    const r = await db.query(
-      `SELECT br.id, br.user_id, br.proposed_at, br.session_type, br.created_at, br.message,
-        u.name as client_name, u.email as client_email
-       FROM booking_requests br JOIN dashboard_users u ON u.id = br.user_id WHERE br.specialist_id = $1 AND br.status = 'PENDING' ORDER BY br.created_at DESC`,
-      [req.params.id]
+    // Check if message column exists to avoid column-not-found errors
+    const colCheck = await db.query(
+      "SELECT 1 FROM information_schema.columns WHERE table_name = 'booking_requests' AND column_name = 'message'"
     );
+    const hasMessageCol = colCheck.rows.length > 0;
+    const sql = hasMessageCol
+      ? `SELECT br.id, br.user_id, br.proposed_at, br.session_type, br.created_at, br.message,
+           u.name as client_name, u.email as client_email
+         FROM booking_requests br JOIN dashboard_users u ON u.id = br.user_id
+         WHERE br.specialist_id = $1 AND br.status = 'PENDING' ORDER BY br.created_at DESC`
+      : `SELECT br.id, br.user_id, br.proposed_at, br.session_type, br.created_at,
+           u.name as client_name, u.email as client_email
+         FROM booking_requests br JOIN dashboard_users u ON u.id = br.user_id
+         WHERE br.specialist_id = $1 AND br.status = 'PENDING' ORDER BY br.created_at DESC`;
+    const r = await db.query(sql, [req.params.id]);
     res.json(r.rows.map(rr => ({
       id: String(rr.id),
       userId: String(rr.user_id),
       clientName: rr.client_name,
-      clientEmail: rr.client_email,
+      clientEmail: rr.client_email || '',
       requestedAt: rr.created_at ? new Date(rr.created_at).toISOString() : '',
       proposedTime: rr.proposed_at ? new Date(rr.proposed_at).toLocaleString() : '',
       sessionType: rr.session_type,
@@ -1413,17 +1504,30 @@ app.patch('/api/specialists/:id/requests/:requestId', async (req, res) => {
     const brR = await db.query('SELECT id, user_id, specialist_id, proposed_at, session_type FROM booking_requests WHERE id = $1 AND specialist_id = $2', [req.params.requestId, req.params.id]);
     if (brR.rows.length === 0) return res.status(404).json({ error: 'Request not found' });
     const br = brR.rows[0];
+    const uR  = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1', [br.user_id]);
+    const spR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1', [br.specialist_id]);
+    const clientName = uR.rows[0]?.name || 'Client';
+    const spName     = spR.rows[0]?.name || 'Specialist';
     if (newStatus === 'ACCEPTED') {
       await db.query(
         `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status) VALUES ($1, $2, $3, $4, 50, 'UPCOMING')`,
         [br.user_id, br.specialist_id, br.session_type || 'Consultation', br.proposed_at]
       );
       await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [br.user_id, br.specialist_id]);
-      const uR = await db.query('SELECT name FROM dashboard_users WHERE id = $1', [br.user_id]);
-      const spR = await db.query('SELECT name FROM dashboard_users WHERE id = $1', [br.specialist_id]);
-      await db.query("INSERT INTO activity_log (type, message) VALUES ('booking_accepted', $1)", [`${spR.rows[0]?.name || 'Specialist'} accepted consultation request from ${uR.rows[0]?.name || 'Client'} — session scheduled`]);
+      // Notify client their request was accepted
+      const dateStr = br.proposed_at ? new Date(br.proposed_at).toLocaleString() : 'a scheduled time';
+      await db.query(
+        'INSERT INTO direct_messages (from_user_id, to_user_id, content) VALUES ($1, $2, $3)',
+        [br.specialist_id, br.user_id, `Great news! ${spName} has accepted your consultation request. Your session is scheduled for ${dateStr}. See you soon!`]
+      );
+      await db.query("INSERT INTO activity_log (type, message) VALUES ('booking_accepted', $1)", [`${spName} accepted consultation request from ${clientName} — session scheduled`]);
     } else {
-      await db.query("INSERT INTO activity_log (type, message) VALUES ('booking_declined', $1)", [`Consultation request #${req.params.requestId} declined by specialist`]);
+      // Notify client their request was declined
+      await db.query(
+        'INSERT INTO direct_messages (from_user_id, to_user_id, content) VALUES ($1, $2, $3)',
+        [br.specialist_id, br.user_id, `${spName} is unable to take your consultation request at the proposed time. Please feel free to request a different time.`]
+      );
+      await db.query("INSERT INTO activity_log (type, message) VALUES ('booking_declined', $1)", [`Consultation request from ${clientName} declined by ${spName}`]);
     }
     await db.query('UPDATE booking_requests SET status = $1 WHERE id = $2 AND specialist_id = $3', [newStatus, req.params.requestId, req.params.id]);
     res.json({ success: true });

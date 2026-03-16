@@ -112,6 +112,21 @@
   gap: 12px;
 }
 
+.sessionRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sessionDate {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 2px 0;
+}
+
 .clientGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

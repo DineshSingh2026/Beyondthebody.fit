@@ -126,21 +126,29 @@ export default function TherapistDashboardPage() {
       <div className={styles.grid}>
         <div className={styles.leftCol}>
           <motion.section className={styles.section} variants={item}>
-            <h2 className={styles.sectionTitle}>Today&apos;s Schedule</h2>
-            <div className={styles.scheduleList}>
-              {d.todaySchedule.map((s) => (
-                <SessionCard
-                  key={s.id}
-                  clientName={s.clientName}
-                  specialistName={s.clientName}
-                  type={s.type}
-                  time={s.time}
-                  duration={s.durationMinutes}
-                  status={s.status}
-                  onJoin={() => setJoinModal({ clientName: s.clientName })}
-                />
-              ))}
-            </div>
+            <h2 className={styles.sectionTitle}>Upcoming Sessions</h2>
+            {d.todaySchedule.length === 0 ? (
+              <p className={styles.muted}>No upcoming sessions scheduled.</p>
+            ) : (
+              <div className={styles.scheduleList}>
+                {d.todaySchedule.map((s) => (
+                  <div key={s.id} className={styles.sessionRow}>
+                    {s.date && (
+                      <span className={styles.sessionDate}>{s.date}</span>
+                    )}
+                    <SessionCard
+                      clientName={s.clientName}
+                      specialistName={s.clientName}
+                      type={s.type}
+                      time={s.time}
+                      duration={s.durationMinutes}
+                      status={s.status}
+                      onJoin={() => setJoinModal({ clientName: s.clientName })}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </motion.section>
           <motion.section className={styles.section} variants={item}>
             <h2 className={styles.sectionTitle}>Client Roster</h2>

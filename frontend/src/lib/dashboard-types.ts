@@ -47,6 +47,8 @@ export interface SessionSummary {
   specialistType: SpecialistType;
   type: string;
   time: string;
+  date?: string;
+  scheduledAt?: string;
   durationMinutes: number;
   status: SessionStatus;
   rating?: number;

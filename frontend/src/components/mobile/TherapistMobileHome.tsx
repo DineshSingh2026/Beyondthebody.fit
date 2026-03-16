@@ -117,16 +117,19 @@ export default function TherapistMobileHome({ specialistId }: { specialistId: st
         </div>
       </section>
 
-      {/* Today's schedule */}
+      {/* Upcoming sessions */}
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Today&apos;s Schedule</h3>
+        <h3 className={styles.sectionTitle}>Upcoming Sessions</h3>
         {d.todaySchedule.length === 0 ? (
-          <p className={styles.muted}>No sessions today.</p>
+          <p className={styles.muted}>No upcoming sessions scheduled.</p>
         ) : (
           <div className={styles.scheduleScroll}>
             {d.todaySchedule.map((s) => (
               <div key={s.id} className={styles.scheduleCard}>
-                <span className={styles.time}>{s.time}</span>
+                <div className={styles.scheduleDateTime}>
+                  {s.date && <span className={styles.scheduleDate}>{s.date}</span>}
+                  <span className={styles.time}>{s.time}</span>
+                </div>
                 <Avatar name={s.clientName} size="sm" />
                 <span className={styles.type}>{s.type}</span>
                 <Badge variant={s.status === 'IN_PROGRESS' ? 'green' : s.status === 'COMPLETED' ? 'muted' : 'gold'}>
@@ -147,7 +150,10 @@ export default function TherapistMobileHome({ specialistId }: { specialistId: st
               <Avatar name={nextSession.clientName} size="md" />
               <div>
                 <div className={styles.clientName}>{nextSession.clientName}</div>
-                <div className={styles.nextTime}>{nextSession.time} · {nextSession.durationMinutes} min</div>
+                <div className={styles.nextTime}>
+                  {nextSession.date && `${nextSession.date} · `}
+                  {nextSession.time} · {nextSession.durationMinutes} min
+                </div>
               </div>
             </div>
             <div className={styles.nextBtns}>
