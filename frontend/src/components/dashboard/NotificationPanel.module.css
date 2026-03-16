@@ -55,13 +55,14 @@
   overflow: hidden;
 }
 
-/* Opens below trigger (mobile top bar) */
+/* Opens below trigger (desktop topbar + mobile top bar) */
 .panelDown {
   bottom: unset;
   top: calc(100% + 8px);
   right: 0;
   left: auto;
   max-height: min(480px, 70dvh);
+  width: min(360px, calc(100vw - 24px));
 }
 
 .header {

@@ -67,8 +67,8 @@
 /* Stats */
 .statsRow {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
   margin-bottom: 24px;
 }
 
@@ -76,20 +76,23 @@
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 10px 6px;
   text-align: center;
 }
 
 .statValue {
   display: block;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 16px;
   color: var(--cream);
+  line-height: 1.1;
 }
 
 .statLabel {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted);
+  margin-top: 3px;
+  display: block;
 }
 
 /* Quick actions */
@@ -221,9 +224,23 @@
   font-size: 14px;
 }
 
+.requestEmail {
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .requestTime {
   font-size: 12px;
   color: var(--muted);
+}
+
+.requestType {
+  font-size: 11px;
+  color: var(--gold);
+  font-weight: 500;
 }
 
 .requestMsg {

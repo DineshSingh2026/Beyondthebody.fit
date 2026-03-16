@@ -20,6 +20,15 @@ import styles from './page.module.css';
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 const SPECIALIST_ROLES: SpecialistType[] = ['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'];
 
+interface PendingRequest {
+  id: string;
+  clientName: string;
+  clientEmail?: string;
+  proposedTime: string;
+  sessionType: string;
+  message?: string;
+}
+
 export default function TherapistDashboardPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -27,7 +36,17 @@ export default function TherapistDashboardPage() {
   const [role, setRole] = useState<SpecialistType>('THERAPIST');
   const [joinModal, setJoinModal] = useState<{ clientName: string } | null>(null);
   const [d, setD] = useState<TherapistDashboardData>(() => emptyTherapistDashboard('THERAPIST'));
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [actionId, setActionId] = useState<string | null>(null);
+
+  const loadRequests = async (id: string) => {
+    try {
+      const reqs = await api.getSpecialistRequests(id);
+      setPendingRequests(Array.isArray(reqs) ? reqs : []);
+    } catch {
+      /* keep */
+    }
+  };
 
   const loadDashboard = async (id: string) => {
     try {
@@ -36,6 +55,7 @@ export default function TherapistDashboardPage() {
     } catch {
       /* keep current data */
     }
+    await loadRequests(id);
   };
 
   useEffect(() => {
@@ -169,21 +189,24 @@ export default function TherapistDashboardPage() {
           <motion.section className={styles.section} variants={item}>
             <h2 className={styles.sectionTitle}>
               Pending Requests
-              {d.pendingRequests.length > 0 && (
-                <span className={styles.badge}>{d.pendingRequests.length}</span>
+              {pendingRequests.length > 0 && (
+                <span className={styles.badge}>{pendingRequests.length}</span>
               )}
             </h2>
-            {d.pendingRequests.length === 0 ? (
+            {pendingRequests.length === 0 ? (
               <p className={styles.muted}>No pending consultation requests.</p>
             ) : (
-              d.pendingRequests.map((r) => (
+              pendingRequests.map((r) => (
                 <div key={r.id} className={styles.requestItem}>
                   <Avatar name={r.clientName} size="sm" />
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <span className={styles.requestName}>{r.clientName}</span>
+                    {r.clientEmail && (
+                      <span className={styles.muted} style={{ display: 'block', fontSize: 11 }}>{r.clientEmail}</span>
+                    )}
                     <span className={styles.muted}>{r.proposedTime} — {r.sessionType}</span>
-                    {(r as { message?: string }).message && (
-                      <p className={styles.requestMsg}>&ldquo;{(r as { message?: string }).message}&rdquo;</p>
+                    {r.message && (
+                      <p className={styles.requestMsg}>&ldquo;{r.message}&rdquo;</p>
                     )}
                   </div>
                   <div className={styles.requestActions}>

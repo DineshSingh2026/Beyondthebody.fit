@@ -106,7 +106,7 @@ export default function TopBar({
           ↻
         </button>
 
-        <NotificationPanel role={role} />
+        <NotificationPanel role={role} direction="down" />
 
         <div className={styles.user}>
           <Avatar name={userName} size="md" />

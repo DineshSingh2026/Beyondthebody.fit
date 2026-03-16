@@ -74,7 +74,15 @@ export default function TherapistMobileHome({ specialistId }: { specialistId: st
         </div>
         <div className={styles.stat}>
           <span className={styles.statValue}>{d.stats.sessionsThisWeek}</span>
-          <span className={styles.statLabel}>Sessions</span>
+          <span className={styles.statLabel}>Sessions/wk</span>
+        </div>
+        <div className={styles.stat}>
+          <span className={styles.statValue}>★ {d.stats.avgRating}</span>
+          <span className={styles.statLabel}>Rating</span>
+        </div>
+        <div className={styles.stat}>
+          <span className={styles.statValue}>{d.stats.completionRate}%</span>
+          <span className={styles.statLabel}>Completion</span>
         </div>
         <div className={styles.stat}>
           <span className={styles.statValue}>£{d.earningsThisMonth}</span>
@@ -165,7 +173,11 @@ export default function TherapistMobileHome({ specialistId }: { specialistId: st
               <Avatar name={r.clientName} size="sm" />
               <div className={styles.requestMeta}>
                 <span className={styles.requestName}>{r.clientName}</span>
-                <span className={styles.requestTime}>{r.proposedTime} — {r.sessionType}</span>
+                {r.clientEmail && (
+                  <span className={styles.requestEmail}>{r.clientEmail}</span>
+                )}
+                <span className={styles.requestTime}>{r.proposedTime}</span>
+                <span className={styles.requestType}>{r.sessionType}</span>
                 {r.message && <span className={styles.requestMsg}>&ldquo;{r.message}&rdquo;</span>}
               </div>
               <div className={styles.requestActions}>
