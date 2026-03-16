@@ -1,6 +1,6 @@
 .desktop {
   padding: 24px 32px;
-  max-width: 480px;
+  max-width: 520px;
 }
 
 .desktopTitle {
@@ -16,7 +16,7 @@
 }
 
 .page {
-  max-width: 420px;
+  max-width: 440px;
   margin: 0 auto;
   padding: 0 0 32px;
 }
@@ -65,22 +65,53 @@
   letter-spacing: 0.08em;
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(74, 222, 128, 0.1);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  color: var(--green);
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: #d4af37;
 }
 
-.scoreWrap {
-  margin-top: 16px;
+/* Stats */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 0 16px 20px;
+}
+
+.statCard {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 8px;
+  text-align: center;
 }
 
-/* Menu list */
+.statIcon {
+  font-size: 20px;
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.statLabel {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Menu */
 .menu {
   list-style: none;
   padding: 0 16px;
-  margin: 8px 0 0;
+  margin: 0;
   border-top: 1px solid var(--border);
 }
 
@@ -92,7 +123,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 15px 0;
+  padding: 14px 0;
   font-size: 15px;
   color: var(--text);
   text-decoration: none;

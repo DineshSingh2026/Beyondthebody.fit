@@ -25,7 +25,7 @@ const adminTabs: (TabItem | 'center')[] = [
   { label: 'Users', href: '/dashboard/admin/users', icon: '👥' },
   { label: 'Specialists', href: '/dashboard/admin/specialists', icon: '🌟' },
   { label: 'Applications', href: '/dashboard/admin/applications', icon: '📋' },
-  { label: 'Schedule', href: '/dashboard/admin/schedule', icon: '📞' },
+  { label: 'Profile', href: '/dashboard/admin/profile', icon: '👤' },
 ];
 
 const therapistTabs: (TabItem | 'center')[] = [
@@ -33,7 +33,7 @@ const therapistTabs: (TabItem | 'center')[] = [
   { label: 'Schedule', href: '/dashboard/therapist/schedule', icon: '📅' },
   { label: 'Messages', href: '/dashboard/therapist/messages', icon: '💬' },
   { label: 'Clients', href: '/dashboard/therapist/clients', icon: '👥' },
-  { label: 'Notes', href: '/dashboard/therapist/notes', icon: '📝' },
+  { label: 'Profile', href: '/dashboard/therapist/profile', icon: '👤' },
 ];
 
 function getTabs(role: UserRole): (TabItem | 'center')[] {

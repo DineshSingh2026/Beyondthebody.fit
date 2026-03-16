@@ -25,12 +25,13 @@ const adminNav: NavSection[] = [
   { title: 'Platform', items: [{ label: 'Overview', href: '/dashboard/admin' }, { label: 'Revenue', href: '/dashboard/admin/revenue' }] },
   { title: 'People', items: [{ label: 'All Users', href: '/dashboard/admin/users' }, { label: 'All Specialists', href: '/dashboard/admin/specialists' }, { label: 'Add Therapist', href: '/dashboard/admin/specialists/add' }, { label: 'Applications', href: '/dashboard/admin/applications' }] },
   { title: 'Content', items: [{ label: 'Sessions', href: '/dashboard/admin' }, { label: 'Schedule call', href: '/dashboard/admin/schedule' }] },
+  { title: 'Account', items: [{ label: 'Profile', href: '/dashboard/admin/profile' }] },
 ];
 
 const therapistNav: NavSection[] = [
   { title: 'My Practice', items: [{ label: 'Overview', href: '/dashboard/therapist' }, { label: 'My Clients', href: '/dashboard/therapist/clients' }, { label: 'Notes', href: '/dashboard/therapist/notes' }] },
   { title: 'Schedule', items: [{ label: 'Calendar & Requests', href: '/dashboard/therapist/schedule' }, { label: 'Messages', href: '/dashboard/therapist/messages' }] },
-  { title: 'Account', items: [{ label: 'Earnings', href: '/dashboard/therapist/earnings' }] },
+  { title: 'Account', items: [{ label: 'Earnings', href: '/dashboard/therapist/earnings' }, { label: 'Profile', href: '/dashboard/therapist/profile' }] },
 ];
 
 function getNav(role: UserRole): NavSection[] {

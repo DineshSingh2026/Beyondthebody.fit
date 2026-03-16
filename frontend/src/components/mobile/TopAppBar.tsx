@@ -21,12 +21,14 @@ const roleTitles: Record<string, string> = {
   '/dashboard/admin/applications': 'Applications',
   '/dashboard/admin/revenue': 'Revenue',
   '/dashboard/admin/schedule': 'Schedule Call',
+  '/dashboard/admin/profile': 'My Profile',
   '/dashboard/therapist': 'My Practice',
   '/dashboard/therapist/clients': 'Clients',
   '/dashboard/therapist/schedule': 'Schedule',
   '/dashboard/therapist/notes': 'Notes',
   '/dashboard/therapist/earnings': 'Earnings',
   '/dashboard/therapist/messages': 'Messages',
+  '/dashboard/therapist/profile': 'My Profile',
 };
 
 function getTitle(pathname: string): string {
