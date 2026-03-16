@@ -85,8 +85,13 @@ export default function UserSpecialistsPage() {
           }
         });
         setConsultCounts(counts);
-        // Already assigned
-        setAssignedIds(new Set((assigned || []).map((s: { id: string }) => s.id)));
+        // Derive assigned from APPROVED assignment requests (not user_specialists)
+        const approvedAssign = new Set(
+          (assignReqs || [])
+            .filter((r: { status: string }) => r.status === 'APPROVED')
+            .map((r: { specialistId: string }) => r.specialistId)
+        );
+        setAssignedIds(approvedAssign);
         // Pending assignment requests
         const pendingAssign = new Set(
           (assignReqs || [])

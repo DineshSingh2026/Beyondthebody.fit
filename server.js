@@ -1789,7 +1789,8 @@ app.patch('/api/specialists/:id/requests/:requestId', async (req, res) => {
         `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, meeting_link) VALUES ($1, $2, $3, $4, 50, 'UPCOMING', $5)`,
         [br.user_id, br.specialist_id, br.session_type || 'Consultation', scheduleAt, meetLink]
       );
-      await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [br.user_id, br.specialist_id]);
+      // NOTE: Do NOT insert into user_specialists here — that only happens
+      // when admin approves the formal assignment request (after 2 consultations).
       // Notify client their request was accepted
       const dateStr = scheduleAt.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       await db.query(
@@ -1837,7 +1838,6 @@ app.post('/api/specialists/:id/sessions', async (req, res) => {
       `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status, meeting_link) VALUES ($1, $2, $3, $4, $5, 'UPCOMING', $6)`,
       [userId, req.params.id, type, at, dur, spMeetLink]
     );
-    await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, req.params.id]);
     await db.query("INSERT INTO activity_log (type, message) VALUES ('session_scheduled', $1)", [`${spR.rows[0].name} scheduled session with ${uR.rows[0].name} — ${type}`]);
     res.status(201).json({ success: true, message: 'Session scheduled.' });
   } catch (err) {
