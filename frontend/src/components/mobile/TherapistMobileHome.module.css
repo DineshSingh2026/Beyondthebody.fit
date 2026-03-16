@@ -9,8 +9,40 @@
   color: var(--muted);
   margin: 0 0 12px;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.seeAll {
+  font-size: 12px;
+  color: var(--green);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gold);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+}
+
+/* Hero */
 .hero {
   background: var(--card);
   border: 1px solid var(--border);
@@ -32,6 +64,71 @@
   margin: 0;
 }
 
+/* Stats */
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  text-align: center;
+}
+
+.statValue {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--cream);
+}
+
+.statLabel {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Quick actions */
+.quickGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.quickBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  font-size: 11px;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 64px;
+}
+
+.quickBtn:hover,
+.quickBtn:active {
+  border-color: var(--green);
+  background: var(--card2);
+}
+
+.quickIcon {
+  font-size: 18px;
+}
+
+/* Schedule */
 .scheduleScroll {
   display: flex;
   gap: 12px;
@@ -39,6 +136,7 @@
   padding: 0 0 8px;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x mandatory;
+  overscroll-behavior: contain;
   margin: 0 -16px;
   padding-left: 16px;
   padding-right: 16px;
@@ -67,6 +165,7 @@
   color: var(--muted);
 }
 
+/* Next session */
 .nextRow {
   display: flex;
   align-items: center;
@@ -74,7 +173,13 @@
   margin-bottom: 16px;
 }
 
+.nextBtns {
+  display: flex;
+  gap: 10px;
+}
+
 .clientName {
+  font-size: 14px;
   font-weight: 500;
   color: var(--text);
 }
@@ -84,36 +189,10 @@
   color: var(--muted);
 }
 
-.statsRow {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.stat {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  text-align: center;
-}
-
-.statValue {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 20px;
-  color: var(--cream);
-}
-
-.statLabel {
-  font-size: 11px;
-  color: var(--muted);
-}
-
+/* Pending requests */
 .requestCard {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 14px 0;
   border-bottom: 1px solid var(--border);
@@ -126,12 +205,16 @@
 .requestMeta {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .requestName {
   display: block;
   font-weight: 500;
   color: var(--text);
+  font-size: 14px;
 }
 
 .requestTime {
@@ -139,17 +222,71 @@
   color: var(--muted);
 }
 
+.requestMsg {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .requestActions {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
+  padding-top: 2px;
 }
 
+.btnAccept {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--green);
+  color: var(--bg);
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+
+.btnDecline {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--red, #f87171);
+  border: 1px solid var(--red, #f87171);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+
+.btnAccept:disabled,
+.btnDecline:disabled {
+  opacity: 0.4;
+}
+
+/* Clients */
 .clientScroll {
   display: flex;
   gap: 12px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   padding: 0 0 8px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   margin: 0 -16px;
   padding-left: 16px;
   padding-right: 16px;
@@ -168,11 +305,47 @@
   gap: 6px;
 }
 
-.clientName {
-  font-size: 13px;
+.msgLink {
+  font-size: 11px;
+  color: var(--green);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  padding: 4px 8px;
+  border: 1px solid var(--green);
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+/* Notes */
+.noteCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.noteClient {
+  font-size: 12px;
   font-weight: 500;
+  color: var(--green);
+}
+
+.noteExcerpt {
+  font-size: 13px;
   color: var(--text);
-  text-align: center;
+  margin: 6px 0 4px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.noteTime {
+  font-size: 11px;
+  color: var(--dim);
 }
 
 .muted {

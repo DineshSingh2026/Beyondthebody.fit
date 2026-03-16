@@ -11,6 +11,7 @@
   font-weight: 500;
 }
 
+/* Stats grid */
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -39,6 +40,7 @@
   color: var(--cream);
 }
 
+/* Live */
 .live {
   display: flex;
   align-items: center;
@@ -53,6 +55,7 @@
   height: 8px;
   border-radius: 50%;
   background: var(--green);
+  flex-shrink: 0;
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -61,9 +64,77 @@
   50% { opacity: 0.5; }
 }
 
-.appCard {
+/* Pending actions chips */
+.pendingRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pendingChip {
   display: flex;
   align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  text-decoration: none;
+  font-size: 13px;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  flex: 1;
+  min-width: 120px;
+}
+
+.pendingNum {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--gold);
+  line-height: 1;
+}
+
+/* Quick actions */
+.quickGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.quickBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  font-size: 11px;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 64px;
+}
+
+.quickBtn:hover,
+.quickBtn:active {
+  border-color: var(--green);
+  background: var(--card2);
+}
+
+.quickIcon {
+  font-size: 18px;
+}
+
+/* Application cards */
+.appCard {
+  display: flex;
+  align-items: flex-start;
   gap: 12px;
   padding: 14px 0;
   border-bottom: 1px solid var(--border);
@@ -84,15 +155,202 @@
 .appName {
   font-weight: 500;
   color: var(--text);
+  font-size: 14px;
 }
 
 .appStatus {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.appActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.appBtns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.btnApprove {
+  background: var(--green);
+  color: var(--bg);
+  border: none;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+.btnReject {
+  background: transparent;
+  color: var(--red, #f87171);
+  border: 1px solid var(--red, #f87171);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+/* Booking / consultation request cards */
+.bookingCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bookingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.bookingUser {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.bookingMeta {
   font-size: 12px;
   color: var(--muted);
 }
 
+.bookingTime {
+  font-size: 11px;
+  color: var(--dim);
+}
+
+/* Specialist roster cards */
+.rosterCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.rosterCard:last-child {
+  border-bottom: none;
+}
+
+.rosterMeta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rosterName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.rosterSub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.rosterActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.linkBtn {
+  color: var(--green);
+  font-size: 12px;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  padding: 2px 0;
+}
+
+.btnSm {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 30px;
+}
+
+.btnDanger {
+  background: transparent;
+  border: 1px solid var(--red, #f87171);
+  color: var(--red, #f87171);
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 30px;
+}
+
+/* Recent session cards */
+.sessionCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sessionRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sessionUser {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.sessionMeta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Revenue */
 .chartWrap {
   margin-top: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .revenueCard {
@@ -114,6 +372,7 @@
   color: var(--green);
 }
 
+/* Activity log */
 .log {
   list-style: none;
   padding: 0;
@@ -135,4 +394,53 @@
 
 .logMsg {
   color: var(--text);
+}
+
+/* Alert banner */
+.alert {
+  background: #1a2e1f;
+  border: 1px solid #d4af37;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.alertBody {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.alertBody code {
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  color: var(--gold);
+}
+
+.alertClose {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  min-width: 28px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 8px 0;
 }
