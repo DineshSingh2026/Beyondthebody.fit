@@ -16,16 +16,18 @@
   padding: 32px;
 }
 
-.title {
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  color: var(--text);
-  margin: 0 0 8px;
+.logoWrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
 }
 
-.title em {
-  font-style: italic;
-  color: var(--sage);
+.logoImg {
+  height: 52px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+  display: block;
 }
 
 .subtitle {

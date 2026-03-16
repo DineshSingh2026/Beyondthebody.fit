@@ -12,36 +12,17 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 24px 24px;
+  justify-content: center;
+  padding: 0 20px 24px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 24px;
 }
 
-.logoRing {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--green), var(--gold));
-  color: var(--bg);
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.logoText {
-  font-family: var(--font-display);
-  font-size: 16px;
-  color: var(--text);
-  letter-spacing: 0.04em;
-}
-
-.logoText em {
-  font-style: italic;
-  color: var(--sage);
+.logoImg {
+  width: 148px;
+  height: auto;
+  display: block;
+  object-fit: contain;
 }
 
 .scoreWrap {

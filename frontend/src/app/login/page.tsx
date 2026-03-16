@@ -86,7 +86,9 @@ function LoginForm() {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        <h1 className={styles.title}>Beyond <em>The Body</em></h1>
+        <div className={styles.logoWrap}>
+          <img src="/img/btb-logo.png" alt="Beyond The Body" className={styles.logoImg} />
+        </div>
         <p className={styles.subtitle}>
           {mode === 'signin' ? 'Healing begins within' : 'Create your account'}
         </p>
@@ -208,7 +210,9 @@ export default function LoginPage() {
     <Suspense fallback={
       <div className={styles.page}>
         <div className={styles.card}>
-          <h1 className={styles.title}>Beyond <em>The Body</em></h1>
+          <div className={styles.logoWrap}>
+            <img src="/img/btb-logo.png" alt="Beyond The Body" className={styles.logoImg} />
+          </div>
           <p className={styles.subtitle}>Healing begins within</p>
           <p style={{ color: 'var(--muted)', textAlign: 'center' }}>Loading…</p>
         </div>

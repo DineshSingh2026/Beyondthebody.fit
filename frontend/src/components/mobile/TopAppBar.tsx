@@ -126,7 +126,11 @@ export default function TopAppBar({
             ←
           </button>
         ) : (
-          <div className={styles.logoRing}>B</div>
+          <img
+            src="/img/btb-logo.png"
+            alt="Beyond The Body"
+            className={styles.logoImg}
+          />
         )}
         <h1 className={styles.title}>{displayTitle}</h1>
       </div>

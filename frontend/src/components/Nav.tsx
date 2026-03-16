@@ -37,12 +37,14 @@ export default function Nav() {
           <button
             className="nav-logo"
             onClick={() => scrollTo('home')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
-            <img src="/img/btb-logo.png" alt="" className="nav-logo-img" />
-            <span className="logo-text">
-              Beyond <em>The Body</em>
-            </span>
+            <img
+              src="/img/btb-logo.png"
+              alt="Beyond The Body"
+              className="nav-logo-img"
+              style={{ height: '36px', width: 'auto', display: 'block' }}
+            />
           </button>
           <ul className="nav-links">
             {links.map((l) => (

@@ -38,10 +38,7 @@ export default function Loader() {
     <div className={`loader${hidden ? ' hidden' : ''}`} id="loader">
       <div className="loader-inner">
         <div className="loader-logo">
-          <img src="/img/btb-logo.png" alt="" className="loader-logo-img" />
-          <span className="logo-text loader-logo-text">
-            Beyond <em>The Body</em>
-          </span>
+          <img src="/img/btb-logo.png" alt="Beyond The Body" className="loader-logo-img" />
         </div>
         <p className="loader-tagline">Healing begins within</p>
         <div className="loader-progress-wrap">

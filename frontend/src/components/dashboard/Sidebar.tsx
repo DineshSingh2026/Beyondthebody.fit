@@ -59,8 +59,11 @@ export default function Sidebar({ role, healingScore = 0 }: SidebarProps) {
   return (
     <aside className={styles.sidebar}>
       <div className={styles.logo}>
-        <div className={styles.logoRing}>B</div>
-        <span className={styles.logoText}>Beyond <em>The Body</em></span>
+        <img
+          src="/img/btb-logo.png"
+          alt="Beyond The Body"
+          className={styles.logoImg}
+        />
       </div>
       {showHealingRing && (
         <div className={styles.scoreWrap}>

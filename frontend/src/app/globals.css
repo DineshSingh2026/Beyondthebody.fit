@@ -170,7 +170,8 @@ body:hover .cursor { opacity: 1; }
 }
 
 .loader-logo-img {
-  max-height: 320px;
+  max-height: 80px;
+  max-width: 260px;
   width: auto;
   height: auto;
   object-fit: contain;
