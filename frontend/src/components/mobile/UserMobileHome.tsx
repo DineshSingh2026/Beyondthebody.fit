@@ -100,17 +100,13 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Quick Actions</h3>
         <div className={styles.quickGrid}>
-          <Link href="/dashboard/user/sessions">
-            <button type="button" className={styles.quickBtn}>
-              <span className={styles.quickIcon}>📅</span>
-              Book
-            </button>
+          <Link href="/dashboard/user/sessions" className={styles.quickBtn}>
+            <span className={styles.quickIcon}>📅</span>
+            Book
           </Link>
-          <Link href="/dashboard/user/mood">
-            <button type="button" className={styles.quickBtn}>
-              <span className={styles.quickIcon}>💚</span>
-              Mood Log
-            </button>
+          <Link href="/dashboard/user/mood" className={styles.quickBtn}>
+            <span className={styles.quickIcon}>💚</span>
+            Mood Log
           </Link>
           <button type="button" className={styles.quickBtn}>
             <span className={styles.quickIcon}>✨</span>
