@@ -21,13 +21,35 @@ import JoinSection from '@/components/JoinSection';
 import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
 
+const FALLBACK = {
+  affirmations: ['I am worthy of healing and growth.', 'Every step forward counts.'],
+  conditions: [{ name: 'Anxiety', fact: 'Anxiety is treatable.', treatment: 'Therapy and lifestyle.', signs: ['Worry', 'Restlessness'], treatments: ['Therapy', 'Breathing'], color: '#5BB89A' }],
+  brainTips: [{ title: 'Box Breathing', description: 'Inhale 4s, hold 4s, exhale 4s.', category: 'Breathing', icon: '🫁' }],
+  quotes: [{ quote_text: 'Healing is not linear.', author: 'Unknown' }],
+};
+
 export default async function HomePage() {
-  const [affirmations, conditions, brainTips, quotes] = await Promise.all([
-    fetchAffirmations(),
-    fetchConditions(),
-    fetchBrainTips(),
-    fetchQuotes(),
-  ]);
+  let affirmations: string[];
+  let conditions: { name: string; fact: string; treatment: string; signs: string[]; treatments: string[]; color: string }[];
+  let brainTips: { title: string; description: string; category: string; icon: string }[];
+  let quotes: { quote_text: string; author: string }[];
+  try {
+    const [a, c, b, q] = await Promise.all([
+      fetchAffirmations(),
+      fetchConditions(),
+      fetchBrainTips(),
+      fetchQuotes(),
+    ]);
+    affirmations = a;
+    conditions = c;
+    brainTips = b;
+    quotes = q;
+  } catch {
+    affirmations = FALLBACK.affirmations;
+    conditions = FALLBACK.conditions;
+    brainTips = FALLBACK.brainTips;
+    quotes = FALLBACK.quotes;
+  }
 
   return (
     <>
