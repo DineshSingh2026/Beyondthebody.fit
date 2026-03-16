@@ -1,0 +1,16 @@
+.page { padding: 24px 32px; max-width: 480px; }
+.title { font-size: 1.5rem; color: var(--text); margin: 0 0 8px; }
+.sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+.form { display: flex; flex-direction: column; gap: 16px; }
+.label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--text); }
+.input { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--text); font-size: 14px; }
+.input:focus { outline: none; border-color: var(--accent, #d4af37); }
+.error { color: var(--error, #c53030); font-size: 14px; margin: 0; }
+.actions { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+.submit { padding: 10px 20px; background: var(--accent, #d4af37); color: var(--dark, #070C0A); border: none; border-radius: var(--radius); font-weight: 500; cursor: pointer; }
+.submit:disabled { opacity: 0.7; cursor: not-allowed; }
+.cancel { color: var(--muted); font-size: 14px; }
+.success { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+.success p { margin: 0 0 16px; color: var(--text); }
+.link { display: inline-block; margin-right: 12px; color: var(--accent); font-size: 14px; }
+.button { margin-top: 8px; padding: 8px 16px; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); cursor: pointer; font-size: 14px; }

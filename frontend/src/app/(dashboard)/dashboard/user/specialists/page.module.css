@@ -212,3 +212,31 @@
   flex-direction: column;
   gap: 16px;
 }
+
+/* Request consultation modal */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+}
+.modalTitle { font-size: 1.1rem; margin: 0 0 16px; color: var(--text); }
+.modalError { color: var(--error, #c53030); font-size: 13px; margin: 0 0 12px; }
+.modalLabel { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text); margin-bottom: 12px; }
+.modalInput { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; }
+.modalActions { display: flex; gap: 10px; margin-top: 16px; }
+.modalBtnPrimary { padding: 10px 18px; background: var(--green); color: var(--dark); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
+.modalBtnPrimary:disabled { opacity: 0.7; cursor: not-allowed; }
+.modalBtnGhost { padding: 10px 18px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text); cursor: pointer; font-size: 14px; }

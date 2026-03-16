@@ -70,6 +70,15 @@
 .headerActions {
   display: flex;
   gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pendingSummary {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .clearBtn {

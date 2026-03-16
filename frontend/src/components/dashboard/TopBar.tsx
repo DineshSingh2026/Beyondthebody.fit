@@ -67,7 +67,7 @@ export default function TopBar({
         )}
       </div>
       <div className={styles.right}>
-        <NotificationPanel />
+        <NotificationPanel role={role} />
         <div className={styles.user}>
           <Avatar name={userName} size="md" />
           <div className={styles.userMeta}>

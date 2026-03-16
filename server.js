@@ -246,9 +246,10 @@ app.post('/api/auth/login', async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Service unavailable' });
   try {
-    const r = await db.query('SELECT id, name, email, role, password_hash FROM dashboard_users WHERE LOWER(email) = LOWER($1)', [email]);
+    const r = await db.query('SELECT id, name, email, role, password_hash, suspended FROM dashboard_users WHERE LOWER(email) = LOWER($1)', [email]);
     if (r.rows.length === 0) return res.status(401).json({ error: 'Invalid email or password' });
     const u = r.rows[0];
+    if (u.suspended) return res.status(403).json({ error: 'Account suspended. Please contact support.' });
     if (!u.password_hash) return res.status(401).json({ error: 'Account not set up for login. Use sign up or contact support.' });
     const ok = await bcrypt.compare(password, u.password_hash);
     if (!ok) return res.status(401).json({ error: 'Invalid email or password' });
@@ -313,9 +314,10 @@ app.get('/api/auth/me', async (req, res) => {
   if (!payload) return res.status(401).json({ error: 'Unauthorized' });
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Service unavailable' });
   try {
-    const r = await db.query('SELECT id, name, email, role FROM dashboard_users WHERE id = $1', [payload.id]);
+    const r = await db.query('SELECT id, name, email, role, suspended FROM dashboard_users WHERE id = $1', [payload.id]);
     if (r.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     const u = r.rows[0];
+    if (u.suspended) return res.status(403).json({ error: 'Account suspended. Please contact support.' });
     return res.json({ id: String(u.id), name: u.name, email: u.email, role: u.role });
   } catch (err) {
     console.error('GET /api/auth/me', err);
@@ -460,6 +462,104 @@ app.get('/api/users/:id/specialists', async (req, res) => {
   }
 });
 
+// Conversation partners for messaging: specialists from user_specialists + anyone with direct_messages
+app.get('/api/users/:id/conversation-partners', async (req, res) => {
+  const bearer = req.headers.authorization;
+  const token = bearer && bearer.startsWith('Bearer ') ? bearer.slice(7) : null;
+  const payload = token ? verifyToken(token) : null;
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (String(payload.id) !== String(req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT DISTINCT u.id, u.name, u.role FROM dashboard_users u
+       WHERE u.id IN (
+         SELECT specialist_id FROM user_specialists WHERE user_id = $1
+         UNION
+         SELECT from_user_id FROM direct_messages WHERE to_user_id = $1
+         UNION
+         SELECT to_user_id FROM direct_messages WHERE from_user_id = $1
+       ) AND u.role IN ('THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR')
+       ORDER BY u.name`,
+      [req.params.id]
+    );
+    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, type: rr.role })));
+  } catch (err) {
+    console.error('GET /api/users/:id/conversation-partners', err);
+    res.json([]);
+  }
+});
+
+// List booking requests made by this user (so UI can show "Request sent" per specialist)
+app.get('/api/users/:userId/booking-requests', async (req, res) => {
+  const bearer = req.headers.authorization;
+  const token = bearer && bearer.startsWith('Bearer ') ? bearer.slice(7) : null;
+  const payload = token ? verifyToken(token) : null;
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (String(payload.id) !== String(req.params.userId)) return res.status(403).json({ error: 'Forbidden' });
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT br.id, br.specialist_id, br.proposed_at, br.session_type, br.status, br.created_at
+       FROM booking_requests br WHERE br.user_id = $1 ORDER BY br.created_at DESC`,
+      [req.params.userId]
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      specialistId: String(rr.specialist_id),
+      proposedAt: rr.proposed_at,
+      sessionType: rr.session_type,
+      status: rr.status,
+      createdAt: rr.created_at,
+    })));
+  } catch (err) {
+    console.error('GET /api/users/:userId/booking-requests', err);
+    res.json([]);
+  }
+});
+
+// User requests consultation with a specialist (creates booking_request)
+app.post('/api/users/:userId/booking-request', async (req, res) => {
+  const bearer = req.headers.authorization;
+  const token = bearer && bearer.startsWith('Bearer ') ? bearer.slice(7) : null;
+  const payload = token ? verifyToken(token) : null;
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (String(payload.id) !== String(req.params.userId)) return res.status(403).json({ error: 'Forbidden' });
+  const { specialistId, proposedAt, sessionType, message } = req.body || {};
+  if (!specialistId || !proposedAt || !sessionType) return res.status(400).json({ error: 'specialistId, proposedAt and sessionType are required.' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const userR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1 AND role = $2', [req.params.userId, 'USER']);
+    if (userR.rows.length === 0) return res.status(400).json({ error: 'Not a user account' });
+    const spR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1 AND role IN (\'THERAPIST\',\'LIFE_COACH\',\'HYPNOTHERAPIST\',\'MUSIC_TUTOR\')', [specialistId]);
+    if (spR.rows.length === 0) return res.status(404).json({ error: 'Specialist not found' });
+    const proposed = new Date(proposedAt);
+    if (isNaN(proposed.getTime())) return res.status(400).json({ error: 'Invalid proposedAt date.' });
+    const insertCols = 'specialist_id, user_id, proposed_at, session_type, status';
+    const insertVals = '$1, $2, $3, $4, \'PENDING\'';
+    const params = [specialistId, req.params.userId, proposed, (sessionType || 'Consultation').toString().trim()];
+    let colCount = 5;
+    try {
+      const msgCol = await db.query("SELECT 1 FROM information_schema.columns WHERE table_name = 'booking_requests' AND column_name = 'message'");
+      if (msgCol.rows.length > 0) {
+        params.push((message || '').toString().trim().slice(0, 2000));
+        colCount = 6;
+      }
+    } catch (_) {}
+    const q = colCount === 6
+      ? `INSERT INTO booking_requests (specialist_id, user_id, proposed_at, session_type, status, message) VALUES ($1, $2, $3, $4, 'PENDING', $5) RETURNING id`
+      : `INSERT INTO booking_requests (specialist_id, user_id, proposed_at, session_type, status) VALUES ($1, $2, $3, $4, 'PENDING') RETURNING id`;
+    const ins = await db.query(q, params);
+    const userName = userR.rows[0].name;
+    const spName = spR.rows[0].name;
+    await db.query("INSERT INTO activity_log (type, message) VALUES ('booking_request', $1)", [`${userName} requested consultation with ${spName} — ${(sessionType || 'Consultation').toString()}`]);
+    res.status(201).json({ success: true, id: String(ins.rows[0].id), message: 'Request sent. The specialist will respond shortly.' });
+  } catch (err) {
+    console.error('POST /api/users/:userId/booking-request', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/users/:id/mood-log', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
@@ -586,6 +686,20 @@ app.get('/api/admin/applications', async (req, res) => {
   }
 });
 
+app.get('/api/admin/applications/:id', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const r = await db.query('SELECT id, name, email, specialty, status, applied_at FROM specialist_applications WHERE id = $1', [req.params.id]);
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Application not found' });
+    const rr = r.rows[0];
+    res.json({ id: String(rr.id), name: rr.name, email: rr.email, specialty: rr.specialty, status: rr.status, appliedAt: rr.applied_at });
+  } catch (err) {
+    console.error('GET /api/admin/applications/:id', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.patch('/api/admin/applications/:id', async (req, res) => {
   if (requireAdmin(req, res) === undefined) return;
   const { status } = req.body;
@@ -656,15 +770,93 @@ app.get('/api/admin/sessions', async (req, res) => {
   }
 });
 
+app.get('/api/admin/booking-requests', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT br.id, br.proposed_at, br.session_type, br.status, br.created_at,
+        u.name as user_name, u.email as user_email,
+        sp.name as specialist_name, sp.role as specialist_role
+       FROM booking_requests br
+       JOIN dashboard_users u ON u.id = br.user_id
+       JOIN dashboard_users sp ON sp.id = br.specialist_id
+       ORDER BY br.created_at DESC LIMIT 200`
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      userName: rr.user_name,
+      userEmail: rr.user_email,
+      specialistName: rr.specialist_name,
+      specialistRole: rr.specialist_role,
+      proposedAt: rr.proposed_at,
+      sessionType: rr.session_type,
+      status: rr.status,
+      createdAt: rr.created_at,
+    })));
+  } catch (err) {
+    console.error('GET /api/admin/booking-requests', err);
+    res.json([]);
+  }
+});
+
+app.get('/api/admin/notifications', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  if (!db.connected || !(await hasDashboard())) return res.json({ notifications: [], pendingApplications: 0, pendingBookingRequests: 0 });
+  try {
+    const [logR, appR, brR] = await Promise.all([
+      db.query('SELECT id, type, message, created_at FROM activity_log ORDER BY created_at DESC LIMIT 50'),
+      db.query("SELECT COUNT(*)::int as c FROM specialist_applications WHERE status = 'PENDING'"),
+      db.query("SELECT COUNT(*)::int as c FROM booking_requests WHERE status = 'PENDING'"),
+    ]);
+    const pendingApplications = appR.rows[0]?.c || 0;
+    const pendingBookingRequests = brR.rows[0]?.c || 0;
+    const notifications = logR.rows.map(rr => {
+      const d = rr.created_at ? new Date(rr.created_at) : new Date();
+      const ts = (() => { const m = Math.round((Date.now() - d) / 60000); if (m < 1) return 'Just now'; if (m < 60) return m + ' min ago'; if (m < 1440) return Math.floor(m / 60) + ' hours ago'; return Math.floor(m / 1440) + ' days ago'; })();
+      return {
+        id: String(rr.id),
+        type: rr.type || 'activity',
+        title: (rr.type || 'activity').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        message: rr.message,
+        timestamp: ts,
+        createdAt: rr.created_at,
+      };
+    });
+    res.json({ notifications, pendingApplications, pendingBookingRequests });
+  } catch (err) {
+    console.error('GET /api/admin/notifications', err);
+    res.json({ notifications: [], pendingApplications: 0, pendingBookingRequests: 0 });
+  }
+});
+
 app.get('/api/admin/users', async (req, res) => {
   if (requireAdmin(req, res) === undefined) return;
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
-    const r = await db.query("SELECT id, name, email, role FROM dashboard_users WHERE role = 'USER' ORDER BY id");
-    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, email: rr.email, role: rr.role })));
+    const r = await db.query("SELECT id, name, email, role, COALESCE(suspended, false) as suspended FROM dashboard_users WHERE role = 'USER' ORDER BY id");
+    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, email: rr.email, role: rr.role, suspended: !!rr.suspended })));
   } catch (err) {
     console.error('GET /api/admin/users', err);
     res.json([]);
+  }
+});
+
+app.patch('/api/admin/users/:id/suspend', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  const { suspended } = req.body;
+  if (typeof suspended !== 'boolean') return res.status(400).json({ error: 'suspended (boolean) required' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const target = await db.query('SELECT id, name, role FROM dashboard_users WHERE id = $1', [req.params.id]);
+    if (target.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    if (target.rows[0].role === 'ADMIN') return res.status(400).json({ error: 'Cannot suspend an admin' });
+    await db.query('UPDATE dashboard_users SET suspended = $1 WHERE id = $2', [suspended, req.params.id]);
+    await db.query("INSERT INTO activity_log (type, message) VALUES ('user_suspended', $1)", [`${target.rows[0].name} (${target.rows[0].role}) ${suspended ? 'suspended' : 'unsuspended'} by admin`]);
+    res.json({ success: true, suspended });
+  } catch (err) {
+    console.error('PATCH /api/admin/users/:id/suspend', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -673,7 +865,7 @@ app.get('/api/admin/specialists', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query(
-      `SELECT id, name, role,
+      `SELECT id, name, email, role, COALESCE(suspended, false) as suspended,
         (SELECT COUNT(*) FROM sessions WHERE specialist_id = dashboard_users.id AND status = 'COMPLETED') as session_count,
         (SELECT ROUND(AVG(rating)::numeric, 1) FROM sessions WHERE specialist_id = dashboard_users.id AND rating IS NOT NULL) as avg_rating
        FROM dashboard_users WHERE role IN ('THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR') ORDER BY name`
@@ -681,13 +873,66 @@ app.get('/api/admin/specialists', async (req, res) => {
     res.json(r.rows.map(rr => ({
       id: String(rr.id),
       name: rr.name,
+      email: rr.email,
       specialty: rr.role,
-      active: true,
+      active: !rr.suspended,
+      suspended: !!rr.suspended,
       sessionCount: parseInt(rr.session_count || 0, 10),
       rating: parseFloat(rr.avg_rating || 0) || 0,
     })));
   } catch (err) {
     console.error('GET /api/admin/specialists', err);
+    res.json([]);
+  }
+});
+
+app.post('/api/admin/specialists', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  const { name, email, password, role } = req.body || {};
+  if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password are required.' });
+  const allowedRoles = ['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'];
+  const specialistRole = allowedRoles.includes(role) ? role : 'THERAPIST';
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const existing = await db.query('SELECT id FROM dashboard_users WHERE LOWER(email) = LOWER($1)', [email.trim()]);
+    if (existing.rows.length > 0) return res.status(409).json({ error: 'A user with this email already exists.' });
+    const hash = await bcrypt.hash(password, 10);
+    const uR = await db.query(
+      'INSERT INTO dashboard_users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
+      [name.trim(), email.trim().toLowerCase(), hash, specialistRole]
+    );
+    const row = uR.rows[0];
+    await db.query("INSERT INTO activity_log (type, message) VALUES ('specialist_added', $1)", [`${row.name} (${row.email}) added as ${row.role} by admin`]);
+    res.status(201).json({ id: String(row.id), name: row.name, email: row.email, role: row.role });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'A user with this email already exists.' });
+    console.error('POST /api/admin/specialists', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/messages', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT m.id, m.content, m.created_at, fu.name as from_name, fu.email as from_email, tu.name as to_name, tu.email as to_email
+       FROM direct_messages m
+       JOIN dashboard_users fu ON fu.id = m.from_user_id
+       JOIN dashboard_users tu ON tu.id = m.to_user_id
+       ORDER BY m.created_at DESC LIMIT 100`
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      fromName: rr.from_name,
+      fromEmail: rr.from_email,
+      toName: rr.to_name,
+      toEmail: rr.to_email,
+      content: (rr.content || '').slice(0, 200),
+      createdAt: rr.created_at,
+    })));
+  } catch (err) {
+    console.error('GET /api/admin/messages', err);
     res.json([]);
   }
 });
@@ -709,6 +954,98 @@ app.get('/api/admin/activity-log', async (req, res) => {
   }
 });
 
+app.get('/api/admin/users/:id/metrics', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  const userId = req.params.id;
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const userR = await db.query('SELECT id, name, email, role, healing_score, suspended FROM dashboard_users WHERE id = $1', [userId]);
+    if (userR.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const user = userR.rows[0];
+    if (user.role !== 'USER') return res.status(400).json({ error: 'Not a user account' });
+    const [sessionsR, moodR, specialistsR, upcomingR] = await Promise.all([
+      db.query('SELECT COUNT(*) FILTER (WHERE status = \'COMPLETED\') as completed, COUNT(*) FILTER (WHERE status IN (\'UPCOMING\', \'IN_PROGRESS\') AND scheduled_at >= NOW()) as upcoming FROM sessions WHERE user_id = $1', [userId]),
+      db.query('SELECT COALESCE(AVG(value), 0) as avg FROM mood_log WHERE user_id = $1 AND date >= CURRENT_DATE - 14', [userId]),
+      db.query('SELECT sp.id, sp.name, sp.role, (SELECT COUNT(*) FROM sessions WHERE specialist_id = sp.id AND status = \'COMPLETED\') as sc FROM dashboard_users sp JOIN user_specialists us ON us.specialist_id = sp.id WHERE us.user_id = $1', [userId]),
+      db.query('SELECT s.id, s.type, s.scheduled_at, s.duration_minutes, sp.name as specialist_name FROM sessions s JOIN dashboard_users sp ON sp.id = s.specialist_id WHERE s.user_id = $1 AND s.scheduled_at >= NOW() AND s.status IN (\'UPCOMING\', \'IN_PROGRESS\') ORDER BY s.scheduled_at ASC LIMIT 10', [userId]),
+    ]);
+    const sessionsCompleted = parseInt(sessionsR.rows[0]?.completed || 0, 10);
+    const sessionsUpcoming = parseInt(sessionsR.rows[0]?.upcoming || 0, 10);
+    const moodAverage = parseFloat(moodR.rows[0]?.avg || 0);
+    res.json({
+      user: { id: String(user.id), name: user.name, email: user.email, role: user.role, suspended: !!user.suspended },
+      healingScore: user.healing_score || 0,
+      metrics: { sessionsCompleted, sessionsUpcoming, moodAverage },
+      specialists: specialistsR.rows.map(r => ({ id: String(r.id), name: r.name, role: r.role, sessionCount: parseInt(r.sc || 0, 10) })),
+      upcomingSessions: upcomingR.rows.map(r => ({ id: String(r.id), type: r.type, scheduledAt: r.scheduled_at, durationMinutes: r.duration_minutes, specialistName: r.specialist_name })),
+    });
+  } catch (err) {
+    console.error('GET /api/admin/users/:id/metrics', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/specialists/:id/metrics', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  const id = req.params.id;
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const spR = await db.query('SELECT id, name, email, role, suspended FROM dashboard_users WHERE id = $1 AND role IN (\'THERAPIST\', \'LIFE_COACH\', \'HYPNOTHERAPIST\', \'MUSIC_TUTOR\')', [id]);
+    if (spR.rows.length === 0) return res.status(404).json({ error: 'Specialist not found' });
+    const sp = spR.rows[0];
+    const [clientsR, sessionsR, requestsR, todayR] = await Promise.all([
+      db.query('SELECT u.id, u.name, COUNT(s.id) as session_count, MAX(s.scheduled_at)::date as last_date FROM dashboard_users u JOIN sessions s ON s.user_id = u.id AND s.specialist_id = $1 AND s.status = \'COMPLETED\' GROUP BY u.id, u.name', [id]),
+      db.query('SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE status = \'COMPLETED\') as completed FROM sessions WHERE specialist_id = $1', [id]),
+      db.query('SELECT COUNT(*) as c FROM booking_requests WHERE specialist_id = $1 AND status = \'PENDING\'', [id]),
+      db.query('SELECT s.id, s.type, s.scheduled_at, u.name as user_name FROM sessions s JOIN dashboard_users u ON u.id = s.user_id WHERE s.specialist_id = $1 AND s.scheduled_at::date = CURRENT_DATE AND s.status IN (\'UPCOMING\', \'IN_PROGRESS\') ORDER BY s.scheduled_at', [id]),
+    ]);
+    res.json({
+      specialist: { id: String(sp.id), name: sp.name, email: sp.email, role: sp.role, suspended: !!sp.suspended },
+      metrics: {
+        totalSessions: parseInt(sessionsR.rows[0]?.total || 0, 10),
+        completedSessions: parseInt(sessionsR.rows[0]?.completed || 0, 10),
+        pendingRequests: parseInt(requestsR.rows[0]?.c || 0, 10),
+        clientsCount: clientsR.rows.length,
+      },
+      clients: clientsR.rows.map(r => ({ id: String(r.id), name: r.name, sessionCount: parseInt(r.session_count || 0, 10), lastSessionDate: r.last_date })),
+      todaySchedule: todayR.rows.map(r => ({ id: String(r.id), type: r.type, scheduledAt: r.scheduled_at, clientName: r.user_name })),
+    });
+  } catch (err) {
+    console.error('GET /api/admin/specialists/:id/metrics', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/sessions', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  const { userId, specialistId, scheduledAt, sessionType, durationMinutes } = req.body || {};
+  if (!userId || !specialistId || !scheduledAt) return res.status(400).json({ error: 'userId, specialistId and scheduledAt are required.' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const userR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1 AND role = \'USER\'', [userId]);
+    const spR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1 AND role IN (\'THERAPIST\', \'LIFE_COACH\', \'HYPNOTHERAPIST\', \'MUSIC_TUTOR\')', [specialistId]);
+    if (userR.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    if (spR.rows.length === 0) return res.status(404).json({ error: 'Specialist not found' });
+    const at = new Date(scheduledAt);
+    if (isNaN(at.getTime())) return res.status(400).json({ error: 'Invalid scheduledAt' });
+    const dur = Math.min(120, Math.max(15, parseInt(durationMinutes, 10) || 50));
+    const type = (sessionType || 'Session').toString().trim().slice(0, 100);
+    await db.query('INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status) VALUES ($1, $2, $3, $4, $5, \'UPCOMING\')', [userId, specialistId, type, at, dur]);
+    await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, specialistId]);
+    const adminId = 1;
+    const dateStr = at.toLocaleDateString();
+    const timeStr = at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const msgToUser = `Your session has been scheduled by admin: ${dateStr} at ${timeStr} with ${spR.rows[0].name}. Type: ${type}.`;
+    const msgToSpecialist = `Admin scheduled a session: ${dateStr} at ${timeStr} with ${userR.rows[0].name}. Type: ${type}.`;
+    await db.query('INSERT INTO direct_messages (from_user_id, to_user_id, content) VALUES ($1, $2, $3), ($1, $4, $5)', [adminId, userId, msgToUser, specialistId, msgToSpecialist]);
+    await db.query("INSERT INTO activity_log (type, message) VALUES ('session_scheduled', $1)", [`Admin scheduled session: ${userR.rows[0].name} with ${spR.rows[0].name} — ${type}`]);
+    res.status(201).json({ success: true, message: 'Session scheduled. Both parties have been notified via messaging.' });
+  } catch (err) {
+    console.error('POST /api/admin/sessions', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---------- Browse all active specialists (for user discovery) ----------
 app.get('/api/specialists/browse', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) {
@@ -725,7 +1062,7 @@ app.get('/api/specialists/browse', async (req, res) => {
         COUNT(s.id) FILTER (WHERE s.status = 'COMPLETED') as session_count
        FROM dashboard_users u
        LEFT JOIN sessions s ON s.specialist_id = u.id
-       WHERE u.role IN ('THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR')
+       WHERE u.role IN ('THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR') AND (u.suspended IS NULL OR u.suspended = false)
        GROUP BY u.id, u.name, u.role, u.avatar_url
        ORDER BY session_count DESC, avg_rating DESC`
     );
@@ -902,14 +1239,19 @@ app.get('/api/specialists/:id/requests', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query(
-      `SELECT br.id, u.name as client_name, br.proposed_at, br.session_type FROM booking_requests br JOIN dashboard_users u ON u.id = br.user_id WHERE br.specialist_id = $1 AND br.status = 'PENDING'`
+      `SELECT br.id, br.user_id, br.proposed_at, br.session_type, br.created_at, br.message,
+        u.name as client_name, u.email as client_email
+       FROM booking_requests br JOIN dashboard_users u ON u.id = br.user_id WHERE br.specialist_id = $1 AND br.status = 'PENDING' ORDER BY br.created_at DESC`
     );
     res.json(r.rows.map(rr => ({
       id: String(rr.id),
+      userId: String(rr.user_id),
       clientName: rr.client_name,
-      requestedAt: '1 hour ago',
+      clientEmail: rr.client_email,
+      requestedAt: rr.created_at ? new Date(rr.created_at).toISOString() : '',
       proposedTime: rr.proposed_at ? new Date(rr.proposed_at).toLocaleString() : '',
       sessionType: rr.session_type,
+      message: rr.message || '',
     })));
   } catch (err) {
     console.error('GET /api/specialists/:id/requests', err);
@@ -918,15 +1260,116 @@ app.get('/api/specialists/:id/requests', async (req, res) => {
 });
 
 app.patch('/api/specialists/:id/requests/:requestId', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (String(payload.id) !== String(req.params.id)) return res.status(403).json({ error: 'Forbidden' });
   const { status } = req.body;
   if (!status || !['accepted', 'declined'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
   try {
-    await db.query('UPDATE booking_requests SET status = $1 WHERE id = $2 AND specialist_id = $3', [status.toUpperCase() === 'ACCEPTED' ? 'ACCEPTED' : 'DECLINED', req.params.requestId, req.params.id]);
+    const newStatus = status.toLowerCase() === 'accepted' ? 'ACCEPTED' : 'DECLINED';
+    const brR = await db.query('SELECT id, user_id, specialist_id, proposed_at, session_type FROM booking_requests WHERE id = $1 AND specialist_id = $2', [req.params.requestId, req.params.id]);
+    if (brR.rows.length === 0) return res.status(404).json({ error: 'Request not found' });
+    const br = brR.rows[0];
+    if (newStatus === 'ACCEPTED') {
+      await db.query(
+        `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status) VALUES ($1, $2, $3, $4, 50, 'UPCOMING')`,
+        [br.user_id, br.specialist_id, br.session_type || 'Consultation', br.proposed_at]
+      );
+      await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [br.user_id, br.specialist_id]);
+      const uR = await db.query('SELECT name FROM dashboard_users WHERE id = $1', [br.user_id]);
+      const spR = await db.query('SELECT name FROM dashboard_users WHERE id = $1', [br.specialist_id]);
+      await db.query("INSERT INTO activity_log (type, message) VALUES ('booking_accepted', $1)", [`${spR.rows[0]?.name || 'Specialist'} accepted consultation request from ${uR.rows[0]?.name || 'Client'} — session scheduled`]);
+    } else {
+      await db.query("INSERT INTO activity_log (type, message) VALUES ('booking_declined', $1)", [`Consultation request #${req.params.requestId} declined by specialist`]);
+    }
+    await db.query('UPDATE booking_requests SET status = $1 WHERE id = $2 AND specialist_id = $3', [newStatus, req.params.requestId, req.params.id]);
     res.json({ success: true });
   } catch (err) {
     console.error('PATCH /api/specialists/:id/requests/:requestId', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Therapist schedules a session with a client (manual schedule meeting)
+app.post('/api/specialists/:id/sessions', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (String(payload.id) !== String(req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+  const { userId, scheduledAt, sessionType, durationMinutes } = req.body || {};
+  if (!userId || !scheduledAt) return res.status(400).json({ error: 'userId and scheduledAt are required.' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const spR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1 AND role IN (\'THERAPIST\',\'LIFE_COACH\',\'HYPNOTHERAPIST\',\'MUSIC_TUTOR\')', [req.params.id]);
+    if (spR.rows.length === 0) return res.status(404).json({ error: 'Specialist not found' });
+    const uR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1 AND role = $2', [userId, 'USER']);
+    if (uR.rows.length === 0) return res.status(400).json({ error: 'Client not found' });
+    const at = new Date(scheduledAt);
+    if (isNaN(at.getTime())) return res.status(400).json({ error: 'Invalid scheduledAt' });
+    const dur = Math.min(120, Math.max(15, parseInt(durationMinutes, 10) || 50));
+    const type = (sessionType || 'Consultation').toString().trim().slice(0, 100);
+    await db.query(
+      `INSERT INTO sessions (user_id, specialist_id, type, scheduled_at, duration_minutes, status) VALUES ($1, $2, $3, $4, $5, 'UPCOMING')`,
+      [userId, req.params.id, type, at, dur]
+    );
+    await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, req.params.id]);
+    await db.query("INSERT INTO activity_log (type, message) VALUES ('session_scheduled', $1)", [`${spR.rows[0].name} scheduled session with ${uR.rows[0].name} — ${type}`]);
+    res.status(201).json({ success: true, message: 'Session scheduled.' });
+  } catch (err) {
+    console.error('POST /api/specialists/:id/sessions', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Send a direct message (therapist to client or client to therapist)
+app.post('/api/messages', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  const { toUserId, content } = req.body || {};
+  if (!toUserId || !content || typeof content !== 'string') return res.status(400).json({ error: 'toUserId and content are required.' });
+  const text = content.trim().slice(0, 5000);
+  if (!text) return res.status(400).json({ error: 'Content cannot be empty.' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const toR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1', [toUserId]);
+    if (toR.rows.length === 0) return res.status(404).json({ error: 'Recipient not found' });
+    const fromR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1', [payload.id]);
+    await db.query('INSERT INTO direct_messages (from_user_id, to_user_id, content) VALUES ($1, $2, $3)', [payload.id, toUserId, text]);
+    await db.query("INSERT INTO activity_log (type, message) VALUES ('message_sent', $1)", [`${fromR.rows[0]?.name || 'User'} sent message to ${toR.rows[0]?.name || 'User'}`]);
+    res.status(201).json({ success: true });
+  } catch (err) {
+    console.error('POST /api/messages', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get message thread between current user and another user
+app.get('/api/messages', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  const withUserId = req.query.with;
+  if (!withUserId) return res.status(400).json({ error: 'Query parameter "with" (userId) is required.' });
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT m.id, m.from_user_id, m.to_user_id, m.content, m.created_at, u.name as from_name
+       FROM direct_messages m JOIN dashboard_users u ON u.id = m.from_user_id
+       WHERE (m.from_user_id = $1 AND m.to_user_id = $2) OR (m.from_user_id = $2 AND m.to_user_id = $1)
+       ORDER BY m.created_at ASC`,
+      [payload.id, withUserId]
+    );
+    res.json(r.rows.map(rr => ({
+      id: String(rr.id),
+      fromUserId: String(rr.from_user_id),
+      toUserId: String(rr.to_user_id),
+      fromName: rr.from_name,
+      content: rr.content,
+      createdAt: rr.created_at,
+      isFromMe: String(rr.from_user_id) === String(payload.id),
+    })));
+  } catch (err) {
+    console.error('GET /api/messages', err);
+    res.json([]);
   }
 });
 
@@ -1295,6 +1738,13 @@ async function autoMigrate() {
         message    TEXT NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+      CREATE TABLE IF NOT EXISTS direct_messages (
+        id            SERIAL PRIMARY KEY,
+        from_user_id  INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        to_user_id    INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        content       TEXT NOT NULL,
+        created_at    TIMESTAMPTZ DEFAULT NOW()
+      );
       CREATE INDEX IF NOT EXISTS idx_sessions_user       ON sessions(user_id);
       CREATE INDEX IF NOT EXISTS idx_sessions_specialist ON sessions(specialist_id);
       CREATE INDEX IF NOT EXISTS idx_sessions_scheduled  ON sessions(scheduled_at);
@@ -1302,6 +1752,8 @@ async function autoMigrate() {
       CREATE INDEX IF NOT EXISTS idx_mood_log_user_date  ON mood_log(user_id, date DESC);
       CREATE INDEX IF NOT EXISTS idx_community_created   ON community_posts(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_activity_created    ON activity_log(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_dm_from_to          ON direct_messages(from_user_id, to_user_id);
+      CREATE INDEX IF NOT EXISTS idx_dm_created         ON direct_messages(created_at DESC);
     `);
     console.log('autoMigrate: schema OK');
 
@@ -1312,6 +1764,16 @@ async function autoMigrate() {
       } catch (e) {
         if (e.code !== '42701') throw e; // 42701 = duplicate_column
       }
+    }
+    try {
+      await db.query('ALTER TABLE dashboard_users ADD COLUMN suspended BOOLEAN DEFAULT FALSE');
+    } catch (e) {
+      if (e.code !== '42701') throw e;
+    }
+    try {
+      await db.query('ALTER TABLE booking_requests ADD COLUMN message TEXT');
+    } catch (e) {
+      if (e.code !== '42701') throw e;
     }
 
     // 2. Insert base users (admin + 4 specialists) — skip if already present

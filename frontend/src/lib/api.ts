@@ -124,8 +124,23 @@ export const api = {
     return fetchWithAuth(`${API_BASE}/api/users/${userId}/sessions/upcoming`);
   },
 
+  async getBookingRequests(userId: string) {
+    return fetchWithAuth<{ id: string; specialistId: string; status: string; proposedAt: string; sessionType: string; createdAt: string }[]>(`${API_BASE}/api/users/${userId}/booking-requests`);
+  },
+
+  async postBookingRequest(userId: string, data: { specialistId: string; proposedAt: string; sessionType: string; message?: string }) {
+    return fetchWithAuth<{ success: boolean; id: string; message: string }>(`${API_BASE}/api/users/${userId}/booking-request`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   async getSpecialists(userId: string) {
     return fetchWithAuth(`${API_BASE}/api/users/${userId}/specialists`);
+  },
+
+  async getConversationPartners(userId: string) {
+    return fetchWithAuth<{ id: string; name: string; type: string }[]>(`${API_BASE}/api/users/${userId}/conversation-partners`);
   },
 
   async getMoodLog(userId: string) {
@@ -151,6 +166,10 @@ export const api = {
     return fetchWithAuth(`${API_BASE}/api/admin/applications`);
   },
 
+  async getAdminApplication(id: string): Promise<{ id: string; name: string; email: string; specialty: string; status: string; appliedAt: string }> {
+    return fetchWithAuth(`${API_BASE}/api/admin/applications/${id}`);
+  },
+
   async patchApplication(id: string, status: string): Promise<{ success: boolean; newUser?: { id: string; name: string; email: string; role: string; tempPassword: string } | null }> {
     return fetchWithAuth(`${API_BASE}/api/admin/applications/${id}`, {
       method: 'PATCH',
@@ -166,6 +185,14 @@ export const api = {
     return fetchWithAuth(`${API_BASE}/api/admin/sessions`);
   },
 
+  async getAdminBookingRequests() {
+    return fetchWithAuth(`${API_BASE}/api/admin/booking-requests`);
+  },
+
+  async getAdminMessages() {
+    return fetchWithAuth(`${API_BASE}/api/admin/messages`);
+  },
+
   async getAdminUsers() {
     return fetchWithAuth(`${API_BASE}/api/admin/users`);
   },
@@ -174,8 +201,41 @@ export const api = {
     return fetchWithAuth(`${API_BASE}/api/admin/specialists`);
   },
 
+  async postAdminCreateSpecialist(data: { name: string; email: string; password: string; role: string }): Promise<{ id: string; name: string; email: string; role: string }> {
+    return fetchWithAuth(`${API_BASE}/api/admin/specialists`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   async getAdminActivityLog() {
     return fetchWithAuth(`${API_BASE}/api/admin/activity-log`);
+  },
+
+  async getAdminNotifications(): Promise<{ notifications: { id: string; type: string; title: string; message: string; timestamp: string; createdAt: string }[]; pendingApplications: number; pendingBookingRequests: number }> {
+    return fetchWithAuth(`${API_BASE}/api/admin/notifications`);
+  },
+
+  async patchUserSuspend(userId: string, suspended: boolean) {
+    return fetchWithAuth(`${API_BASE}/api/admin/users/${userId}/suspend`, {
+      method: 'PATCH',
+      body: JSON.stringify({ suspended }),
+    });
+  },
+
+  async getAdminUserMetrics(userId: string) {
+    return fetchWithAuth(`${API_BASE}/api/admin/users/${userId}/metrics`);
+  },
+
+  async getAdminSpecialistMetrics(specialistId: string) {
+    return fetchWithAuth(`${API_BASE}/api/admin/specialists/${specialistId}/metrics`);
+  },
+
+  async postAdminSession(data: { userId: string; specialistId: string; scheduledAt: string; sessionType?: string; durationMinutes?: number }) {
+    return fetchWithAuth(`${API_BASE}/api/admin/sessions`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   async getSpecialistDashboard(specialistId: string): Promise<TherapistDashboardData> {
@@ -203,6 +263,24 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });
+  },
+
+  async postSpecialistSession(specialistId: string, data: { userId: string; scheduledAt: string; sessionType?: string; durationMinutes?: number }) {
+    return fetchWithAuth(`${API_BASE}/api/specialists/${specialistId}/sessions`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async postMessage(toUserId: string, content: string) {
+    return fetchWithAuth(`${API_BASE}/api/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ toUserId, content }),
+    });
+  },
+
+  async getMessages(withUserId: string) {
+    return fetchWithAuth(`${API_BASE}/api/messages?with=${encodeURIComponent(withUserId)}`);
   },
 
   async getSpecialistReviews(specialistId: string) {

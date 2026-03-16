@@ -1,0 +1,15 @@
+.page { padding: 24px 32px; max-width: 700px; }
+.back { display: inline-block; margin-bottom: 16px; color: var(--muted); font-size: 14px; text-decoration: none; }
+.back:hover { color: var(--text); }
+.title { font-size: 1.5rem; color: var(--text); margin: 0 0 8px; }
+.sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+.section { margin-bottom: 24px; }
+.sectionTitle { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 16px; }
+.metric { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+.metricValue { font-size: 1.5rem; font-weight: 600; color: var(--text); display: block; }
+.metricLabel { font-size: 11px; color: var(--muted); }
+.list { list-style: none; padding: 0; margin: 0; }
+.list li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text); }
+.muted { color: var(--muted); font-size: 14px; }
+.error { color: var(--error, #c53030); }

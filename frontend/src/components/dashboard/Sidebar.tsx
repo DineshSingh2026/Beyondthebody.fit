@@ -15,7 +15,7 @@ interface NavSection {
 
 const userNav: NavSection[] = [
   { title: 'My Sanctuary', items: [{ label: 'Dashboard', href: '/dashboard/user' }] },
-  { title: 'Specialists', items: [{ label: 'Find a Specialist', href: '/dashboard/user/specialists' }, { label: 'My Specialists', href: '/dashboard/user' }] },
+  { title: 'Specialists', items: [{ label: 'Find a Specialist', href: '/dashboard/user/specialists' }, { label: 'My Specialists', href: '/dashboard/user' }, { label: 'Messages', href: '/dashboard/user/messages' }] },
   { title: 'Sessions', items: [{ label: 'Upcoming & Past', href: '/dashboard/user/sessions' }] },
   { title: 'Wellness', items: [{ label: 'Mood Tracker', href: '/dashboard/user/mood' }, { label: 'Profile', href: '/dashboard/user/profile' }] },
   { title: 'Community', items: [{ label: 'Feed', href: '/dashboard/user/community' }] },
@@ -23,13 +23,13 @@ const userNav: NavSection[] = [
 
 const adminNav: NavSection[] = [
   { title: 'Platform', items: [{ label: 'Overview', href: '/dashboard/admin' }, { label: 'Revenue', href: '/dashboard/admin/revenue' }] },
-  { title: 'People', items: [{ label: 'All Users', href: '/dashboard/admin/users' }, { label: 'All Specialists', href: '/dashboard/admin/specialists' }, { label: 'Applications', href: '/dashboard/admin/applications' }] },
-  { title: 'Content', items: [{ label: 'Sessions', href: '/dashboard/admin' }] },
+  { title: 'People', items: [{ label: 'All Users', href: '/dashboard/admin/users' }, { label: 'All Specialists', href: '/dashboard/admin/specialists' }, { label: 'Add Therapist', href: '/dashboard/admin/specialists/add' }, { label: 'Applications', href: '/dashboard/admin/applications' }] },
+  { title: 'Content', items: [{ label: 'Sessions', href: '/dashboard/admin' }, { label: 'Schedule call', href: '/dashboard/admin/schedule' }] },
 ];
 
 const therapistNav: NavSection[] = [
   { title: 'My Practice', items: [{ label: 'Overview', href: '/dashboard/therapist' }, { label: 'My Clients', href: '/dashboard/therapist/clients' }, { label: 'Notes', href: '/dashboard/therapist/notes' }] },
-  { title: 'Schedule', items: [{ label: 'Calendar & Requests', href: '/dashboard/therapist/schedule' }] },
+  { title: 'Schedule', items: [{ label: 'Calendar & Requests', href: '/dashboard/therapist/schedule' }, { label: 'Messages', href: '/dashboard/therapist/messages' }] },
   { title: 'Account', items: [{ label: 'Earnings', href: '/dashboard/therapist/earnings' }] },
 ];
 

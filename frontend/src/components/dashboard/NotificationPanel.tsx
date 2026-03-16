@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '@/lib/api';
+import type { UserRole } from '@/lib/dashboard-types';
 import styles from './NotificationPanel.module.css';
 
 export interface Notification {
@@ -19,14 +21,36 @@ const defaultNotifications: Notification[] = [
   { id: '4', title: 'Tip of the day', body: 'Try 5-4-3-2-1 grounding when you feel overwhelmed.', time: '2 days ago', unread: false },
 ];
 
-export default function NotificationPanel() {
+interface NotificationPanelProps {
+  role?: UserRole;
+}
+
+export default function NotificationPanel({ role }: NotificationPanelProps) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(() =>
-    defaultNotifications.map((n) => ({ ...n }))
+    role === 'ADMIN' ? [] : defaultNotifications.map((n) => ({ ...n }))
   );
+  const [adminPending, setAdminPending] = useState({ applications: 0, bookings: 0 });
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  useEffect(() => {
+    if (role === 'ADMIN' && open) {
+      api.getAdminNotifications().then((res) => {
+        setNotifications(
+          (res.notifications || []).map((n) => ({
+            id: n.id,
+            title: n.title,
+            body: n.message || '',
+            time: n.timestamp || '',
+            unread: true,
+          }))
+        );
+        setAdminPending({ applications: res.pendingApplications || 0, bookings: res.pendingBookingRequests || 0 });
+      }).catch(() => {});
+    }
+  }, [role, open]);
+
+  const unreadCount = role === 'ADMIN' ? notifications.length + (adminPending.applications + adminPending.bookings) : notifications.filter((n) => n.unread).length;
 
   useEffect(() => {
     if (!open) return;
@@ -76,7 +100,12 @@ export default function NotificationPanel() {
             <div className={styles.header}>
               <span>Notifications</span>
               <div className={styles.headerActions}>
-                {unreadCount > 0 && (
+                {role === 'ADMIN' && (adminPending.applications > 0 || adminPending.bookings > 0) && (
+                  <span className={styles.pendingSummary}>
+                    {adminPending.applications} pending applications · {adminPending.bookings} pending requests
+                  </span>
+                )}
+                {role !== 'ADMIN' && unreadCount > 0 && (
                   <button type="button" className={styles.clearBtn} onClick={markAllRead}>
                     Mark all read
                   </button>
@@ -90,7 +119,7 @@ export default function NotificationPanel() {
             </div>
             <div className={styles.list}>
               {notifications.length === 0 ? (
-                <div className={styles.empty}>No notifications</div>
+                <div className={styles.empty}>{role === 'ADMIN' ? 'No activity yet' : 'No notifications'}</div>
               ) : (
                 notifications.map((n) => (
                   <div key={n.id} className={`${styles.item} ${n.unread ? styles.unread : ''}`}>

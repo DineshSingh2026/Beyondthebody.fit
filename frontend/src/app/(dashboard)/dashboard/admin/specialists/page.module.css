@@ -12,3 +12,9 @@
 .name { font-weight: 500; color: var(--text); display: block; }
 .specialty { font-size: 12px; color: var(--gold-soft); display: block; }
 .meta { font-size: 12px; color: var(--muted); display: block; margin-top: 4px; }
+.row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.link { color: var(--green); font-size: 13px; text-decoration: none; }
+.link:hover { text-decoration: underline; }
+.btnSm { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 12px; cursor: pointer; }
+.btnDanger { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--error, #c53030); background: transparent; color: var(--error, #c53030); font-size: 12px; cursor: pointer; }
+.btnDanger:disabled { opacity: 0.6; cursor: not-allowed; }

@@ -31,6 +31,7 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState(emptyAdminPlatformStats);
   const [applications, setApplications] = useState(emptyApplications);
   const [sessions, setSessions] = useState(emptyAdminSessions);
+  const [bookingRequests, setBookingRequests] = useState<any[]>([]);
   const [roster, setRoster] = useState(emptySpecialistRoster);
   const [activityLog, setActivityLog] = useState(emptyActivityLog);
 
@@ -53,6 +54,7 @@ export default function AdminDashboardPage() {
     api.getAdminPlatformStats().then(setStats).catch(() => setStats(emptyAdminPlatformStats));
     api.getAdminApplications().then(setApplications).catch(() => setApplications(emptyApplications));
     api.getAdminSessions().then(setSessions).catch(() => setSessions(emptyAdminSessions));
+    api.getAdminBookingRequests().then(setBookingRequests).catch(() => setBookingRequests([]));
     api.getAdminSpecialists().then(setRoster).catch(() => setRoster(emptySpecialistRoster));
     api.getAdminActivityLog().then(setActivityLog).catch(() => setActivityLog(emptyActivityLog));
   }, []);
@@ -170,6 +172,36 @@ export default function AdminDashboardPage() {
             </table>
           </motion.section>
           <motion.section className={styles.section} variants={item}>
+            <h2 className={styles.sectionTitle}>Consultation requests</h2>
+            <p className={styles.sectionSub}>All user requests for consultation. Status: PENDING → specialist reviews; ACCEPTED → session scheduled; DECLINED.</p>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Specialist</th>
+                  <th>Proposed</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bookingRequests.length === 0 ? (
+                  <tr><td colSpan={5} className={styles.muted}>No consultation requests yet.</td></tr>
+                ) : (
+                  bookingRequests.slice(0, 30).map((br) => (
+                    <tr key={br.id}>
+                      <td>{br.userName}<br /><span className={styles.muted}>{br.userEmail}</span></td>
+                      <td>{br.specialistName}<br /><Badge variant="muted">{br.specialistRole?.replace('_', ' ')}</Badge></td>
+                      <td className={styles.muted}>{br.proposedAt ? new Date(br.proposedAt).toLocaleString() : '—'}</td>
+                      <td>{br.sessionType || '—'}</td>
+                      <td><Badge variant={br.status === 'PENDING' ? 'warn' : br.status === 'ACCEPTED' ? 'green' : 'muted'}>{br.status}</Badge></td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </motion.section>
+          <motion.section className={styles.section} variants={item}>
             <h2 className={styles.sectionTitle}>Recent Sessions</h2>
             <table className={styles.table}>
               <thead>
@@ -233,6 +265,7 @@ export default function AdminDashboardPage() {
             <h2 className={styles.sectionTitle}>Pending Actions</h2>
             <ul className={styles.pendingList}>
               <li>Applications to Review: <strong>{applications.filter((a) => a.status === 'PENDING').length}</strong></li>
+              <li>Consultation requests (PENDING): <strong>{bookingRequests.filter((br) => br.status === 'PENDING').length}</strong></li>
               <li>Reports Flagged: <strong>0</strong></li>
               <li>Support Tickets: <strong>2</strong></li>
             </ul>

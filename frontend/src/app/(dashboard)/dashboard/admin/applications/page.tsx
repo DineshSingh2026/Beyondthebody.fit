@@ -19,6 +19,9 @@ export default function AdminApplicationsPage() {
   const isMobile = useIsMobile();
   const [applications, setApplications] = useState<SpecialistApplication[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewApp, setViewApp] = useState<SpecialistApplication | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     api.getMe()
@@ -32,10 +35,23 @@ export default function AdminApplicationsPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  const handleStatus = (id: string, status: string) => {
-    api.patchApplication(id, status).then(() => {
-      api.getAdminApplications().then(setApplications).catch(() => {});
-    }).catch(() => {});
+  const refreshList = () => {
+    api.getAdminApplications().then(setApplications).catch(() => {});
+  };
+
+  const handleStatus = (id: string, status: string, fromModal?: boolean) => {
+    setActionLoading(true);
+    api.patchApplication(id, status)
+      .then((res) => {
+        refreshList();
+        if (fromModal) setViewApp(null);
+        if (status === 'APPROVED' && res.newUser) {
+          setSuccessMessage(`${res.newUser.name} can now log in. Temporary password: ${res.newUser.tempPassword}`);
+          setTimeout(() => setSuccessMessage(null), 12000);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setActionLoading(false));
   };
 
   if (loading) {
@@ -44,6 +60,7 @@ export default function AdminApplicationsPage() {
 
   const content = (
     <>
+      {successMessage && <p className={styles.successMsg}>{successMessage}</p>}
       {applications.length === 0 ? (
         <p className={styles.empty}>No applications at the moment.</p>
       ) : (
@@ -56,11 +73,42 @@ export default function AdminApplicationsPage() {
               <span className={styles.date}>{new Date(app.appliedAt).toLocaleDateString()}</span>
             </div>
             <div className={styles.actions}>
-              <HapticButton variant="primary" pill onClick={() => handleStatus(app.id, 'APPROVED')}>Approve</HapticButton>
-              <HapticButton variant="ghost" pill onClick={() => handleStatus(app.id, 'REJECTED')}>Reject</HapticButton>
+              <HapticButton variant="secondary" pill onClick={() => setViewApp(app)}>View</HapticButton>
+              {app.status === 'PENDING' && (
+                <>
+                  <HapticButton variant="primary" pill onClick={() => handleStatus(app.id, 'APPROVED')}>Approve</HapticButton>
+                  <HapticButton variant="ghost" pill onClick={() => handleStatus(app.id, 'REJECTED')}>Reject</HapticButton>
+                </>
+              )}
             </div>
           </div>
         ))
+      )}
+      {viewApp && (
+        <div className={styles.overlay} onClick={() => !actionLoading && setViewApp(null)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>Application profile</h3>
+            <div className={styles.modalBody}>
+              <Avatar name={viewApp.name} size="lg" />
+              <dl className={styles.profileList}>
+                <dt>Name</dt><dd>{viewApp.name}</dd>
+                <dt>Email</dt><dd>{viewApp.email}</dd>
+                <dt>Specialty</dt><dd><Badge variant={variant[viewApp.specialty] ?? 'muted'}>{viewApp.specialty.replace('_', ' ')}</Badge></dd>
+                <dt>Applied</dt><dd>{new Date(viewApp.appliedAt).toLocaleString()}</dd>
+                <dt>Status</dt><dd>{viewApp.status}</dd>
+              </dl>
+            </div>
+            <div className={styles.modalActions}>
+              {viewApp.status === 'PENDING' && (
+                <>
+                  <HapticButton variant="primary" pill onClick={() => handleStatus(viewApp.id, 'APPROVED', true)} disabled={actionLoading}>Approve</HapticButton>
+                  <HapticButton variant="ghost" pill onClick={() => handleStatus(viewApp.id, 'REJECTED', true)} disabled={actionLoading}>Reject</HapticButton>
+                </>
+              )}
+              <HapticButton variant="ghost" pill onClick={() => !actionLoading && setViewApp(null)}>Close</HapticButton>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

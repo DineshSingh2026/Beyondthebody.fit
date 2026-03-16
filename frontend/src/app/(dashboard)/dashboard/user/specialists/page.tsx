@@ -30,6 +30,8 @@ const roleDesc: Record<string, string> = {
   MUSIC_TUTOR: 'Music therapy for emotional regulation',
 };
 
+const SESSION_TYPES = ['Consultation', '1:1 Therapy', 'Coaching', 'Hypnosis', 'Mindfulness', 'Follow-up'];
+
 export default function UserSpecialistsPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -37,7 +39,14 @@ export default function UserSpecialistsPage() {
   const [specialists, setSpecialists] = useState<SpecialistBrowse[]>([]);
   const [filter, setFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
-  const [requested, setRequested] = useState<Set<string>>(new Set());
+  const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
+  const [showModal, setShowModal] = useState<SpecialistBrowse | null>(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [proposedDate, setProposedDate] = useState('');
+  const [proposedTime, setProposedTime] = useState('10:00');
+  const [sessionType, setSessionType] = useState('Consultation');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -46,8 +55,10 @@ export default function UserSpecialistsPage() {
         if (me.role === 'ADMIN') { router.replace('/dashboard/admin'); return; }
         if (['THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR'].includes(me.role)) { router.replace('/dashboard/therapist'); return; }
         setUserId(me.id);
-        const list = await browseSpecialists();
+        const [list, requests] = await Promise.all([browseSpecialists(), api.getBookingRequests(me.id).catch(() => [])]);
         setSpecialists(list);
+        const pending = new Set((requests || []).map((r: { specialistId: string }) => r.specialistId));
+        setRequestedIds(pending);
       } catch {
         // fallback stays empty
       } finally {
@@ -59,8 +70,37 @@ export default function UserSpecialistsPage() {
   const roles = ['ALL', 'THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'];
   const filtered = filter === 'ALL' ? specialists : specialists.filter(s => s.role === filter);
 
-  const handleRequest = (sp: SpecialistBrowse) => {
-    setRequested(prev => new Set(prev).add(sp.id));
+  const openRequestModal = (sp: SpecialistBrowse) => {
+    setShowModal(sp);
+    setError('');
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    setProposedDate(d.toISOString().slice(0, 10));
+    setProposedTime('10:00');
+    setSessionType('Consultation');
+    setMessage('');
+  };
+
+  const handleSubmitRequest = async () => {
+    if (!showModal || !userId) return;
+    const at = new Date(`${proposedDate}T${proposedTime}`);
+    if (isNaN(at.getTime())) { setError('Please pick a valid date and time.'); return; }
+    setSubmitLoading(true);
+    setError('');
+    try {
+      await api.postBookingRequest(userId, {
+        specialistId: showModal.id,
+        proposedAt: at.toISOString(),
+        sessionType,
+        message: message.trim() || undefined,
+      });
+      setRequestedIds(prev => new Set(prev).add(showModal.id));
+      setShowModal(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Request failed. Try again.');
+    } finally {
+      setSubmitLoading(false);
+    }
   };
 
   if (loading) {
@@ -119,22 +159,55 @@ export default function UserSpecialistsPage() {
                 <span className={styles.trustBadge}>✓ Vetted</span>
                 {sp.rating != null && sp.rating >= 4.8 && <span className={styles.trustBadge}>⭐ Top Rated</span>}
               </div>
-              {requested.has(sp.id) ? (
+              {requestedIds.has(sp.id) ? (
                 <div className={styles.requested}>
-                  <span>💚</span> Request sent — we&apos;ll confirm your session within 24 hours.
+                  <span>💚</span> Request sent — the specialist will respond shortly.
                 </div>
               ) : (
                 <button
                   className={styles.requestBtn}
                   type="button"
-                  onClick={() => handleRequest(sp)}
+                  onClick={() => openRequestModal(sp)}
                   disabled={!userId}
                 >
-                  Request a Session
+                  Request for consultation
                 </button>
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {showModal && (
+        <div className={styles.overlay} onClick={() => !submitLoading && setShowModal(null)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>Request consultation with {showModal.name}</h3>
+            {error && <p className={styles.modalError}>{error}</p>}
+            <label className={styles.modalLabel}>
+              Preferred date
+              <input type="date" value={proposedDate} onChange={(e) => setProposedDate(e.target.value)} className={styles.modalInput} />
+            </label>
+            <label className={styles.modalLabel}>
+              Preferred time
+              <input type="time" value={proposedTime} onChange={(e) => setProposedTime(e.target.value)} className={styles.modalInput} />
+            </label>
+            <label className={styles.modalLabel}>
+              Session type
+              <select value={sessionType} onChange={(e) => setSessionType(e.target.value)} className={styles.modalInput}>
+                {SESSION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </label>
+            <label className={styles.modalLabel}>
+              Message (optional)
+              <textarea value={message} onChange={(e) => setMessage(e.target.value)} className={styles.modalInput} rows={2} placeholder="Brief note for the specialist" />
+            </label>
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.modalBtnPrimary} onClick={handleSubmitRequest} disabled={submitLoading}>
+                {submitLoading ? 'Sending…' : 'Send request'}
+              </button>
+              <button type="button" className={styles.modalBtnGhost} onClick={() => !submitLoading && setShowModal(null)}>Cancel</button>
+            </div>
+          </div>
         </div>
       )}
 

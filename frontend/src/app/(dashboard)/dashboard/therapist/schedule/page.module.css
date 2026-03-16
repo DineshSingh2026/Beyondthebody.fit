@@ -14,3 +14,24 @@
 .info .name { font-weight: 500; color: var(--text); display: block; }
 .meta { font-size: 12px; color: var(--muted); }
 .empty, .muted { color: var(--muted); padding: 12px 0; font-size: 14px; }
+
+.requestCard { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.requestHeader { display: flex; align-items: center; gap: 12px; padding: 16px; cursor: pointer; }
+.viewToggle { font-size: 12px; color: var(--muted); margin-left: auto; }
+.requestDetail { border-top: 1px solid var(--border); padding: 16px; }
+.dl { margin: 0 0 12px; font-size: 13px; }
+.dl dt { color: var(--muted); margin-top: 8px; }
+.dl dd { margin: 2px 0 0; color: var(--text); }
+.requestActions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.linkBtn { background: none; border: none; color: var(--accent, #d4af37); font-size: 13px; cursor: pointer; padding: 4px 0; text-decoration: none; }
+.linkBtn:hover { text-decoration: underline; }
+
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+.modal { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; max-width: 400px; width: 100%; }
+.modalTitle { margin: 0 0 16px; font-size: 1.1rem; color: var(--text); }
+.modalError { color: var(--error, #c53030); font-size: 13px; margin: 0 0 12px; }
+.modalLabel { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text); margin-bottom: 12px; }
+.modalInput { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; }
+.modalActions { display: flex; gap: 10px; margin-top: 16px; }
+.modalBtnPrimary { padding: 10px 18px; background: var(--gold, #d4af37); color: var(--dark); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
+.modalBtnGhost { padding: 10px 18px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text); cursor: pointer; font-size: 14px; }
