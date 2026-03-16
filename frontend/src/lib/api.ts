@@ -286,4 +286,41 @@ export const api = {
   async getSpecialistReviews(specialistId: string) {
     return fetchWithAuth(`${API_BASE}/api/specialists/${specialistId}/reviews`);
   },
+
+  // Phase 1 — Wellness Score
+  async getWellnessScore(): Promise<{ score: number; label: string; components: { label: string; value: number; weight: string }[] }> {
+    return fetchWithAuth(`${API_BASE}/api/wellness-score`);
+  },
+
+  // Phase 1 — Session Recaps
+  async getSessionRecaps(): Promise<{ id: string; takeaways: string[]; homework: string[]; recommended_brain_tip: string | null; therapist_name: string | null; scheduled_at: string | null; next_session_at: string | null }[]> {
+    return fetchWithAuth(`${API_BASE}/api/session-recaps`);
+  },
+  async postSessionRecap(data: { session_id?: string; user_id: string; takeaways?: string[]; homework?: string[]; recommended_brain_tip?: string; therapist_note?: string }) {
+    return fetchWithAuth(`${API_BASE}/api/session-recaps`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async dismissSessionRecap(id: string) {
+    return fetchWithAuth(`${API_BASE}/api/session-recaps`, { method: 'PATCH', body: JSON.stringify({ id }) });
+  },
+
+  // Phase 1 — Body Bank
+  async getBodyBank(): Promise<{ connected: boolean; nutrition?: number; recovery?: number; fitness?: number; hydration?: number; synced_at?: string; stale?: boolean; error?: string }> {
+    return fetchWithAuth(`${API_BASE}/api/bodybank`);
+  },
+
+  // Phase 1 — Mood Insights
+  async getMoodInsights(): Promise<{ insights: string[] }> {
+    return fetchWithAuth(`${API_BASE}/api/mood-insights`);
+  },
+
+  // Phase 1 — Healing Goals
+  async getHealingGoals(): Promise<{ id: string; title: string; category: string; progress_history: { rating: number }[] }[]> {
+    return fetchWithAuth(`${API_BASE}/api/healing-goals`);
+  },
+  async postHealingGoal(data: { title: string; category?: string }) {
+    return fetchWithAuth(`${API_BASE}/api/healing-goals`, { method: 'POST', body: JSON.stringify(data) });
+  },
+  async patchHealingGoal(data: { action: 'log_progress'; goal_id: string; rating: number } | { action: 'deactivate'; goal_id: string }) {
+    return fetchWithAuth(`${API_BASE}/api/healing-goals`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
 };

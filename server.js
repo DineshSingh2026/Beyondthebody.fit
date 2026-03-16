@@ -1614,6 +1614,404 @@ app.get('/api/dev/debug-testuser1', async (req, res) => {
   } catch (e) { res.json({ error: e.message }); }
 });
 
+// ─── PHASE 1 FEATURE ROUTES ──────────────────────────────────────────────────
+
+// Helper: calculate week_start (Sunday)
+function getWeekStart() {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay());
+  return d.toISOString().split('T')[0];
+}
+
+// FEATURE 1 — Wellness Score
+app.get('/api/wellness-score', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.json({ score: 0, label: 'Just Starting', components: [] });
+  try {
+    const userId = payload.id;
+    const [moodData, sessionData, tipData] = await Promise.all([
+      db.query(
+        `SELECT AVG(value) as avg_mood FROM mood_log
+         WHERE user_id = $1 AND date >= CURRENT_DATE - INTERVAL '30 days'`,
+        [userId]
+      ),
+      db.query(
+        `SELECT
+           COUNT(*) FILTER (WHERE status = 'COMPLETED') AS completed,
+           COUNT(*) AS total
+         FROM sessions
+         WHERE user_id = $1 AND scheduled_at >= NOW() - INTERVAL '30 days'`,
+        [userId]
+      ),
+      db.query(
+        `SELECT COALESCE(brain_tips_practiced, 0) AS tips FROM dashboard_users WHERE id = $1`,
+        [userId]
+      ),
+    ]);
+
+    // Streak: count consecutive days with mood_log entries up to today
+    const streakData = await db.query(
+      `WITH days AS (
+         SELECT date FROM mood_log WHERE user_id = $1 ORDER BY date DESC
+       ),
+       numbered AS (
+         SELECT date, ROW_NUMBER() OVER (ORDER BY date DESC) AS rn FROM days
+       )
+       SELECT COUNT(*)::int AS streak FROM numbered
+       WHERE date = CURRENT_DATE - (rn - 1) * INTERVAL '1 day'`,
+      [userId]
+    );
+
+    const avgMood    = parseFloat(moodData.rows[0]?.avg_mood || '0');
+    const completed  = parseInt(sessionData.rows[0]?.completed || '0');
+    const total      = parseInt(sessionData.rows[0]?.total || '1');
+    const streak     = parseInt(streakData.rows[0]?.streak || '0');
+    const tips       = parseInt(tipData.rows[0]?.tips || '0');
+
+    const moodComp    = Math.min(100, Math.round((avgMood / 10) * 100));
+    const sessionComp = Math.min(100, Math.round((completed / Math.max(total, 1)) * 100));
+    const streakComp  = Math.min(100, Math.round((Math.min(streak, 30) / 30) * 100));
+    const tipsComp    = Math.min(100, Math.round((Math.min(tips, 30) / 30) * 100));
+
+    const score = Math.round(
+      moodComp * 0.30 + sessionComp * 0.30 + streakComp * 0.20 + tipsComp * 0.20
+    );
+    const label =
+      score >= 80 ? 'Thriving' :
+      score >= 60 ? 'Growing'  :
+      score >= 40 ? 'Healing'  :
+      score >= 20 ? 'Beginning': 'Just Starting';
+
+    res.json({
+      score, label,
+      components: [
+        { label: 'Mood',       value: moodComp,    weight: '30%' },
+        { label: 'Sessions',   value: sessionComp, weight: '30%' },
+        { label: 'Streak',     value: streakComp,  weight: '20%' },
+        { label: 'Brain Tips', value: tipsComp,    weight: '20%' },
+      ],
+    });
+  } catch (err) {
+    console.error('GET /api/wellness-score', err);
+    res.json({ score: 0, label: 'Just Starting', components: [] });
+  }
+});
+
+// FEATURE 2 — Session Recaps
+app.get('/api/session-recaps', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT
+         sr.*,
+         s.scheduled_at,
+         therapist.name  AS therapist_name,
+         next_s.scheduled_at AS next_session_at
+       FROM session_recaps sr
+       LEFT JOIN sessions s          ON sr.session_id   = s.id
+       LEFT JOIN dashboard_users therapist ON sr.therapist_id = therapist.id
+       LEFT JOIN LATERAL (
+         SELECT scheduled_at FROM sessions
+         WHERE  user_id = sr.user_id
+           AND  status  IN ('UPCOMING','scheduled')
+           AND  scheduled_at > NOW()
+         ORDER BY scheduled_at ASC LIMIT 1
+       ) next_s ON TRUE
+       WHERE sr.user_id      = $1
+         AND sr.is_dismissed = FALSE
+       ORDER BY sr.created_at DESC
+       LIMIT 3`,
+      [payload.id]
+    );
+    res.json(r.rows);
+  } catch (err) {
+    console.error('GET /api/session-recaps', err);
+    res.json([]);
+  }
+});
+
+app.post('/api/session-recaps', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  const { session_id, user_id, takeaways, homework, recommended_brain_tip, therapist_note } = req.body || {};
+  if (!user_id) return res.status(400).json({ error: 'user_id required' });
+  try {
+    const r = await db.query(
+      `INSERT INTO session_recaps
+         (session_id, user_id, therapist_id, takeaways, homework, recommended_brain_tip, therapist_note)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [session_id || null, user_id, payload.id,
+       takeaways || [], homework || [],
+       recommended_brain_tip || null, therapist_note || null]
+    );
+    res.json(r.rows[0]);
+  } catch (err) {
+    console.error('POST /api/session-recaps', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/session-recaps', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  const { id } = req.body || {};
+  if (!id) return res.status(400).json({ error: 'id required' });
+  try {
+    await db.query(
+      `UPDATE session_recaps SET is_dismissed = TRUE WHERE id = $1 AND user_id = $2`,
+      [id, payload.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PATCH /api/session-recaps', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// FEATURE 3 — Body Bank Sync
+app.get('/api/bodybank', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.json({ connected: false });
+  try {
+    const userResult = await db.query(
+      `SELECT bodybank_user_id, bodybank_access_token FROM dashboard_users WHERE id = $1`,
+      [payload.id]
+    );
+    const user = userResult.rows[0];
+    if (!user?.bodybank_user_id) return res.json({ connected: false });
+
+    const cacheResult = await db.query(
+      `SELECT * FROM bodybank_sync WHERE user_id = $1 ORDER BY synced_at DESC LIMIT 1`,
+      [payload.id]
+    );
+    const cached = cacheResult.rows[0];
+    const isStale = !cached ||
+      new Date(cached.synced_at) < new Date(Date.now() - 60 * 60 * 1000);
+
+    if (!isStale && cached) {
+      return res.json({
+        connected: true,
+        nutrition: cached.nutrition_score, recovery: cached.recovery_score,
+        fitness: cached.fitness_score,     hydration: cached.hydration_score,
+        synced_at: cached.synced_at,
+      });
+    }
+
+    const bbApiUrl = process.env.BODYBANK_API_URL || 'https://api.bodybank.fit/v1';
+    try {
+      const bbRes = await fetch(
+        `${bbApiUrl}/user/${user.bodybank_user_id}/scores`,
+        { headers: { Authorization: `Bearer ${user.bodybank_access_token}` } }
+      );
+      if (!bbRes.ok) throw new Error('Body Bank API error');
+      const bbData = await bbRes.json();
+      await db.query(
+        `INSERT INTO bodybank_sync
+           (user_id, nutrition_score, recovery_score, fitness_score, hydration_score, raw_data)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [payload.id, bbData.nutrition, bbData.recovery,
+         bbData.fitness, bbData.hydration, JSON.stringify(bbData)]
+      );
+      return res.json({
+        connected: true,
+        nutrition: bbData.nutrition, recovery: bbData.recovery,
+        fitness: bbData.fitness,     hydration: bbData.hydration,
+        synced_at: new Date(),
+      });
+    } catch {
+      if (cached) return res.json({
+        connected: true,
+        nutrition: cached.nutrition_score, recovery: cached.recovery_score,
+        fitness: cached.fitness_score,     hydration: cached.hydration_score,
+        synced_at: cached.synced_at, stale: true,
+      });
+      return res.json({ connected: true, error: 'Sync failed' });
+    }
+  } catch (err) {
+    console.error('GET /api/bodybank', err);
+    res.json({ connected: false });
+  }
+});
+
+// FEATURE 4 — Mood Pattern Insights
+app.get('/api/mood-insights', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ insights: [] });
+  if (!db.connected || !(await hasDashboard())) return res.json({ insights: [] });
+  try {
+    const userId = payload.id;
+    const [moodLogs, sessionDates] = await Promise.all([
+      db.query(
+        `SELECT value AS mood_value, date::text AS logged_at,
+                EXTRACT(DOW FROM date) AS day_of_week
+         FROM mood_log
+         WHERE user_id = $1 AND date >= CURRENT_DATE - INTERVAL '60 days'
+         ORDER BY date ASC`,
+        [userId]
+      ),
+      db.query(
+        `SELECT DATE(scheduled_at)::text AS session_date
+         FROM sessions
+         WHERE user_id = $1 AND status = 'COMPLETED'
+           AND scheduled_at >= NOW() - INTERVAL '60 days'`,
+        [userId]
+      ),
+    ]);
+
+    const logs = moodLogs.rows;
+    const sessionDays = new Set(sessionDates.rows.map(r => r.session_date));
+    const insights = [];
+
+    if (logs.length < 5) {
+      return res.json({
+        insights: ['Log your mood for 5 or more days to unlock your personal patterns.'],
+      });
+    }
+
+    // Best / worst day of week
+    const dayMoods = {};
+    logs.forEach(l => {
+      const d = Number(l.day_of_week);
+      dayMoods[d] = dayMoods[d] || [];
+      dayMoods[d].push(Number(l.mood_value));
+    });
+    const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const dayAvgs = Object.entries(dayMoods)
+      .filter(([, v]) => v.length >= 2)
+      .map(([d, v]) => ({ day: parseInt(d), avg: v.reduce((a,b)=>a+b,0)/v.length }));
+    if (dayAvgs.length >= 3) {
+      const best  = dayAvgs.reduce((a,b) => a.avg > b.avg ? a : b);
+      const worst = dayAvgs.reduce((a,b) => a.avg < b.avg ? a : b);
+      if (best.avg - worst.avg > 1.0)
+        insights.push(`You feel best on ${dayNames[best.day]}s and tend to dip on ${dayNames[worst.day]}s.`);
+    }
+
+    // Mood after sessions
+    if (sessionDays.size >= 3) {
+      const after = [], normal = [];
+      logs.forEach(l => {
+        const prev = new Date(l.logged_at);
+        prev.setDate(prev.getDate() - 1);
+        sessionDays.has(prev.toISOString().split('T')[0])
+          ? after.push(Number(l.mood_value))
+          : normal.push(Number(l.mood_value));
+      });
+      if (after.length >= 2 && normal.length >= 2) {
+        const avgA = after.reduce((a,b)=>a+b,0)/after.length;
+        const avgN = normal.reduce((a,b)=>a+b,0)/normal.length;
+        const diff = Math.round(((avgA - avgN) / Math.max(avgN, 1)) * 100);
+        if (diff >= 10)
+          insights.push(`Your mood is ${diff}% higher on days after a therapy session.`);
+        else if (diff <= -10)
+          insights.push(`Your mood tends to be lower after sessions — this is normal during deep healing.`);
+      }
+    }
+
+    // Weekly trend
+    if (logs.length >= 14) {
+      const r = logs.slice(-7).map(l => Number(l.mood_value));
+      const o = logs.slice(-14,-7).map(l => Number(l.mood_value));
+      const rA = r.reduce((a,b)=>a+b,0)/r.length;
+      const oA = o.reduce((a,b)=>a+b,0)/o.length;
+      const td = Math.round(rA - oA);
+      if (td >= 1) insights.push(`Your mood has trended up ${td} point${td>1?'s':''} this week. Keep going.`);
+      else if (td <= -1) insights.push(`Your mood dipped slightly this week. A session might help.`);
+    }
+
+    res.json({ insights: insights.slice(0, 2) });
+  } catch (err) {
+    console.error('GET /api/mood-insights', err);
+    res.json({ insights: [] });
+  }
+});
+
+// FEATURE 5 — Healing Goals
+app.get('/api/healing-goals', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const r = await db.query(
+      `SELECT hg.*,
+         COALESCE(
+           json_agg(gp ORDER BY gp.logged_at DESC)
+             FILTER (WHERE gp.id IS NOT NULL),
+           '[]'::json
+         ) AS progress_history
+       FROM healing_goals hg
+       LEFT JOIN goal_progress gp ON hg.id = gp.goal_id
+       WHERE hg.user_id = $1 AND hg.is_active = TRUE
+       GROUP BY hg.id
+       ORDER BY hg.created_at ASC
+       LIMIT 3`,
+      [payload.id]
+    );
+    res.json(r.rows);
+  } catch (err) {
+    console.error('GET /api/healing-goals', err);
+    res.json([]);
+  }
+});
+
+app.post('/api/healing-goals', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  const { title, category } = req.body || {};
+  if (!title || !title.trim()) return res.status(400).json({ error: 'Title required' });
+  try {
+    const count = await db.query(
+      `SELECT COUNT(*)::int AS c FROM healing_goals WHERE user_id = $1 AND is_active = TRUE`,
+      [payload.id]
+    );
+    if (count.rows[0].c >= 3)
+      return res.status(400).json({ error: 'Maximum 3 active goals allowed' });
+    const r = await db.query(
+      `INSERT INTO healing_goals (user_id, title, category) VALUES ($1,$2,$3) RETURNING *`,
+      [payload.id, title.trim(), category || 'general']
+    );
+    res.json(r.rows[0]);
+  } catch (err) {
+    console.error('POST /api/healing-goals', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/healing-goals', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  const body = req.body || {};
+  try {
+    if (body.action === 'log_progress') {
+      await db.query(
+        `INSERT INTO goal_progress (goal_id, user_id, rating, week_start)
+         VALUES ($1,$2,$3,$4)
+         ON CONFLICT (goal_id, week_start) DO UPDATE SET rating = EXCLUDED.rating`,
+        [body.goal_id, payload.id, body.rating, getWeekStart()]
+      );
+      return res.json({ success: true });
+    }
+    if (body.action === 'deactivate') {
+      await db.query(
+        `UPDATE healing_goals SET is_active = FALSE WHERE id = $1 AND user_id = $2`,
+        [body.goal_id, payload.id]
+      );
+      return res.json({ success: true });
+    }
+    res.status(400).json({ error: 'Unknown action' });
+  } catch (err) {
+    console.error('PATCH /api/healing-goals', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Auto-migrate: create schema + seed base users (idempotent) ─────────────
 async function autoMigrate() {
   if (!db.connected) return;
@@ -1775,6 +2173,99 @@ async function autoMigrate() {
     } catch (e) {
       if (e.code !== '42701') throw e;
     }
+
+    // Phase 1 feature columns on dashboard_users
+    for (const col of [
+      'brain_tips_practiced INTEGER DEFAULT 0',
+      'brain_tips_practiced_dates JSONB DEFAULT \'[]\'',
+      'bodybank_user_id VARCHAR(255)',
+      'bodybank_access_token TEXT',
+      'bodybank_token_expires_at TIMESTAMPTZ',
+    ]) {
+      try {
+        await db.query(`ALTER TABLE dashboard_users ADD COLUMN ${col}`);
+      } catch (e) {
+        if (e.code !== '42701') throw e;
+      }
+    }
+
+    // Phase 1 tables
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS wellness_scores (
+        id            SERIAL PRIMARY KEY,
+        user_id       INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        score         INT NOT NULL CHECK (score BETWEEN 0 AND 100),
+        mood_component     INT,
+        session_component  INT,
+        streak_component   INT,
+        tips_component     INT,
+        calculated_at TIMESTAMPTZ DEFAULT NOW(),
+        week_start    DATE NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_wellness_scores_user_week ON wellness_scores(user_id, week_start DESC);
+
+      CREATE TABLE IF NOT EXISTS session_recaps (
+        id                    SERIAL PRIMARY KEY,
+        session_id            INT REFERENCES sessions(id) ON DELETE CASCADE,
+        user_id               INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        therapist_id          INT REFERENCES dashboard_users(id),
+        takeaways             TEXT[] DEFAULT '{}',
+        homework              TEXT[] DEFAULT '{}',
+        recommended_brain_tip VARCHAR(200),
+        therapist_note        TEXT,
+        is_dismissed          BOOLEAN DEFAULT FALSE,
+        created_at            TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_session_recaps_user ON session_recaps(user_id, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS bodybank_sync (
+        id               SERIAL PRIMARY KEY,
+        user_id          INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        nutrition_score  INT,
+        recovery_score   INT,
+        fitness_score    INT,
+        hydration_score  INT,
+        raw_data         JSONB,
+        synced_at        TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_bodybank_sync_user ON bodybank_sync(user_id, synced_at DESC);
+
+      CREATE TABLE IF NOT EXISTS healing_goals (
+        id         SERIAL PRIMARY KEY,
+        user_id    INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        title      VARCHAR(200) NOT NULL,
+        category   VARCHAR(50) DEFAULT 'general',
+        is_active  BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_healing_goals_user ON healing_goals(user_id);
+
+      CREATE TABLE IF NOT EXISTS goal_progress (
+        id         SERIAL PRIMARY KEY,
+        goal_id    INT NOT NULL REFERENCES healing_goals(id) ON DELETE CASCADE,
+        user_id    INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        rating     INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+        note       TEXT,
+        logged_at  TIMESTAMPTZ DEFAULT NOW(),
+        week_start DATE NOT NULL,
+        CONSTRAINT goal_progress_goal_week_unique UNIQUE (goal_id, week_start)
+      );
+      CREATE INDEX IF NOT EXISTS idx_goal_progress_goal ON goal_progress(goal_id, logged_at DESC);
+
+      CREATE TABLE IF NOT EXISTS journal_entries (
+        id           SERIAL PRIMARY KEY,
+        user_id      INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        gratitude_1  TEXT,
+        gratitude_2  TEXT,
+        gratitude_3  TEXT,
+        intention    TEXT,
+        mood_at_entry INT,
+        entry_date   DATE NOT NULL DEFAULT CURRENT_DATE,
+        created_at   TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(user_id, entry_date)
+      );
+      CREATE INDEX IF NOT EXISTS idx_journal_user ON journal_entries(user_id, entry_date DESC);
+    `);
 
     // 2. Insert base users (admin + 4 specialists) — skip if already present
     await db.query(`

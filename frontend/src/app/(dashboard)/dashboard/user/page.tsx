@@ -14,6 +14,11 @@ import SessionCard from '@/components/dashboard/SessionCard';
 import MiniChart from '@/components/dashboard/MiniChart';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
+import WellnessScore from '@/components/dashboard/WellnessScore';
+import SessionRecap from '@/components/dashboard/SessionRecap';
+import BodyBankSync from '@/components/dashboard/BodyBankSync';
+import MoodInsights from '@/components/dashboard/MoodInsights';
+import HealingGoals from '@/components/dashboard/HealingGoals';
 import styles from './page.module.css';
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
@@ -80,6 +85,14 @@ export default function UserDashboardPage() {
       initial="hidden"
       animate="show"
     >
+      {/* Phase 1: Wellness Score — top of page */}
+      <motion.div variants={item}>
+        <WellnessScore />
+      </motion.div>
+
+      {/* Phase 1: Session Recap — below wellness score, self-hides if empty */}
+      <SessionRecap />
+
       <div className={styles.heroRow}>
         <motion.div className={styles.heroCard} variants={item}>
           <div className={styles.heroCardLabel}>Healing Journey</div>
@@ -136,6 +149,12 @@ export default function UserDashboardPage() {
               ))}
             </div>
           </motion.section>
+
+          {/* Phase 1: Healing Goals — below My Specialists */}
+          <motion.section className={styles.section} variants={item}>
+            <HealingGoals />
+          </motion.section>
+
           <motion.section className={styles.section} variants={item}>
             <h2 className={styles.sectionTitle}>Weekly Mood Tracker</h2>
             <div className={styles.chartWrap}>
@@ -146,6 +165,8 @@ export default function UserDashboardPage() {
                 <span key={m.date}>{m.date.slice(5)}</span>
               ))}
             </div>
+            {/* Phase 1: Mood Pattern Insights — after Weekly Mood Tracker */}
+            <MoodInsights />
           </motion.section>
           <motion.section className={styles.section} variants={item}>
             <h2 className={styles.sectionTitle}>Journey Milestones</h2>
@@ -193,6 +214,12 @@ export default function UserDashboardPage() {
               ))}
             </ul>
           </motion.section>
+
+          {/* Phase 1: Body Bank Sync Panel */}
+          <motion.section className={styles.section} variants={item}>
+            <BodyBankSync />
+          </motion.section>
+
           <motion.section className={styles.section} variants={item}>
             <h2 className={styles.sectionTitle}>Wellness Toolkit</h2>
             <p className={styles.toolkitCopy}>Breathing exercises, journal prompts, and grounding techniques at your fingertips.</p>

@@ -1,12 +1,12 @@
 {
   "name": "Beyond The Body",
-  "short_name": "BTB",
+  "short_name": "Beyond TB",
   "description": "Your safe space to heal beyond the body",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#060e09",
-  "theme_color": "#060e09",
+  "orientation": "portrait-primary",
+  "background_color": "#0a1a0f",
+  "theme_color": "#0a1a0f",
   "categories": ["health", "lifestyle", "medical"],
   "icons": [
     { "src": "/icons/icon-72.png", "sizes": "72x72", "type": "image/png" },

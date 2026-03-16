@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import '@/styles/dashboard.css';
 import '@/styles/mobile.css';
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 
 export const metadata: Metadata = {
   title: 'Beyond The Body — Mental Wellness & Healing',
@@ -12,22 +13,23 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'BTB',
+    title: 'Beyond TB',
   },
   formatDetection: { telephone: false, email: false },
   manifest: '/manifest.json',
   other: {
     'mobile-web-app-capable': 'yes',
-    'msapplication-TileColor': '#060e09',
+    'msapplication-TileColor': '#0a1a0f',
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#060e09',
+  themeColor: '#0a1a0f',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -49,6 +51,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Beyond TB" />
         <link
           rel="apple-touch-startup-image"
           href="/splash/splash-1170x2532.png"
@@ -75,7 +80,10 @@ export default function RootLayout({
           media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <ServiceWorkerRegistration />
+        {children}
+      </body>
     </html>
   );
 }
