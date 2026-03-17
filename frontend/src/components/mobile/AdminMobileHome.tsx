@@ -41,6 +41,7 @@ export default function AdminMobileHome() {
   const [sessions, setSessions]   = useState<any[]>([]);
   const [actionId, setActionId]   = useState<string | null>(null);
   const [assignActionId, setAssignActionId] = useState<string | null>(null);
+  const [sessionsAllottedPerRequest, setSessionsAllottedPerRequest] = useState<Record<string, string>>({});
   const [approvedAlert, setApprovedAlert] = useState<{ name: string; email: string; tempPassword: string } | null>(null);
 
   const loadAll = () => {
@@ -78,8 +79,11 @@ export default function AdminMobileHome() {
 
   const handleAssignmentAction = (id: string, status: 'approved' | 'rejected') => {
     setAssignActionId(id);
-    api.patchAdminAssignmentRequest(id, status)
+    const raw = sessionsAllottedPerRequest[id]?.trim();
+    const sessionsAllotted = raw !== '' && /^\d+$/.test(raw) ? parseInt(raw, 10) : undefined;
+    api.patchAdminAssignmentRequest(id, status, status === 'approved' ? { sessionsAllotted } : undefined)
       .then(() => {
+        setSessionsAllottedPerRequest((prev) => { const next = { ...prev }; delete next[id]; return next; });
         api.getAdminAssignmentRequests().then(setAssignReqs).catch(() => {});
         api.getAdminPlatformStats().then(setS).catch(() => {});
       })
@@ -228,6 +232,17 @@ export default function AdminMobileHome() {
                 <span className={styles.assignEmail}>{ar.clientEmail}</span>
                 <span className={styles.assignSp}>{ar.specialistName} · <Badge variant={ar.specialistRole === 'THERAPIST' ? 'green' : ar.specialistRole === 'LIFE_COACH' ? 'gold' : 'purple'}>{ar.specialistRole.replace('_', ' ')}</Badge></span>
                 <span className={styles.assignCount}>{ar.consultationCount} consultations done</span>
+                <label className={styles.assignSessionsLabel}>
+                  Sessions allotted:
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="e.g. 12"
+                    value={sessionsAllottedPerRequest[ar.id] ?? ''}
+                    onChange={(e) => setSessionsAllottedPerRequest((prev) => ({ ...prev, [ar.id]: e.target.value }))}
+                    className={styles.assignSessionsInput}
+                  />
+                </label>
               </div>
               <div className={styles.assignActions}>
                 <button

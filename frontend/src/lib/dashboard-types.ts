@@ -26,10 +26,19 @@ export interface HealingScore {
   label?: string;
 }
 
+export interface SessionQuota {
+  sessionsAllotted: number;
+  sessionsUsed: number;
+  sessionsRemaining: number;
+}
+
 export interface UserDashboardData {
   user: User;
   healingScore: HealingScore;
   stats: { sessionsCompleted: number; streak: number; moodAverage: number; communityPosts: number };
+  sessionsAllotted?: number;
+  sessionsUsed?: number;
+  sessionsRemaining?: number;
   affirmation: string;
   brainTip: { title: string; description: string; icon: string };
   upcomingSessions: SessionSummary[];

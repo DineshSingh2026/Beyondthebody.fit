@@ -156,7 +156,7 @@ export const api = {
     return fetchWithAuth(`${API_BASE}/api/users/${userId}/sessions/upcoming`);
   },
 
-  async getUserSessions(userId: string) {
+  async getUserSessions(userId: string): Promise<{ sessions: import('./dashboard-types').SessionSummary[]; sessionQuota: import('./dashboard-types').SessionQuota | null }> {
     return fetchWithAuth(`${API_BASE}/api/users/${userId}/sessions`);
   },
 
@@ -186,10 +186,17 @@ export const api = {
     return fetchWithAuth<{ id: string; userId: string; specialistId: string; clientName: string; clientEmail: string; specialistName: string; specialistRole: string; consultationCount: number; createdAt: string }[]>(`${API_BASE}/api/admin/assignment-requests`);
   },
 
-  async patchAdminAssignmentRequest(id: string, status: 'approved' | 'rejected') {
+  async patchAdminAssignmentRequest(id: string, status: 'approved' | 'rejected', options?: { sessionsAllotted?: number }) {
     return fetchWithAuth<{ success: boolean }>(`${API_BASE}/api/admin/assignment-requests/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, ...(options?.sessionsAllotted != null && { sessionsAllotted: options.sessionsAllotted }) }),
+    });
+  },
+
+  async patchAdminUserSessionsAllotted(userId: string, sessionsAllotted: number | null) {
+    return fetchWithAuth<{ success: boolean; sessionsAllotted: number | null }>(`${API_BASE}/api/admin/users/${userId}/sessions-allotted`, {
+      method: 'PATCH',
+      body: JSON.stringify({ sessionsAllotted }),
     });
   },
 

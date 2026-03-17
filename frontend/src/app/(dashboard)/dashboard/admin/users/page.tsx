@@ -16,6 +16,9 @@ interface UserRow {
   role: string;
   suspended?: boolean;
   avatarUrl?: string | null;
+  sessionsAllotted?: number;
+  sessionsUsed?: number;
+  sessionsRemaining?: number;
 }
 
 export default function AdminUsersPage() {
@@ -24,6 +27,8 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [sessionsEdit, setSessionsEdit] = useState<Record<string, string>>({});
+  const [sessionsSaving, setSessionsSaving] = useState<string | null>(null);
 
   const load = () => api.getAdminUsers().then((data: UserRow[]) => setUsers(Array.isArray(data) ? data : [])).catch(() => setUsers([]));
 
@@ -35,6 +40,19 @@ export default function AdminUsersPage() {
   const handleSuspend = (u: UserRow, suspended: boolean) => {
     setActionId(u.id);
     api.patchUserSuspend(u.id, suspended).then(load).finally(() => setActionId(null));
+  };
+
+  const handleSetSessionsAllotted = async (u: UserRow) => {
+    const raw = sessionsEdit[u.id]?.trim();
+    const value = raw === '' ? null : (raw !== undefined && /^\d+$/.test(raw) ? parseInt(raw, 10) : u.sessionsAllotted ?? null);
+    setSessionsSaving(u.id);
+    try {
+      await api.patchAdminUserSessionsAllotted(u.id, value);
+      await load();
+      setSessionsEdit((prev) => { const next = { ...prev }; delete next[u.id]; return next; });
+    } finally {
+      setSessionsSaving(null);
+    }
   };
 
   if (loading) {
@@ -51,6 +69,9 @@ export default function AdminUsersPage() {
           <div className={styles.info}>
             <span className={styles.name}>{u.name}</span>
             <span className={styles.email}>{u.email}</span>
+            {u.sessionsAllotted != null && (
+              <span className={styles.sessionsQuota}>Sessions: {u.sessionsRemaining ?? 0}/{u.sessionsAllotted}</span>
+            )}
             <div className={styles.row}>
               {u.suspended && <Badge variant="warn">Suspended</Badge>}
               <Link href={`/dashboard/admin/users/${u.id}`} className={styles.link}>View metrics</Link>
@@ -70,6 +91,7 @@ export default function AdminUsersPage() {
         <tr>
           <th>Name</th>
           <th>Email</th>
+          <th>Sessions</th>
           <th>Status</th>
           <th></th>
         </tr>
@@ -79,6 +101,31 @@ export default function AdminUsersPage() {
           <tr key={u.id}>
             <td>{u.name}</td>
             <td>{u.email}</td>
+            <td>
+              {u.sessionsAllotted != null ? (
+                <span className={styles.sessionsDisplay}>{u.sessionsRemaining ?? 0}/{u.sessionsAllotted}</span>
+              ) : (
+                <span className={styles.muted}>—</span>
+              )}
+              <div className={styles.sessionsEditRow}>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="Allot"
+                  value={sessionsEdit[u.id] ?? (u.sessionsAllotted != null ? String(u.sessionsAllotted) : '')}
+                  onChange={(e) => setSessionsEdit((prev) => ({ ...prev, [u.id]: e.target.value }))}
+                  className={styles.sessionsInput}
+                />
+                <button
+                  type="button"
+                  className={styles.btnSm}
+                  disabled={sessionsSaving === u.id}
+                  onClick={() => handleSetSessionsAllotted(u)}
+                >
+                  {sessionsSaving === u.id ? '…' : 'Set'}
+                </button>
+              </div>
+            </td>
             <td>{u.suspended ? <Badge variant="warn">Suspended</Badge> : <Badge variant="green">Active</Badge>}</td>
             <td className={styles.actions}>
               <Link href={`/dashboard/admin/users/${u.id}`} className={styles.link}>Metrics</Link>

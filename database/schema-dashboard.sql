@@ -1,14 +1,15 @@
 -- Beyond The Body — Dashboard tables (run after schema.sql)
 -- Users and roles
 CREATE TABLE IF NOT EXISTS dashboard_users (
-  id             SERIAL PRIMARY KEY,
-  name           VARCHAR(255) NOT NULL,
-  email          VARCHAR(255) NOT NULL UNIQUE,
-  password_hash  VARCHAR(255),
-  role           VARCHAR(50) NOT NULL DEFAULT 'USER',
-  avatar_url     VARCHAR(500),
-  healing_score  INT DEFAULT 0,
-  created_at     TIMESTAMPTZ DEFAULT NOW()
+  id                 SERIAL PRIMARY KEY,
+  name               VARCHAR(255) NOT NULL,
+  email              VARCHAR(255) NOT NULL UNIQUE,
+  password_hash      VARCHAR(255),
+  role               VARCHAR(50) NOT NULL DEFAULT 'USER',
+  avatar_url         VARCHAR(500),
+  healing_score      INT DEFAULT 0,
+  sessions_allotted  INT,
+  created_at         TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS user_specialists (

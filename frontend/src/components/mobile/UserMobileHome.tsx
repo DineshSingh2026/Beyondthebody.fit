@@ -72,6 +72,12 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
         <div className={styles.heroRow}>
           <MiniHealingRing score={d.healingScore.value} size={100} label={d.healingScore.label} />
         </div>
+        {d.sessionsAllotted != null && (
+          <div className={styles.sessionQuota}>
+            <span className={styles.sessionQuotaLabel}>Sessions</span>
+            <span className={styles.sessionQuotaVal}>{d.sessionsRemaining ?? 0}/{d.sessionsAllotted}</span>
+          </div>
+        )}
         <div className={styles.weekStrip}>Week 6 of your healing journey</div>
         <div className={styles.progressBar}>
           <div className={styles.progressFill} />

@@ -9,7 +9,7 @@ import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import HapticButton from '@/components/mobile/HapticButton';
 import SwipeableRow from '@/components/mobile/SwipeableRow';
-import type { SessionSummary } from '@/lib/dashboard-types';
+import type { SessionSummary, SessionQuota } from '@/lib/dashboard-types';
 import styles from './page.module.css';
 
 const SPECIALIST_ROLES = ['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'];
@@ -19,6 +19,7 @@ export default function UserSessionsPage() {
   const isMobile = useIsMobile();
   const [userId, setUserId] = useState<string | null>(null);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [sessionQuota, setSessionQuota] = useState<SessionQuota | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
 
@@ -30,9 +31,11 @@ export default function UserSessionsPage() {
         if (SPECIALIST_ROLES.includes(me.role)) { router.replace('/dashboard/therapist'); return; }
         setUserId(me.id);
         const data = await api.getUserSessions(me.id);
-        setSessions(Array.isArray(data) ? data : []);
+        setSessions(data.sessions ?? []);
+        setSessionQuota(data.sessionQuota ?? null);
       } catch {
         setSessions([]);
+        setSessionQuota(null);
       } finally {
         setLoading(false);
       }
@@ -109,11 +112,19 @@ export default function UserSessionsPage() {
     );
   }
 
+  const quotaBlock = sessionQuota && (
+    <div className={styles.quotaBar}>
+      <span className={styles.quotaLabel}>Sessions</span>
+      <span className={styles.quotaValue}>{sessionQuota.sessionsRemaining}/{sessionQuota.sessionsAllotted}</span>
+    </div>
+  );
+
   if (!isMobile) {
     return (
       <div className={styles.desktop}>
         <h2 className={styles.desktopTitle}>Sessions</h2>
         <p className={styles.desktopSub}>Upcoming and past sessions with your specialists.</p>
+        {quotaBlock}
         {chips}
         {sessionList}
         <Link href="/dashboard/user/specialists" className={styles.bookLink}>
@@ -125,6 +136,7 @@ export default function UserSessionsPage() {
 
   return (
     <div className={styles.page}>
+      {quotaBlock}
       {chips}
       {sessionList}
       <Link href="/dashboard/user/specialists" className={styles.fab}>

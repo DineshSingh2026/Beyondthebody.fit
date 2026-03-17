@@ -260,6 +260,18 @@ const generateMeetingLink = () => {
   return `https://meet.jit.si/BTB-${rand(4)}-${rand(4)}-${rand(4)}`;
 };
 
+// ── Check if user has remaining session allotment (returns error message or null) ──
+const checkSessionAllotment = async (userId) => {
+  if (!db.connected) return null;
+  const r = await db.query('SELECT sessions_allotted FROM dashboard_users WHERE id = $1', [userId]);
+  const allotted = r.rows[0]?.sessions_allotted != null ? parseInt(r.rows[0].sessions_allotted, 10) : null;
+  if (allotted == null) return null;
+  const usedR = await db.query('SELECT COUNT(*)::int AS c FROM sessions WHERE user_id = $1', [userId]);
+  const used = parseInt(usedR.rows[0]?.c || 0, 10);
+  if (used >= allotted) return 'No sessions remaining in this client\'s allotment.';
+  return null;
+};
+
 // ── Healing Score: recalculate and persist for a user ──────────────────────
 // Formula (capped at 100):
 //   Sessions completed  × 10  (max 50)
@@ -443,10 +455,14 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
     return res.status(503).json({ error: 'Dashboard not configured' });
   }
   try {
-    const userR = await db.query('SELECT id, name, email, role, healing_score FROM dashboard_users WHERE id = $1', [userId]);
+    const userR = await db.query('SELECT id, name, email, role, healing_score, sessions_allotted FROM dashboard_users WHERE id = $1', [userId]);
     if (userR.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     const user = userR.rows[0];
     if (user.role !== 'USER') return res.status(400).json({ error: 'Not a user account' });
+    const sessionsAllotted = user.sessions_allotted != null ? parseInt(user.sessions_allotted, 10) : null;
+    const sessionsUsedR = await db.query('SELECT COUNT(*)::int AS c FROM sessions WHERE user_id = $1', [userId]);
+    const sessionsUsed = parseInt(sessionsUsedR.rows[0]?.c || 0, 10);
+    const sessionsRemaining = sessionsAllotted != null ? Math.max(0, sessionsAllotted - sessionsUsed) : null;
 
     // Recalculate healing score — always returns a number (minimum 5)
     const freshScore = await recalculateHealingScore(userId);
@@ -564,6 +580,9 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
       user: { id: String(user.id), name: user.name, email: user.email, role: user.role },
       healingScore: { value: healingValue, label: 'Healing Journey' },
       stats: { sessionsCompleted, streak: Number(streak), moodAverage: Number(moodAvg), communityPosts },
+      sessionsAllotted: sessionsAllotted ?? undefined,
+      sessionsUsed,
+      sessionsRemaining: sessionsRemaining ?? undefined,
       affirmation: affR.rows[0]?.text || 'I am worthy of healing and growth.',
       brainTip: tipR.rows[0] ? { title: tipR.rows[0].title, description: tipR.rows[0].description, icon: tipR.rows[0].icon } : { title: 'Box Breathing', description: 'Inhale 4s, hold 4s, exhale 4s.', icon: '🫁' },
       upcomingSessions,
@@ -581,7 +600,7 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
 
 // All sessions for user (upcoming + completed) for Sessions page tabs
 app.get('/api/users/:id/sessions', async (req, res) => {
-  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  if (!db.connected || !(await hasDashboard())) return res.json({ sessions: [], sessionQuota: null });
   try {
     const uid = req.params.id;
     await db.query(`UPDATE sessions SET scheduled_at = NOW() + INTERVAL '7 days' WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()`, [uid]).catch(() => {});
@@ -592,18 +611,26 @@ app.get('/api/users/:id/sessions', async (req, res) => {
          lower(substr(md5(random()::text || id::text), 9, 4))
        WHERE user_id = $1 AND (meeting_link IS NULL OR meeting_link = '')`, [uid]
     ).catch(() => {});
-    const r = await db.query(
-      `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role, sp.avatar_url as specialist_avatar_url
-       FROM sessions s JOIN dashboard_users u ON u.id = s.user_id JOIN dashboard_users sp ON sp.id = s.specialist_id
-       WHERE s.user_id = $1
-         AND (s.status IN ('UPCOMING', 'IN_PROGRESS') OR (s.status = 'COMPLETED' AND s.scheduled_at >= NOW() - INTERVAL '1 year'))
-       ORDER BY (s.status = 'COMPLETED') ASC, (CASE WHEN s.status = 'COMPLETED' THEN s.scheduled_at END) DESC NULLS LAST, (CASE WHEN s.status IN ('UPCOMING','IN_PROGRESS') THEN s.scheduled_at END) ASC NULLS LAST`,
-      [uid]
-    );
-    res.json(r.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role, avatar_url: row.specialist_avatar_url })));
+    const [r, userQuotaR, usedR] = await Promise.all([
+      db.query(
+        `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role, sp.avatar_url as specialist_avatar_url
+         FROM sessions s JOIN dashboard_users u ON u.id = s.user_id JOIN dashboard_users sp ON sp.id = s.specialist_id
+         WHERE s.user_id = $1
+           AND (s.status IN ('UPCOMING', 'IN_PROGRESS') OR (s.status = 'COMPLETED' AND s.scheduled_at >= NOW() - INTERVAL '1 year'))
+         ORDER BY (s.status = 'COMPLETED') ASC, (CASE WHEN s.status = 'COMPLETED' THEN s.scheduled_at END) DESC NULLS LAST, (CASE WHEN s.status IN ('UPCOMING','IN_PROGRESS') THEN s.scheduled_at END) ASC NULLS LAST`,
+        [uid]
+      ),
+      db.query('SELECT sessions_allotted FROM dashboard_users WHERE id = $1', [uid]),
+      db.query('SELECT COUNT(*)::int AS c FROM sessions WHERE user_id = $1', [uid]),
+    ]);
+    const allotted = userQuotaR.rows[0]?.sessions_allotted != null ? parseInt(userQuotaR.rows[0].sessions_allotted, 10) : null;
+    const used = parseInt(usedR.rows[0]?.c || 0, 10);
+    const sessionQuota = allotted != null ? { sessionsAllotted: allotted, sessionsUsed: used, sessionsRemaining: Math.max(0, allotted - used) } : null;
+    const sessions = r.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role, avatar_url: row.specialist_avatar_url }));
+    res.json({ sessions, sessionQuota });
   } catch (err) {
     console.error('GET /api/users/:id/sessions', err);
-    res.json([]);
+    res.json({ sessions: [], sessionQuota: null });
   }
 });
 
@@ -1319,7 +1346,7 @@ app.get('/api/admin/assignment-requests', async (req, res) => {
 // Admin: approve or reject an assignment request
 app.patch('/api/admin/assignment-requests/:id', async (req, res) => {
   if (requireAdmin(req, res) === undefined) return;
-  const { status } = req.body || {};
+  const { status, sessionsAllotted } = req.body || {};
   if (!status || !['approved', 'rejected'].includes(status)) return res.status(400).json({ error: 'status must be approved or rejected' });
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
   try {
@@ -1331,6 +1358,10 @@ app.patch('/api/admin/assignment-requests/:id', async (req, res) => {
     const newStatus = status === 'approved' ? 'APPROVED' : 'REJECTED';
     await db.query('UPDATE assignment_requests SET status = $1, resolved_at = NOW() WHERE id = $2', [newStatus, req.params.id]);
     if (status === 'approved') {
+      const allotted = sessionsAllotted != null && Number.isInteger(Number(sessionsAllotted)) && Number(sessionsAllotted) >= 0 ? Number(sessionsAllotted) : null;
+      if (allotted !== null) {
+        await db.query('UPDATE dashboard_users SET sessions_allotted = $1 WHERE id = $2', [allotted, ar.user_id]);
+      }
       await db.query('INSERT INTO user_specialists (user_id, specialist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [ar.user_id, ar.specialist_id]);
       if (adminId) {
         await db.query('INSERT INTO direct_messages (from_user_id, to_user_id, content) VALUES ($1, $2, $3)', [adminId, ar.user_id, `Great news! Your request to be assigned to ${ar.specialist_name} has been approved. They are now your specialist.`]);
@@ -1386,8 +1417,27 @@ app.get('/api/admin/users', async (req, res) => {
   if (requireAdmin(req, res) === undefined) return;
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
-    const r = await db.query("SELECT id, name, email, role, COALESCE(suspended, false) as suspended, avatar_url FROM dashboard_users WHERE role = 'USER' ORDER BY id");
-    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, email: rr.email, role: rr.role, suspended: !!rr.suspended, avatarUrl: rr.avatar_url || null })));
+    const r = await db.query(
+      `SELECT id, name, email, role, COALESCE(suspended, false) as suspended, avatar_url, sessions_allotted,
+        (SELECT COUNT(*)::int FROM sessions WHERE user_id = dashboard_users.id) as sessions_used
+       FROM dashboard_users WHERE role = 'USER' ORDER BY id`
+    );
+    res.json(r.rows.map(rr => {
+      const allotted = rr.sessions_allotted != null ? parseInt(rr.sessions_allotted, 10) : null;
+      const used = parseInt(rr.sessions_used || 0, 10);
+      const remaining = allotted != null ? Math.max(0, allotted - used) : null;
+      return {
+        id: String(rr.id),
+        name: rr.name,
+        email: rr.email,
+        role: rr.role,
+        suspended: !!rr.suspended,
+        avatarUrl: rr.avatar_url || null,
+        sessionsAllotted: allotted ?? undefined,
+        sessionsUsed: used,
+        sessionsRemaining: remaining ?? undefined,
+      };
+    }));
   } catch (err) {
     console.error('GET /api/admin/users', err);
     res.json([]);
@@ -1408,6 +1458,25 @@ app.patch('/api/admin/users/:id/suspend', async (req, res) => {
     res.json({ success: true, suspended });
   } catch (err) {
     console.error('PATCH /api/admin/users/:id/suspend', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/admin/users/:id/sessions-allotted', async (req, res) => {
+  if (requireAdmin(req, res) === undefined) return;
+  const { sessionsAllotted } = req.body || {};
+  if (sessionsAllotted != null && (typeof sessionsAllotted !== 'number' || sessionsAllotted < 0 || !Number.isInteger(sessionsAllotted))) {
+    return res.status(400).json({ error: 'sessionsAllotted must be a non-negative integer or null' });
+  }
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const target = await db.query('SELECT id, name, role FROM dashboard_users WHERE id = $1', [req.params.id]);
+    if (target.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    if (target.rows[0].role !== 'USER') return res.status(400).json({ error: 'Can set session allotment only for clients (USER role)' });
+    await db.query('UPDATE dashboard_users SET sessions_allotted = $1 WHERE id = $2', [sessionsAllotted == null ? null : sessionsAllotted, req.params.id]);
+    res.json({ success: true, sessionsAllotted: sessionsAllotted ?? null });
+  } catch (err) {
+    console.error('PATCH /api/admin/users/:id/sessions-allotted', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1601,6 +1670,8 @@ app.post('/api/admin/sessions', async (req, res) => {
   if (!userId || !specialistId || !scheduledAt) return res.status(400).json({ error: 'userId, specialistId and scheduledAt are required.' });
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
   try {
+    const allotmentErr = await checkSessionAllotment(userId);
+    if (allotmentErr) return res.status(400).json({ error: allotmentErr });
     const userR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1 AND role = \'USER\'', [userId]);
     const spR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1 AND role IN (\'THERAPIST\', \'LIFE_COACH\', \'HYPNOTHERAPIST\', \'MUSIC_TUTOR\')', [specialistId]);
     if (userR.rows.length === 0) return res.status(404).json({ error: 'User not found' });
@@ -1992,6 +2063,8 @@ app.patch('/api/specialists/:id/requests/:requestId', async (req, res) => {
     const clientName = uR.rows[0]?.name || 'Client';
     const spName     = spR.rows[0]?.name || 'Specialist';
     if (newStatus === 'ACCEPTED') {
+      const allotmentErr = await checkSessionAllotment(br.user_id);
+      if (allotmentErr) return res.status(400).json({ error: allotmentErr });
       // If the proposed time is in the past, schedule 7 days from now so it shows as "upcoming"
       const proposedTime = br.proposed_at ? new Date(br.proposed_at) : null;
       const now = new Date();
@@ -2039,6 +2112,8 @@ app.post('/api/specialists/:id/sessions', async (req, res) => {
   if (!userId || !scheduledAt) return res.status(400).json({ error: 'userId and scheduledAt are required.' });
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
   try {
+    const allotmentErr = await checkSessionAllotment(userId);
+    if (allotmentErr) return res.status(400).json({ error: allotmentErr });
     const spR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1 AND role IN (\'THERAPIST\',\'LIFE_COACH\',\'HYPNOTHERAPIST\',\'MUSIC_TUTOR\')', [req.params.id]);
     if (spR.rows.length === 0) return res.status(404).json({ error: 'Specialist not found' });
     const uR = await db.query('SELECT id, name FROM dashboard_users WHERE id = $1 AND role = $2', [userId, 'USER']);
@@ -2959,6 +3034,11 @@ async function autoMigrate() {
     }
     try {
       await db.query('ALTER TABLE booking_requests ADD COLUMN message TEXT');
+    } catch (e) {
+      if (e.code !== '42701') throw e;
+    }
+    try {
+      await db.query('ALTER TABLE dashboard_users ADD COLUMN sessions_allotted INT');
     } catch (e) {
       if (e.code !== '42701') throw e;
     }

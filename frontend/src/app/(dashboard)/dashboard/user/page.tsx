@@ -111,6 +111,12 @@ export default function UserDashboardPage() {
           <p className={styles.brainTipDesc}>{d.brainTip.description}</p>
         </motion.div>
       </div>
+      {d.sessionsAllotted != null && (
+        <motion.div className={styles.sessionQuotaBar} variants={item}>
+          <span className={styles.sessionQuotaLabel}>Sessions remaining</span>
+          <span className={styles.sessionQuotaValue}>{d.sessionsRemaining ?? 0}/{d.sessionsAllotted}</span>
+        </motion.div>
+      )}
       <div className={styles.statsRow}>
         <StatCard label="Sessions Completed" value={d.stats.sessionsCompleted} index={0} />
         <StatCard label="Streak" value={`${d.stats.streak} days`} index={1} />

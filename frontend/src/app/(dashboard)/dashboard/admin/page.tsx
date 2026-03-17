@@ -34,6 +34,7 @@ export default function AdminDashboardPage() {
   const [bookingRequests, setBookingRequests] = useState<any[]>([]);
   const [assignmentRequests, setAssignmentRequests] = useState<{ id: string; clientName: string; clientEmail: string; clientAvatarUrl?: string | null; specialistName: string; specialistRole: string; specialistAvatarUrl?: string | null; consultationCount: number; createdAt: string }[]>([]);
   const [assignActionId, setAssignActionId] = useState<string | null>(null);
+  const [sessionsAllottedPerRequest, setSessionsAllottedPerRequest] = useState<Record<string, string>>({});
   const [roster, setRoster] = useState(emptySpecialistRoster);
   const [activityLog, setActivityLog] = useState(emptyActivityLog);
 
@@ -67,7 +68,10 @@ export default function AdminDashboardPage() {
   const handleAssignmentAction = async (id: string, status: 'approved' | 'rejected') => {
     setAssignActionId(id);
     try {
-      await api.patchAdminAssignmentRequest(id, status);
+      const raw = sessionsAllottedPerRequest[id]?.trim();
+      const sessionsAllotted = raw !== '' && /^\d+$/.test(raw) ? parseInt(raw, 10) : undefined;
+      await api.patchAdminAssignmentRequest(id, status, status === 'approved' ? { sessionsAllotted } : undefined);
+      setSessionsAllottedPerRequest((prev) => { const next = { ...prev }; delete next[id]; return next; });
       api.getAdminAssignmentRequests().then(setAssignmentRequests).catch(() => {});
       api.getAdminPlatformStats().then(setStats).catch(() => {});
     } finally {
@@ -200,6 +204,7 @@ export default function AdminDashboardPage() {
                     <th>Client</th>
                     <th>Therapist</th>
                     <th>Consultations Done</th>
+                    <th>Sessions Allotted</th>
                     <th>Requested</th>
                     <th>Action</th>
                   </tr>
@@ -228,6 +233,17 @@ export default function AdminDashboardPage() {
                         </div>
                       </td>
                       <td><span style={{ color: '#4ade80', fontWeight: 600 }}>{ar.consultationCount}</span>/2</td>
+                      <td>
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="e.g. 12"
+                          value={sessionsAllottedPerRequest[ar.id] ?? ''}
+                          onChange={(e) => setSessionsAllottedPerRequest((prev) => ({ ...prev, [ar.id]: e.target.value }))}
+                          style={{ width: 72, padding: '6px 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 6 }}
+                          title="Sessions to allot when approving"
+                        />
+                      </td>
                       <td className={styles.muted}>{ar.createdAt ? new Date(ar.createdAt).toLocaleDateString() : '—'}</td>
                       <td>
                         <div style={{ display: 'flex', gap: 8 }}>

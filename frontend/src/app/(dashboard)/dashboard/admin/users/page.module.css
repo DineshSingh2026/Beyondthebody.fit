@@ -23,3 +23,7 @@
 .btnSm { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 12px; cursor: pointer; }
 .btnDanger { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--error, #c53030); background: transparent; color: var(--error, #c53030); font-size: 12px; cursor: pointer; }
 .btnDanger:disabled { opacity: 0.6; cursor: not-allowed; }
+.sessionsQuota { font-size: 13px; color: var(--gold); font-weight: 500; display: block; margin-top: 4px; }
+.sessionsDisplay { font-weight: 600; color: var(--gold); }
+.sessionsEditRow { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.sessionsInput { width: 64px; padding: 4px 8px; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); }
