@@ -10,13 +10,17 @@ interface MiniHealingRingProps {
   strokeColor?: string;
 }
 
+const scoreToColor = (s: number) =>
+  s >= 80 ? '#4ade80' : s >= 60 ? '#d4af37' : s >= 40 ? '#60a5fa' : '#f87171';
+
 export default function MiniHealingRing({
   score,
   size = 120,
   label = 'Healing',
-  strokeColor = 'var(--green)',
+  strokeColor,
 }: MiniHealingRingProps) {
   const [mounted, setMounted] = useState(false);
+  const color = strokeColor ?? scoreToColor(Math.min(100, Math.max(0, score)));
   const r = (size - 8) / 2;
   const circumference = 2 * Math.PI * r;
   const offset = circumference - (Math.min(100, Math.max(0, score)) / 100) * circumference;
@@ -44,7 +48,7 @@ export default function MiniHealingRing({
             strokeWidth="4"
             strokeDasharray={circumference}
             strokeDashoffset={mounted ? offset : circumference}
-            style={{ stroke: strokeColor }}
+            style={{ stroke: color }}
           />
         </svg>
         <span className={styles.value} style={{ fontSize: size * 0.2 }}>{score}</span>

@@ -102,23 +102,26 @@ export default function WellnessScore() {
           </div>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {data?.components.map(c => (
-              <div key={c.label}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, color: '#9ca89e' }}>{c.label}</span>
-                  <span style={{ fontSize: 12, color: '#fff' }}>{c.value}</span>
+            {data?.components.map(c => {
+              const barColor = c.value >= 80 ? '#4ade80' : c.value >= 60 ? '#d4af37' : c.value >= 40 ? '#60a5fa' : '#f87171';
+              return (
+                <div key={c.label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, color: '#9ca89e' }}>{c.label}</span>
+                    <span style={{ fontSize: 12, color: barColor, fontWeight: 500 }}>{c.value}</span>
+                  </div>
+                  <div style={{ height: 5, borderRadius: 4, background: '#2a3f2f' }}>
+                    <div style={{
+                      height: 5, borderRadius: 4,
+                      width: `${c.value}%`,
+                      background: barColor,
+                      transition: 'width 1s ease',
+                      willChange: 'width',
+                    }} />
+                  </div>
                 </div>
-                <div style={{ height: 5, borderRadius: 4, background: '#2a3f2f' }}>
-                  <div style={{
-                    height: 5, borderRadius: 4,
-                    width: `${c.value}%`,
-                    background: color,
-                    transition: 'width 1s ease',
-                    willChange: 'width',
-                  }} />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
