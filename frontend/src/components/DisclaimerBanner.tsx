@@ -4,15 +4,7 @@ export default function DisclaimerBanner() {
       <span className="disclaimer-strip-icon">⚠️</span>
       <span className="disclaimer-strip-text">
         Content on this site is <strong>educational only — not diagnostic or medical advice</strong>.
-        Always consult a licensed professional. In crisis?{' '}
-        <a
-          href="https://www.samaritans.org/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="disclaimer-strip-link"
-        >
-          Get immediate help →
-        </a>
+        Always consult a licensed professional.
       </span>
     </div>
   );
