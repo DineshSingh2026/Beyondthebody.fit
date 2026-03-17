@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useIsMobile } from '@/hooks/useMediaQuery';
 import { api, clearToken } from '@/lib/api';
-import Avatar from '@/components/ui/Avatar';
-import styles from './page.module.css';
+import s from '../../profile.module.css';
 
 const SPECIALIST_ROLES = ['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'];
 
@@ -16,19 +14,24 @@ const roleLabels: Record<string, string> = {
   MUSIC_TUTOR: 'Music Tutor',
 };
 
+const menuItems = [
+  { href: '/dashboard/therapist',          icon: '🏠', label: 'My Practice' },
+  { href: '/dashboard/therapist/clients',  icon: '👥', label: 'My Clients' },
+  { href: '/dashboard/therapist/schedule', icon: '📅', label: 'Schedule' },
+  { href: '/dashboard/therapist/messages', icon: '💬', label: 'Messages' },
+  { href: '/dashboard/therapist/earnings', icon: '💰', label: 'Earnings' },
+  { href: '/dashboard/therapist/notes',    icon: '📝', label: 'Notes' },
+];
+
 export default function TherapistProfilePage() {
   const router = useRouter();
-  const isMobile = useIsMobile();
-  const [me, setMe] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
-  const [stats, setStats] = useState<{
-    activeClients: number;
-    sessionsThisWeek: number;
-    avgRating: number;
-    completionRate: number;
-    earningsThisMonth: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [me, setMe]                       = useState<{ id: string; name: string; email: string; role: string; avatarUrl?: string | null } | null>(null);
+  const [stats, setStats]                 = useState<{ activeClients: number; sessionsThisWeek: number; avgRating: number; completionRate: number; earningsThisMonth: number } | null>(null);
+  const [loading, setLoading]             = useState(true);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [saving, setSaving]               = useState(false);
+  const [toast, setToast]                 = useState('');
 
   useEffect(() => {
     (async () => {
@@ -37,6 +40,7 @@ export default function TherapistProfilePage() {
         if (user.role === 'ADMIN') { router.replace('/dashboard/admin'); return; }
         if (!SPECIALIST_ROLES.includes(user.role)) { router.replace('/dashboard/user'); return; }
         setMe(user);
+        if (user.avatarUrl) setAvatarPreview(user.avatarUrl);
         try {
           const d = await api.getSpecialistDashboard(user.id);
           if (d?.stats) {
@@ -48,118 +52,120 @@ export default function TherapistProfilePage() {
               earningsThisMonth: d.earningsThisMonth ?? 0,
             });
           }
-        } catch { /* stats are bonus */ }
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
+        } catch { /* bonus */ }
+      } catch { /* ignore */ } finally { setLoading(false); }
     })();
   }, [router]);
 
-  const handleLogout = () => {
-    clearToken();
-    router.push('/login');
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
   };
 
-  if (loading) {
-    return <div className={styles.page}><div className={styles.spinner} /></div>;
-  }
-  if (error || !me) {
-    return <div className={styles.page}><p className={styles.muted}>Could not load profile.</p></div>;
-  }
+  const saveAvatar = async () => {
+    if (!avatarPreview || !me || avatarPreview === me.avatarUrl) return;
+    setSaving(true);
+    try {
+      await api.uploadAvatar(me.id, avatarPreview);
+      setMe(u => u ? { ...u, avatarUrl: avatarPreview } : u);
+      showToast('Profile photo saved ✓');
+    } catch { showToast('Upload failed. Try a smaller image.'); }
+    finally { setSaving(false); }
+  };
 
-  const specialistLabel = roleLabels[me.role] ?? me.role.replace(/_/g, ' ');
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const initials = me?.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() ?? '?';
+  const isDirty  = avatarPreview && avatarPreview !== me?.avatarUrl;
+  const specialistLabel = me ? (roleLabels[me.role] ?? me.role.replace(/_/g, ' ')) : '';
 
   const statItems = stats ? [
-    { label: 'Active Clients',  value: stats.activeClients,                         icon: '👥' },
-    { label: 'Sessions/Week',   value: stats.sessionsThisWeek,                      icon: '📅' },
-    { label: 'Avg Rating',      value: stats.avgRating > 0 ? `${stats.avgRating.toFixed(1)}★` : '—', icon: '⭐' },
-    { label: 'Completion',      value: stats.completionRate > 0 ? `${stats.completionRate}%` : '—', icon: '✅' },
+    { icon: '👥', value: stats.activeClients,    label: 'Clients' },
+    { icon: '📅', value: stats.sessionsThisWeek, label: 'Wk Sessions' },
+    { icon: '⭐', value: stats.avgRating > 0 ? `${stats.avgRating.toFixed(1)}★` : '—', label: 'Avg Rating' },
+    { icon: '✅', value: stats.completionRate > 0 ? `${stats.completionRate}%` : '—', label: 'Completion' },
   ] : [];
 
-  const content = (
-    <>
-      <div className={styles.hero}>
-        <Avatar name={me.name} size="lg" />
-        <h2 className={styles.name}>{me.name}</h2>
-        <p className={styles.email}>{me.email}</p>
-        <span className={styles.roleBadge}>{specialistLabel}</span>
-        {stats && stats.earningsThisMonth > 0 && (
-          <p className={styles.earnings}>
-            £{stats.earningsThisMonth.toLocaleString()} this month
-          </p>
-        )}
-      </div>
+  if (loading) return <div className={s.page}><div className={s.center}><div className={s.spinner} /></div></div>;
 
-      {statItems.length > 0 && (
-        <div className={styles.statsGrid}>
-          {statItems.map((s) => (
-            <div key={s.label} className={styles.statCard}>
-              <span className={styles.statIcon}>{s.icon}</span>
-              <span className={styles.statValue}>{s.value}</span>
-              <span className={styles.statLabel}>{s.label}</span>
+  return (
+    <div className={s.page}>
+      {toast && <div className={s.toast}>{toast}</div>}
+      <div className={s.inner}>
+
+        {/* ── Hero ── */}
+        <div className={s.hero}>
+          <div className={s.heroBg}>
+            <div className={s.avatarWrap}>
+              <div className={s.avatarRing} />
+              {avatarPreview
+                ? <img src={avatarPreview} alt={me?.name} className={s.avatarImg} />
+                : <div className={s.avatarInitials}>{initials}</div>
+              }
+              <div className={s.uploadOverlay}>
+                <span className={s.uploadIcon}>📷</span>
+                <span className={s.uploadLabel}>Change</span>
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" className={s.fileInput} onChange={onFileChange} />
             </div>
-          ))}
+            {isDirty && (
+              <button type="button" className={s.saveAvatarBtn} onClick={saveAvatar} disabled={saving}>
+                {saving ? 'Saving…' : 'Save Photo'}
+              </button>
+            )}
+            <div className={s.heroText}>
+              <h2 className={s.name}>{me?.name}</h2>
+              <p className={s.email}>{me?.email}</p>
+              <span className={s.rolePill}><span className={s.roleDot} /> {specialistLabel}</span>
+              {stats && stats.earningsThisMonth > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+                  <span className={s.earningsChip}>
+                    💷 £{stats.earningsThisMonth.toLocaleString()} this month
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      )}
 
-      <ul className={styles.menu}>
-        <li>
-          <a href="/dashboard/therapist" className={styles.menuLink}>
-            <span>🏠</span> My Practice
-            <span className={styles.menuArrow}>›</span>
-          </a>
-        </li>
-        <li>
-          <a href="/dashboard/therapist/clients" className={styles.menuLink}>
-            <span>👥</span> My Clients
-            <span className={styles.menuArrow}>›</span>
-          </a>
-        </li>
-        <li>
-          <a href="/dashboard/therapist/schedule" className={styles.menuLink}>
-            <span>📅</span> Schedule
-            <span className={styles.menuArrow}>›</span>
-          </a>
-        </li>
-        <li>
-          <a href="/dashboard/therapist/messages" className={styles.menuLink}>
-            <span>💬</span> Messages
-            <span className={styles.menuArrow}>›</span>
-          </a>
-        </li>
-        <li>
-          <a href="/dashboard/therapist/earnings" className={styles.menuLink}>
-            <span>💰</span> Earnings
-            <span className={styles.menuArrow}>›</span>
-          </a>
-        </li>
-        <li>
-          <a href="/dashboard/therapist/notes" className={styles.menuLink}>
-            <span>📝</span> Notes
-            <span className={styles.menuArrow}>›</span>
-          </a>
-        </li>
-      </ul>
+        {/* ── Stats ── */}
+        {statItems.length > 0 && (
+          <div className={s.statsRow}>
+            {statItems.map(st => (
+              <div key={st.label} className={s.statCard}>
+                <span className={s.statIcon}>{st.icon}</span>
+                <span className={s.statValue}>{st.value}</span>
+                <span className={s.statLabel}>{st.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
-      <div className={styles.logoutRow}>
-        <button type="button" className={styles.logoutBtn} onClick={handleLogout}>
-          <span>⏻</span> Log out
-        </button>
+        <div className={s.divider} />
+
+        {/* ── Navigation ── */}
+        <ul className={s.menu}>
+          {menuItems.map(m => (
+            <li key={m.href} className={s.menuItem}>
+              <a href={m.href} className={s.menuLink}>
+                <span className={s.menuIconWrap}>{m.icon}</span>
+                <span className={s.menuText}>{m.label}</span>
+                <span className={s.menuArrow}>›</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <div className={s.logoutRow}>
+          <button type="button" className={s.logoutBtn} onClick={() => { clearToken(); router.push('/login'); }}>
+            <span>⏻</span> Sign Out
+          </button>
+        </div>
+
       </div>
-    </>
+    </div>
   );
-
-  if (!isMobile) {
-    return (
-      <div className={styles.desktop}>
-        <h2 className={styles.desktopTitle}>My Profile</h2>
-        <p className={styles.desktopSub}>Your account and practice overview.</p>
-        {content}
-      </div>
-    );
-  }
-
-  return <div className={styles.page}>{content}</div>;
 }

@@ -419,11 +419,11 @@ app.get('/api/auth/me', async (req, res) => {
   if (!payload) return res.status(401).json({ error: 'Unauthorized' });
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Service unavailable' });
   try {
-    const r = await db.query('SELECT id, name, email, role, suspended FROM dashboard_users WHERE id = $1', [payload.id]);
+    const r = await db.query('SELECT id, name, email, role, suspended, avatar_url FROM dashboard_users WHERE id = $1', [payload.id]);
     if (r.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     const u = r.rows[0];
     if (u.suspended) return res.status(403).json({ error: 'Account suspended. Please contact support.' });
-    return res.json({ id: String(u.id), name: u.name, email: u.email, role: u.role });
+    return res.json({ id: String(u.id), name: u.name, email: u.email, role: u.role, avatarUrl: u.avatar_url || null });
   } catch (err) {
     console.error('GET /api/auth/me', err);
     return res.status(500).json({ error: err.message });
@@ -788,6 +788,24 @@ app.get('/api/users/:userId/assignment-requests', async (req, res) => {
   } catch (err) {
     console.error('GET /api/users/:userId/assignment-requests', err);
     res.json([]);
+  }
+});
+
+// Upload / update profile avatar (stores URL or base64 data-URI in avatar_url)
+app.patch('/api/users/:id/avatar', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (String(payload.id) !== String(req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  const { avatarUrl } = req.body || {};
+  if (!avatarUrl || typeof avatarUrl !== 'string') return res.status(400).json({ error: 'avatarUrl is required.' });
+  if (avatarUrl.length > 2 * 1024 * 1024) return res.status(413).json({ error: 'Image too large (max ~2MB).' });
+  try {
+    await db.query('UPDATE dashboard_users SET avatar_url = $1 WHERE id = $2', [avatarUrl, req.params.id]);
+    res.json({ success: true, avatarUrl });
+  } catch (err) {
+    console.error('PATCH /api/users/:id/avatar', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -1,0 +1,452 @@
+/* ─────────────────────────────────────────────────────────────
+   Beyond The Body — Shared Luxury Profile CSS
+   Used by: user/profile, admin/profile, therapist/profile
+───────────────────────────────────────────────────────────── */
+
+/* ── Page wrapper ─────────────────────────────────────────── */
+.page {
+  min-height: 100dvh;
+  background: #070f0a;
+  padding: 0 0 80px;
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: 40px 0 80px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background: linear-gradient(160deg, #070f0a 0%, #0d1f12 60%, #071209 100%);
+  }
+}
+
+.inner {
+  width: 100%;
+  max-width: 560px;
+  padding: 0 0 32px;
+}
+
+@media (min-width: 768px) {
+  .inner {
+    padding: 0 24px 48px;
+  }
+}
+
+/* ── Loading / Error ──────────────────────────────────────── */
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 40dvh;
+}
+.spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid #d4af37;
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.errorMsg {
+  color: #9ca89e;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ── Hero banner ──────────────────────────────────────────── */
+.hero {
+  position: relative;
+  padding: 0 0 28px;
+}
+
+/* Decorative gold top bar */
+.hero::before {
+  content: '';
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #d4af37 30%, #f0d060 50%, #d4af37 70%, transparent);
+  margin-bottom: 0;
+}
+
+.heroBg {
+  background: linear-gradient(180deg, rgba(212,175,55,0.07) 0%, transparent 100%);
+  padding: 32px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+@media (min-width: 768px) {
+  .heroBg { padding: 40px 32px 28px; }
+}
+
+/* ── Avatar upload ────────────────────────────────────────── */
+.avatarWrap {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .avatarWrap { width: 116px; height: 116px; }
+}
+
+.avatarRing {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(#d4af37 0deg, #f0d060 90deg, #d4af37 180deg, #8b6914 270deg, #d4af37 360deg);
+  animation: ringRotate 6s linear infinite;
+  z-index: 0;
+}
+
+@keyframes ringRotate { to { transform: rotate(360deg); } }
+
+.avatarImg {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  object-fit: cover;
+  z-index: 1;
+  background: #0f1f14;
+}
+
+.avatarInitials {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a2e1f, #0f1f14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #4ade80;
+  z-index: 1;
+  user-select: none;
+}
+
+@media (min-width: 768px) {
+  .avatarInitials { font-size: 38px; }
+}
+
+.uploadOverlay {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: pointer;
+  z-index: 2;
+  -webkit-tap-highlight-color: transparent;
+}
+.avatarWrap:hover .uploadOverlay,
+.avatarWrap:focus-within .uploadOverlay {
+  opacity: 1;
+}
+/* Always show on mobile (no hover) */
+@media (max-width: 767px) {
+  .uploadOverlay { opacity: 0.85; }
+}
+.uploadIcon { font-size: 20px; line-height: 1; }
+.uploadLabel {
+  font-size: 9px;
+  color: #fff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.fileInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  z-index: 3;
+}
+
+.saveAvatarBtn {
+  margin-top: 6px;
+  padding: 6px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(212,175,55,0.5);
+  background: rgba(212,175,55,0.12);
+  color: #d4af37;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.2s;
+  min-height: 32px;
+}
+.saveAvatarBtn:hover { background: rgba(212,175,55,0.22); }
+.saveAvatarBtn:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Hero text ────────────────────────────────────────────── */
+.heroText { text-align: center; }
+
+.name {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: #fff;
+  margin: 0 0 4px;
+  letter-spacing: 0.01em;
+}
+
+@media (min-width: 768px) {
+  .name { font-size: 1.9rem; }
+}
+
+.email {
+  font-size: 13px;
+  color: #9ca89e;
+  margin: 0 0 10px;
+  letter-spacing: 0.02em;
+}
+
+.rolePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(212,175,55,0.4);
+  background: rgba(212,175,55,0.08);
+  color: #d4af37;
+}
+
+.roleDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d4af37;
+  box-shadow: 0 0 6px #d4af37;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── Stats grid ───────────────────────────────────────────── */
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 0 20px;
+  margin-bottom: 4px;
+}
+
+@media (min-width: 480px) {
+  .statsRow { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 768px) {
+  .statsRow { padding: 0 32px; }
+}
+
+.statCard {
+  background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+  border: 1px solid rgba(212,175,55,0.12);
+  border-radius: 14px;
+  padding: 16px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.statCard:hover {
+  border-color: rgba(212,175,55,0.3);
+  background: rgba(212,175,55,0.05);
+}
+
+.statIcon { font-size: 20px; line-height: 1; }
+.statValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #d4af37;
+  line-height: 1;
+}
+.statLabel {
+  font-size: 10px;
+  color: #6b7a6e;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+/* ── Healing ring (user) ──────────────────────────────────── */
+.scoreRow {
+  padding: 4px 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ── Divider ──────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.2) 30%, rgba(212,175,55,0.2) 70%, transparent);
+  margin: 20px 20px 0;
+}
+
+@media (min-width: 768px) {
+  .divider { margin: 24px 32px 0; }
+}
+
+/* ── Nav menu ─────────────────────────────────────────────── */
+.menu {
+  list-style: none;
+  padding: 8px 16px 0;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .menu { padding: 8px 28px 0; }
+}
+
+.menuItem {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.menuItem:last-child { border-bottom: none; }
+
+.menuLink {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 8px;
+  font-size: 15px;
+  color: #c8d5cb;
+  text-decoration: none;
+  min-height: 52px;
+  border-radius: 10px;
+  transition: background 0.15s, color 0.15s, padding-left 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.menuLink:hover {
+  background: rgba(212,175,55,0.05);
+  color: #fff;
+  padding-left: 16px;
+}
+
+.menuIconWrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.menuLink:hover .menuIconWrap {
+  background: rgba(212,175,55,0.1);
+  border-color: rgba(212,175,55,0.3);
+}
+
+.menuText { flex: 1; font-weight: 400; letter-spacing: 0.01em; }
+
+.menuArrow {
+  color: #3a4a3e;
+  font-size: 18px;
+  transition: color 0.15s, transform 0.15s;
+}
+.menuLink:hover .menuArrow {
+  color: #d4af37;
+  transform: translateX(3px);
+}
+
+/* ── Logout ───────────────────────────────────────────────── */
+.logoutRow {
+  padding: 24px 20px 0;
+}
+
+@media (min-width: 768px) {
+  .logoutRow { padding: 28px 32px 0; }
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid rgba(248,113,113,0.25);
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f87171;
+  background: rgba(248,113,113,0.06);
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.03em;
+  transition: background 0.2s, border-color 0.2s;
+  min-height: 52px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.logoutBtn:hover, .logoutBtn:active {
+  background: rgba(248,113,113,0.14);
+  border-color: rgba(248,113,113,0.45);
+}
+
+/* ── Save toast ───────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a2e1f;
+  border: 1px solid rgba(74,222,128,0.3);
+  color: #4ade80;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 20px;
+  z-index: 999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  animation: toastIn 0.3s ease;
+  white-space: nowrap;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Earnings chip (therapist) ────────────────────────────── */
+.earningsChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #4ade80;
+  background: rgba(74,222,128,0.1);
+  border: 1px solid rgba(74,222,128,0.2);
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-weight: 500;
+  margin-top: 4px;
+}

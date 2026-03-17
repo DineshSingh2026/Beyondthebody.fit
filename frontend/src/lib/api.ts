@@ -106,7 +106,7 @@ export async function browseSpecialists(): Promise<SpecialistBrowse[]> {
 }
 
 // ---------- Auth ----------
-export type AuthUser = { id: string; name: string; email: string; role: string };
+export type AuthUser = { id: string; name: string; email: string; role: string; avatarUrl?: string | null };
 
 export async function login(email: string, password: string): Promise<{ user: AuthUser; token: string }> {
   const r = await fetchJson<{ user: AuthUser; token: string }>(`${API_BASE}/api/auth/login`, {
@@ -197,6 +197,13 @@ export const api = {
     return fetchWithAuth(`${API_BASE}/api/users/${userId}/mood-log`, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  },
+
+  async uploadAvatar(userId: string, avatarUrl: string) {
+    return fetchWithAuth<{ success: boolean; avatarUrl: string }>(`${API_BASE}/api/users/${userId}/avatar`, {
+      method: 'PATCH',
+      body: JSON.stringify({ avatarUrl }),
     });
   },
 
