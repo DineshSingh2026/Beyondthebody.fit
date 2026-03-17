@@ -746,15 +746,24 @@ app.post('/api/users/:userId/assignment-request', async (req, res) => {
     if (userR.rows.length === 0) return res.status(400).json({ error: 'User not found' });
     const spR = await db.query("SELECT id, name FROM dashboard_users WHERE id = $1 AND role IN ('THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR')", [specialistId]);
     if (spR.rows.length === 0) return res.status(404).json({ error: 'Specialist not found' });
-    // Check already assigned
+    // Check already in user_specialists — sync assignment_requests and return gracefully
     const alreadyR = await db.query('SELECT 1 FROM user_specialists WHERE user_id = $1 AND specialist_id = $2', [req.params.userId, specialistId]);
-    if (alreadyR.rows.length > 0) return res.status(400).json({ error: 'Already assigned to this specialist' });
+    if (alreadyR.rows.length > 0) {
+      // Ensure assignment_requests has an APPROVED record so frontend shows "Your Therapist"
+      await db.query(
+        `INSERT INTO assignment_requests (user_id, specialist_id, status, resolved_at)
+         VALUES ($1, $2, 'APPROVED', NOW())
+         ON CONFLICT (user_id, specialist_id) DO UPDATE SET status='APPROVED', resolved_at=NOW()`,
+        [req.params.userId, specialistId]
+      );
+      return res.json({ success: true, alreadyAssigned: true, message: 'You are already assigned to this specialist.' });
+    }
     // Check existing pending/approved assignment request
     const existingR = await db.query("SELECT id, status FROM assignment_requests WHERE user_id = $1 AND specialist_id = $2", [req.params.userId, specialistId]);
     if (existingR.rows.length > 0) {
       const st = existingR.rows[0].status;
-      if (st === 'PENDING') return res.status(400).json({ error: 'Assignment request already pending' });
-      if (st === 'APPROVED') return res.status(400).json({ error: 'Already assigned' });
+      if (st === 'PENDING') return res.status(400).json({ error: 'Assignment request already pending.' });
+      if (st === 'APPROVED') return res.json({ success: true, alreadyAssigned: true, message: 'You are already assigned to this specialist.' });
     }
     // Check consultation count (accepted booking requests)
     const countR = await db.query("SELECT COUNT(*) as c FROM booking_requests WHERE user_id = $1 AND specialist_id = $2 AND status IN ('ACCEPTED','COMPLETED')", [req.params.userId, specialistId]);
@@ -3064,6 +3073,20 @@ async function autoMigrate() {
         );
       }
     } catch (e) { console.log('autoMigrate: activity_log skip:', e.message); }
+
+    // Backfill: for every user_specialists row that has no APPROVED assignment_requests record, create one
+    try {
+      await db.query(`
+        INSERT INTO assignment_requests (user_id, specialist_id, status, resolved_at, created_at)
+        SELECT us.user_id, us.specialist_id, 'APPROVED', NOW(), NOW()
+        FROM user_specialists us
+        WHERE NOT EXISTS (
+          SELECT 1 FROM assignment_requests ar
+          WHERE ar.user_id = us.user_id AND ar.specialist_id = us.specialist_id AND ar.status = 'APPROVED'
+        )
+        ON CONFLICT (user_id, specialist_id) DO UPDATE SET status='APPROVED', resolved_at=NOW()
+      `);
+    } catch (e) { console.log('autoMigrate: user_specialists backfill skip:', e.message); }
 
     console.log('autoMigrate: done');
   } catch (err) {

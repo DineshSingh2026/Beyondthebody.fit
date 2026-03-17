@@ -148,11 +148,22 @@ export default function UserSpecialistsPage() {
     setAssignLoading(sp.id);
     setAssignSuccess(null);
     try {
-      await api.postAssignmentRequest(userId, sp.id);
-      setAssignmentPendingIds(prev => new Set(prev).add(sp.id));
-      setAssignSuccess(sp.id);
+      const res = await api.postAssignmentRequest(userId, sp.id);
+      if (res.alreadyAssigned) {
+        // Already formally assigned — show "Your Therapist" immediately
+        setAssignedIds(prev => new Set(prev).add(sp.id));
+      } else {
+        setAssignmentPendingIds(prev => new Set(prev).add(sp.id));
+        setAssignSuccess(sp.id);
+      }
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Request failed. Try again.');
+      const msg = e instanceof Error ? e.message : 'Request failed. Try again.';
+      // If the pending error fires, just move to pending state silently
+      if (msg.includes('already pending')) {
+        setAssignmentPendingIds(prev => new Set(prev).add(sp.id));
+      } else {
+        alert(msg);
+      }
     } finally {
       setAssignLoading(null);
     }
@@ -222,11 +233,11 @@ export default function UserSpecialistsPage() {
               )}
               {assignedIds.has(sp.id) ? (
                 <div className={styles.assignedTag}>
-                  ✓ Your Therapist
+                  ✅ Assigned — Your Specialist
                 </div>
               ) : assignmentPendingIds.has(sp.id) || assignSuccess === sp.id ? (
                 <div className={styles.requested}>
-                  🕐 Assignment request pending admin approval
+                  🕐 Assignment request sent — awaiting admin approval
                 </div>
               ) : (consultCounts[sp.id] || 0) >= 2 ? (
                 <button

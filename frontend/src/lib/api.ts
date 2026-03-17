@@ -164,7 +164,7 @@ export const api = {
   },
 
   async postAssignmentRequest(userId: string, specialistId: string) {
-    return fetchWithAuth<{ success: boolean; message: string }>(`${API_BASE}/api/users/${userId}/assignment-request`, {
+    return fetchWithAuth<{ success: boolean; message: string; alreadyAssigned?: boolean }>(`${API_BASE}/api/users/${userId}/assignment-request`, {
       method: 'POST',
       body: JSON.stringify({ specialistId }),
     });
