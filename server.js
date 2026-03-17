@@ -519,7 +519,23 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
     const sessionsCompleted = parseInt(statsR.rows[0]?.sessions_completed || 0, 10);
     const moodAvg = parseFloat(moodR.rows[0]?.avg || 0).toFixed(1);
     const communityPosts = parseInt(postsR.rows[0]?.c || 0, 10);
-    const streak = 7;
+
+    // Real streak: consecutive days ending today where the user logged mood
+    let streak = 0;
+    try {
+      const streakR = await db.query(
+        `WITH days AS (
+           SELECT date FROM mood_log WHERE user_id = $1 ORDER BY date DESC
+         ),
+         numbered AS (
+           SELECT date, ROW_NUMBER() OVER (ORDER BY date DESC) AS rn FROM days
+         )
+         SELECT COUNT(*)::int AS streak FROM numbered
+         WHERE date = CURRENT_DATE - (rn - 1) * INTERVAL '1 day'`,
+        [userId]
+      );
+      streak = parseInt(streakR.rows[0]?.streak || 0, 10);
+    } catch { streak = 0; }
 
     const upcomingSessions = upcomingR.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role }));
     const specialists = specialistsR.rows.map(r => ({
