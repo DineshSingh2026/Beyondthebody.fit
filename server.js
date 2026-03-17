@@ -575,6 +575,34 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
   }
 });
 
+// All sessions for user (upcoming + completed) for Sessions page tabs
+app.get('/api/users/:id/sessions', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.json([]);
+  try {
+    const uid = req.params.id;
+    await db.query(`UPDATE sessions SET scheduled_at = NOW() + INTERVAL '7 days' WHERE user_id = $1 AND status = 'UPCOMING' AND scheduled_at < NOW()`, [uid]).catch(() => {});
+    await db.query(
+      `UPDATE sessions SET meeting_link = 'https://meet.jit.si/BTB-' ||
+         lower(substr(md5(random()::text || id::text), 1, 4)) || '-' ||
+         lower(substr(md5(random()::text || id::text), 5, 4)) || '-' ||
+         lower(substr(md5(random()::text || id::text), 9, 4))
+       WHERE user_id = $1 AND (meeting_link IS NULL OR meeting_link = '')`, [uid]
+    ).catch(() => {});
+    const r = await db.query(
+      `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role
+       FROM sessions s JOIN dashboard_users u ON u.id = s.user_id JOIN dashboard_users sp ON sp.id = s.specialist_id
+       WHERE s.user_id = $1
+         AND (s.status IN ('UPCOMING', 'IN_PROGRESS') OR (s.status = 'COMPLETED' AND s.scheduled_at >= NOW() - INTERVAL '1 year'))
+       ORDER BY (s.status = 'COMPLETED') ASC, (CASE WHEN s.status = 'COMPLETED' THEN s.scheduled_at END) DESC NULLS LAST, (CASE WHEN s.status IN ('UPCOMING','IN_PROGRESS') THEN s.scheduled_at END) ASC NULLS LAST`,
+      [uid]
+    );
+    res.json(r.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role })));
+  } catch (err) {
+    console.error('GET /api/users/:id/sessions', err);
+    res.json([]);
+  }
+});
+
 app.get('/api/users/:id/sessions/upcoming', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
@@ -1611,6 +1639,48 @@ app.get('/api/specialists/browse', async (req, res) => {
     })));
   } catch (err) {
     console.error('GET /api/specialists/browse', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Public specialist profile (for user "View Profile" modal)
+app.get('/api/specialists/:id/profile', async (req, res) => {
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  try {
+    const r = await db.query(
+      `SELECT u.id, u.name, u.role, u.avatar_url, u.profile_data,
+              ROUND(AVG(s.rating)::numeric, 1) as avg_rating,
+              COUNT(s.id) FILTER (WHERE s.status = 'COMPLETED') as session_count,
+              COUNT(DISTINCT s.user_id) FILTER (WHERE s.status = 'COMPLETED') as client_count
+       FROM dashboard_users u
+       LEFT JOIN sessions s ON s.specialist_id = u.id
+       WHERE u.id = $1 AND u.role IN ('THERAPIST','LIFE_COACH','HYPNOTHERAPIST','MUSIC_TUTOR')
+       GROUP BY u.id, u.name, u.role, u.avatar_url, u.profile_data`,
+      [req.params.id]
+    );
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Specialist not found' });
+    const sp = r.rows[0];
+    const pd = sp.profile_data || {};
+    res.json({
+      id: String(sp.id),
+      name: sp.name,
+      role: sp.role,
+      avatarUrl: sp.avatar_url || null,
+      rating: sp.avg_rating ? Number(sp.avg_rating) : null,
+      sessionCount: parseInt(sp.session_count || '0', 10),
+      clientCount: parseInt(sp.client_count || '0', 10),
+      bio: pd.bio || pd.aboutMe || '',
+      specializations: pd.specializations || [],
+      qualifications: pd.qualifications || pd.certifications || [],
+      languages: pd.languages || ['English'],
+      experience: pd.experience || pd.yearsExperience || '',
+      sessionTypes: pd.sessionTypes || pd.services || [],
+      education: pd.education || '',
+      approach: pd.approach || pd.therapeuticApproach || '',
+      availability: pd.availability || '',
+    });
+  } catch (err) {
+    console.error('GET /api/specialists/:id/profile', err);
     res.status(500).json({ error: err.message });
   }
 });

@@ -95,15 +95,12 @@ export default function UserProfilePage() {
                 ? <img src={avatarPreview} alt={user?.name} className={s.avatarImg} />
                 : <div className={s.avatarInitials}>{initials}</div>
               }
-              <div className={s.uploadOverlay}>
-                <span className={s.uploadIcon}>📷</span>
-                <span className={s.uploadLabel}>Change</span>
-              </div>
+              <span className={s.cameraBtn} aria-label="Change photo">📷</span>
               <input ref={fileRef} type="file" accept="image/*" className={s.fileInput} onChange={onFileChange} />
             </div>
             {isDirty && (
               <button type="button" className={s.saveAvatarBtn} onClick={saveAvatar} disabled={saving}>
-                {saving ? 'Saving…' : 'Save Photo'}
+                {saving ? 'Saving…' : '💾 Save Photo'}
               </button>
             )}
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { emptyUserDashboard } from '@/lib/mock-data';
@@ -158,6 +159,9 @@ export default function UserDashboardPage() {
                     <Badge variant={sp.type === 'THERAPIST' ? 'green' : sp.type === 'LIFE_COACH' ? 'gold' : 'purple'}>{sp.type.replace('_', ' ')}</Badge>
                   </div>
                   <span className={styles.rating}>★ {sp.rating}</span>
+                  <Link href={`/dashboard/user/messages?with=${sp.id}`} className={styles.specialistMessageBtn}>
+                    Message
+                  </Link>
                 </div>
               ))}
             </div>

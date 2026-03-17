@@ -121,7 +121,20 @@
 .specialistList { display: flex; flex-direction: column; gap: 12px; }
 .specialistItem { display: flex; align-items: center; gap: 12px; }
 .specialistName { display: block; font-weight: 500; color: var(--text); margin-bottom: 4px; }
-.rating { margin-left: auto; color: var(--gold); font-size: 13px; }
+.rating { color: var(--gold); font-size: 13px; }
+.specialistMessageBtn {
+  margin-left: auto;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(212,175,55,0.4);
+  background: rgba(212,175,55,0.08);
+  color: #d4af37;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+}
+.specialistMessageBtn:hover { background: rgba(212,175,55,0.18); border-color: rgba(212,175,55,0.6); }
 .chartWrap { margin-bottom: 8px; }
 .moodLegend { display: flex; justify-content: space-between; font-size: 10px; color: var(--dim); }
 .milestoneList { list-style: none; padding: 0; margin: 0; }

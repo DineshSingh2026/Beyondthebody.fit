@@ -186,7 +186,9 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
                 {sp.type.replace('_', ' ')}
               </Badge>
               <span className={styles.rating}>★ {sp.rating}</span>
-              <HapticButton variant="secondary" pill>Message</HapticButton>
+              <Link href={`/dashboard/user/messages?with=${sp.id}`}>
+                <HapticButton variant="secondary" pill>Message</HapticButton>
+              </Link>
             </div>
           ))}
         </div>

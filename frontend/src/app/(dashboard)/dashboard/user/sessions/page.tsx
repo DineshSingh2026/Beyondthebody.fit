@@ -29,7 +29,7 @@ export default function UserSessionsPage() {
         if (me.role === 'ADMIN') { router.replace('/dashboard/admin'); return; }
         if (SPECIALIST_ROLES.includes(me.role)) { router.replace('/dashboard/therapist'); return; }
         setUserId(me.id);
-        const data = await api.getUpcomingSessions(me.id);
+        const data = await api.getUserSessions(me.id);
         setSessions(Array.isArray(data) ? data : []);
       } catch {
         setSessions([]);

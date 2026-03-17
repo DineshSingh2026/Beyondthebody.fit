@@ -101,6 +101,14 @@ export async function postSpecialistApplication(data: { name: string; email: str
 
 export type SpecialistBrowse = { id: string; name: string; role: string; avatarUrl?: string | null; rating?: number | null; sessionCount: number };
 
+export type SpecialistProfile = {
+  id: string; name: string; role: string; avatarUrl?: string | null;
+  rating?: number | null; sessionCount: number; clientCount: number;
+  bio: string; specializations: string[]; qualifications: string[];
+  languages: string[]; experience: string; sessionTypes: string[];
+  education: string; approach: string; availability: string;
+};
+
 export async function browseSpecialists(): Promise<SpecialistBrowse[]> {
   return fetchJson(`${API_BASE}/api/specialists/browse`);
 }
@@ -146,6 +154,10 @@ export const api = {
 
   async getUpcomingSessions(userId: string) {
     return fetchWithAuth(`${API_BASE}/api/users/${userId}/sessions/upcoming`);
+  },
+
+  async getUserSessions(userId: string) {
+    return fetchWithAuth(`${API_BASE}/api/users/${userId}/sessions`);
   },
 
   async getBookingRequests(userId: string) {
@@ -245,6 +257,10 @@ export const api = {
 
   async browseSpecialists(): Promise<SpecialistBrowse[]> {
     return fetchWithAuth(`${API_BASE}/api/specialists/browse`);
+  },
+
+  async getSpecialistProfile(specialistId: string): Promise<SpecialistProfile> {
+    return fetchWithAuth(`${API_BASE}/api/specialists/${specialistId}/profile`);
   },
 
   async getAdminSessions() {
