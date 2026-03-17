@@ -248,10 +248,19 @@ export const api = {
     return fetchWithAuth(`${API_BASE}/api/admin/applications/${id}`);
   },
 
-  async patchApplication(id: string, status: string): Promise<{ success: boolean; newUser?: { id: string; name: string; email: string; role: string; tempPassword: string } | null }> {
+  async patchApplication(
+    id: string,
+    status: string,
+    credentials?: { email: string; password: string }
+  ): Promise<{ success: boolean; newUser?: { id: string; name: string; email: string; role: string } | null }> {
+    const body: { status: string; email?: string; password?: string } = { status };
+    if (status === 'APPROVED' && credentials) {
+      body.email = credentials.email.trim();
+      body.password = credentials.password;
+    }
     return fetchWithAuth(`${API_BASE}/api/admin/applications/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(body),
     });
   },
 

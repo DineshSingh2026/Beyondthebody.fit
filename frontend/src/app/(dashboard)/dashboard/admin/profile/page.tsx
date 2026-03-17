@@ -35,12 +35,18 @@ export default function AdminProfilePage() {
     })();
   }, [router]);
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    try {
+      const { compressImageFile } = await import('@/lib/avatarCompress');
+      const dataUrl = await compressImageFile(file);
+      setAvatarPreview(dataUrl);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const saveAvatar = async () => {
@@ -50,7 +56,7 @@ export default function AdminProfilePage() {
       await api.uploadAvatar(admin.id, avatarPreview);
       setAdmin(u => u ? { ...u, avatarUrl: avatarPreview } : u);
       showToast('Profile photo saved ✓');
-    } catch { showToast('Upload failed. Try a smaller image.'); }
+    } catch (e) { showToast(e instanceof Error ? e.message : 'Upload failed. Try a smaller image.'); }
     finally { setSaving(false); }
   };
 

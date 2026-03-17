@@ -441,8 +441,7 @@ export default function UserSpecialistsPage() {
       )}
 
       <div className={styles.footer}>
-        <span>🔒 All sessions are confidential. Not sure who to pick?</span>
-        <a href="/dashboard/user" className={styles.footerLink}>Get expert-matched for free →</a>
+        <span>🔒 All sessions are confidential.</span>
       </div>
     </div>
   );

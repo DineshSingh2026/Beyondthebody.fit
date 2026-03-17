@@ -27,8 +27,8 @@ function verifyToken(token) {
   }
 }
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '4mb' }));
+app.use(express.urlencoded({ extended: true, limit: '4mb' }));
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
@@ -836,7 +836,9 @@ app.patch('/api/users/:id/avatar', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
   const { avatarUrl } = req.body || {};
   if (!avatarUrl || typeof avatarUrl !== 'string') return res.status(400).json({ error: 'avatarUrl is required.' });
-  if (avatarUrl.length > 2 * 1024 * 1024) return res.status(413).json({ error: 'Image too large (max ~2MB).' });
+  // Base64 is ~4/3 of image size; allow up to 2MB image => ~2.7MB string
+  const maxLength = Math.ceil(2 * 1024 * 1024 * (4 / 3)) + 100;
+  if (avatarUrl.length > maxLength) return res.status(413).json({ error: 'Image too large. Maximum size is 2MB. Please choose a smaller photo.' });
   try {
     await db.query('UPDATE dashboard_users SET avatar_url = $1 WHERE id = $2', [avatarUrl, req.params.id]);
     res.json({ success: true, avatarUrl });
@@ -1140,15 +1142,21 @@ app.get('/api/admin/applications/:id', async (req, res) => {
 
 app.patch('/api/admin/applications/:id', async (req, res) => {
   if (requireAdmin(req, res) === undefined) return;
-  const { status } = req.body;
+  const { status, email: adminEmail, password: adminPassword } = req.body || {};
   if (!status || !['APPROVED', 'REJECTED', 'REVIEWING', 'PENDING'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  if (status === 'APPROVED') {
+    const email = typeof adminEmail === 'string' ? adminEmail.trim().toLowerCase() : '';
+    const password = typeof adminPassword === 'string' ? adminPassword : '';
+    if (!email) return res.status(400).json({ error: 'Email is required when approving. Set the login email for the therapist.' });
+    if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+  }
   if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
   try {
     await db.query('UPDATE specialist_applications SET status = $1 WHERE id = $2', [status, req.params.id]);
 
     let newUser = null;
     if (status === 'APPROVED') {
-      const appR = await db.query('SELECT name, email, specialty FROM specialist_applications WHERE id = $1', [req.params.id]);
+      const appR = await db.query('SELECT * FROM specialist_applications WHERE id = $1', [req.params.id]);
       if (appR.rows.length > 0) {
         const app = appR.rows[0];
         const roleMap = {
@@ -1162,36 +1170,38 @@ app.patch('/api/admin/applications/:id', async (req, res) => {
           'MUSIC_TUTOR': 'MUSIC_TUTOR',
         };
         const role = roleMap[app.specialty] || 'THERAPIST';
-        const existing = await db.query('SELECT id FROM dashboard_users WHERE LOWER(email) = LOWER($1)', [app.email]);
-        if (existing.rows.length === 0) {
-          const TEMP_PASS = process.env.THERAPIST_TEMP_PASSWORD || 'Welcome@BTB2026';
-          const hash = await bcrypt.hash(TEMP_PASS, 10);
-          const profileData = {
-            professionalTitle: app.professional_title || '',
-            yearsExperience: app.years_experience || null,
-            location: app.location || '',
-            qualification: app.qualification || '',
-            certifications: app.certifications || '',
-            licenseNumber: app.license_number || '',
-            specializations: app.specializations || [],
-            bio: app.bio || '',
-            services: app.services || [],
-            availableDays: app.available_days || [],
-            availableTimes: app.available_times || '',
-            profilePhotoUrl: app.profile_photo_url || '',
-            introVideoUrl: app.intro_video_url || '',
-            certDocsUrl: app.cert_docs_url || '',
-            clientReviews: app.client_reviews || '',
-            successStories: app.success_stories || '',
-          };
-          const uR = await db.query(
-            'INSERT INTO dashboard_users (name, email, password_hash, role, profile_data) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role',
-            [app.name.trim(), app.email.trim().toLowerCase(), hash, role, JSON.stringify(profileData)]
-          );
-          newUser = { id: String(uR.rows[0].id), name: uR.rows[0].name, email: uR.rows[0].email, role, tempPassword: TEMP_PASS };
-          await db.query("INSERT INTO activity_log (type, message) VALUES ('specialist_approved', $1)", [`${app.name} (${app.email}) approved as ${role} — account created`]);
-          console.log(`Approved specialist: ${app.name} <${app.email}> as ${role}, temp password set.`);
+        const loginEmail = typeof adminEmail === 'string' ? adminEmail.trim().toLowerCase() : '';
+        const loginPassword = typeof adminPassword === 'string' ? adminPassword : '';
+        const existing = await db.query('SELECT id FROM dashboard_users WHERE LOWER(email) = LOWER($1)', [loginEmail]);
+        if (existing.rows.length > 0) {
+          return res.status(400).json({ error: 'A user with this email already exists. Choose a different login email.' });
         }
+        const hash = await bcrypt.hash(loginPassword, 10);
+        const profileData = {
+          professionalTitle: app.professional_title || '',
+          yearsExperience: app.years_experience || null,
+          location: app.location || '',
+          qualification: app.qualification || '',
+          certifications: app.certifications || '',
+          licenseNumber: app.license_number || '',
+          specializations: app.specializations || [],
+          bio: app.bio || '',
+          services: app.services || [],
+          availableDays: app.available_days || [],
+          availableTimes: app.available_times || '',
+          profilePhotoUrl: app.profile_photo_url || '',
+          introVideoUrl: app.intro_video_url || '',
+          certDocsUrl: app.cert_docs_url || '',
+          clientReviews: app.client_reviews || '',
+          successStories: app.success_stories || '',
+        };
+        const uR = await db.query(
+          'INSERT INTO dashboard_users (name, email, password_hash, role, profile_data) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role',
+          [app.name.trim(), loginEmail, hash, role, JSON.stringify(profileData)]
+        );
+        newUser = { id: String(uR.rows[0].id), name: uR.rows[0].name, email: uR.rows[0].email, role };
+        await db.query("INSERT INTO activity_log (type, message) VALUES ('specialist_approved', $1)", [`${app.name} (${loginEmail}) approved as ${role} — account created`]);
+        console.log(`Approved specialist: ${app.name} <${loginEmail}> as ${role}.`);
       }
     }
 
@@ -2930,6 +2940,11 @@ async function autoMigrate() {
     }
     try {
       await db.query('ALTER TABLE dashboard_users ADD COLUMN suspended BOOLEAN DEFAULT FALSE');
+    } catch (e) {
+      if (e.code !== '42701') throw e;
+    }
+    try {
+      await db.query('ALTER TABLE dashboard_users ALTER COLUMN avatar_url TYPE TEXT');
     } catch (e) {
       if (e.code !== '42701') throw e;
     }

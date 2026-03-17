@@ -22,6 +22,12 @@ export default function AdminApplicationsPage() {
   const [viewApp, setViewApp] = useState<SpecialistApplication | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // Approve credentials modal: set when admin clicks Approve
+  const [approveApp, setApproveApp] = useState<SpecialistApplication | null>(null);
+  const [credEmail, setCredEmail] = useState('');
+  const [credPassword, setCredPassword] = useState('');
+  const [credConfirm, setCredConfirm] = useState('');
+  const [credError, setCredError] = useState('');
 
   useEffect(() => {
     api.getMe()
@@ -35,22 +41,60 @@ export default function AdminApplicationsPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  useEffect(() => {
+    if (approveApp) {
+      setCredEmail(approveApp.email || '');
+      setCredPassword('');
+      setCredConfirm('');
+      setCredError('');
+    }
+  }, [approveApp]);
+
   const refreshList = () => {
     api.getAdminApplications().then(setApplications).catch(() => {});
   };
 
-  const handleStatus = (id: string, status: string, fromModal?: boolean) => {
+  const handleReject = (id: string, fromModal?: boolean) => {
     setActionLoading(true);
-    api.patchApplication(id, status)
-      .then((res) => {
+    api.patchApplication(id, 'REJECTED')
+      .then(() => {
         refreshList();
         if (fromModal) setViewApp(null);
-        if (status === 'APPROVED' && res.newUser) {
-          setSuccessMessage(`${res.newUser.name} can now log in. Temporary password: ${res.newUser.tempPassword}`);
+      })
+      .catch(() => {})
+      .finally(() => setActionLoading(false));
+  };
+
+  const handleApproveWithCredentials = () => {
+    if (!approveApp) return;
+    const email = credEmail.trim();
+    if (!email) {
+      setCredError('Email is required.');
+      return;
+    }
+    if (credPassword.length < 8) {
+      setCredError('Password must be at least 8 characters.');
+      return;
+    }
+    if (credPassword !== credConfirm) {
+      setCredError('Passwords do not match.');
+      return;
+    }
+    setCredError('');
+    setActionLoading(true);
+    api.patchApplication(approveApp.id, 'APPROVED', { email, password: credPassword })
+      .then((res) => {
+        refreshList();
+        setApproveApp(null);
+        setViewApp(null);
+        if (res.newUser) {
+          setSuccessMessage(`${res.newUser.name} can log in with the email and password you set. Share the credentials with them.`);
           setTimeout(() => setSuccessMessage(null), 12000);
         }
       })
-      .catch(() => {})
+      .catch((e) => {
+        setCredError(e instanceof Error ? e.message : 'Failed to create account. Try again.');
+      })
       .finally(() => setActionLoading(false));
   };
 
@@ -76,8 +120,8 @@ export default function AdminApplicationsPage() {
               <HapticButton variant="secondary" pill onClick={() => setViewApp(app)}>View</HapticButton>
               {app.status === 'PENDING' && (
                 <>
-                  <HapticButton variant="primary" pill onClick={() => handleStatus(app.id, 'APPROVED')}>Approve</HapticButton>
-                  <HapticButton variant="ghost" pill onClick={() => handleStatus(app.id, 'REJECTED')}>Reject</HapticButton>
+                  <HapticButton variant="primary" pill onClick={() => setApproveApp(app)}>Approve</HapticButton>
+                  <HapticButton variant="ghost" pill onClick={() => handleReject(app.id)}>Reject</HapticButton>
                 </>
               )}
             </div>
@@ -204,11 +248,65 @@ export default function AdminApplicationsPage() {
             <div className={styles.modalActions}>
               {viewApp.status === 'PENDING' && (
                 <>
-                  <HapticButton variant="primary" pill onClick={() => handleStatus(viewApp.id, 'APPROVED', true)} disabled={actionLoading}>✓ Approve</HapticButton>
-                  <HapticButton variant="ghost" pill onClick={() => handleStatus(viewApp.id, 'REJECTED', true)} disabled={actionLoading}>✕ Reject</HapticButton>
+                  <HapticButton variant="primary" pill onClick={() => setApproveApp(viewApp)} disabled={actionLoading}>✓ Approve</HapticButton>
+                  <HapticButton variant="ghost" pill onClick={() => handleReject(viewApp.id, true)} disabled={actionLoading}>✕ Reject</HapticButton>
                 </>
               )}
               <HapticButton variant="ghost" pill onClick={() => !actionLoading && setViewApp(null)}>Close</HapticButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Set login credentials when approving */}
+      {approveApp && (
+        <div className={styles.overlay} onClick={() => !actionLoading && setApproveApp(null)} style={{ zIndex: 1001 }}>
+          <div className={styles.credModal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.credTitle}>Set login for {approveApp.name}</h3>
+            <p className={styles.credSub}>Set the email and password the therapist will use to sign in.</p>
+            <div className={styles.credForm}>
+              <label className={styles.credLabel}>
+                Email
+                <input
+                  type="email"
+                  className={styles.credInput}
+                  value={credEmail}
+                  onChange={(e) => setCredEmail(e.target.value)}
+                  placeholder="therapist@example.com"
+                  autoComplete="email"
+                />
+              </label>
+              <label className={styles.credLabel}>
+                Password (min 8 characters)
+                <input
+                  type="password"
+                  className={styles.credInput}
+                  value={credPassword}
+                  onChange={(e) => setCredPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                />
+              </label>
+              <label className={styles.credLabel}>
+                Confirm password
+                <input
+                  type="password"
+                  className={styles.credInput}
+                  value={credConfirm}
+                  onChange={(e) => setCredConfirm(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                />
+              </label>
+              {credError && <p className={styles.credError}>{credError}</p>}
+            </div>
+            <div className={styles.credActions}>
+              <button type="button" className={styles.credBtnGhost} onClick={() => !actionLoading && setApproveApp(null)} disabled={actionLoading}>
+                Cancel
+              </button>
+              <button type="button" className={styles.credBtnPrimary} onClick={handleApproveWithCredentials} disabled={actionLoading}>
+                {actionLoading ? 'Creating…' : 'Approve & Create Account'}
+              </button>
             </div>
           </div>
         </div>

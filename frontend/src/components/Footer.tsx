@@ -5,7 +5,7 @@ export default function Footer() {
         <div className="footer-top">
           <div className="footer-brand">
             <div className="footer-logo">
-              <img src="/img/btb-logo.png" alt="Beyond The Body" className="footer-logo-img" style={{ height: '40px', width: 'auto' }} />
+              <img src="/img/btb-logo.png" alt="Beyond The Body" className="footer-logo-img" />
             </div>
             <p>
               Your safe space to embrace your heart, soul, and mind. Together, let&apos;s look
