@@ -15,6 +15,7 @@ interface UserRow {
   email: string;
   role: string;
   suspended?: boolean;
+  avatarUrl?: string | null;
 }
 
 export default function AdminUsersPage() {
@@ -46,7 +47,7 @@ export default function AdminUsersPage() {
     <div className={styles.list}>
       {users.map((u) => (
         <div key={u.id} className={styles.card}>
-          <Avatar name={u.name} size="md" />
+          <Avatar name={u.name} src={u.avatarUrl} size="md" />
           <div className={styles.info}>
             <span className={styles.name}>{u.name}</span>
             <span className={styles.email}>{u.email}</span>

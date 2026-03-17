@@ -127,6 +127,7 @@ export default function UserDashboardPage() {
                   key={s.id}
                   clientName={s.clientName}
                   specialistName={s.specialistName}
+                  specialistAvatarUrl={s.specialistAvatarUrl}
                   type={s.type}
                   time={s.time}
                   date={s.date}
@@ -153,7 +154,7 @@ export default function UserDashboardPage() {
             <div className={styles.specialistList}>
               {d.specialists.map((sp) => (
                 <div key={sp.id} className={styles.specialistItem}>
-                  <Avatar name={sp.name} size="md" />
+                  <Avatar name={sp.name} src={sp.avatarUrl ?? sp.avatar} size="md" />
                   <div>
                     <span className={styles.specialistName}>{sp.name}</span>
                     <Badge variant={sp.type === 'THERAPIST' ? 'green' : sp.type === 'LIFE_COACH' ? 'gold' : 'purple'}>{sp.type.replace('_', ' ')}</Badge>
@@ -203,7 +204,7 @@ export default function UserDashboardPage() {
             <h2 className={styles.sectionTitle}>Community Feed</h2>
             {d.communityFeed.map((post) => (
               <div key={post.id} className={styles.feedItem}>
-                <Avatar name={post.authorName} size="sm" />
+                <Avatar name={post.authorName} src={post.authorAvatar} size="sm" />
                 <div>
                   <span className={styles.feedAuthor}>{post.authorName}</span>
                   <p className={styles.feedContent}>{post.content}</p>

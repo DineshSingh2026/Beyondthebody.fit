@@ -15,6 +15,7 @@ interface SpecialistRow {
   specialty: string;
   active?: boolean;
   suspended?: boolean;
+  avatarUrl?: string | null;
   sessionCount: number;
   rating: number;
 }
@@ -47,7 +48,7 @@ export default function AdminSpecialistsPage() {
     <div className={styles.list}>
       {specialists.map((sp) => (
         <div key={sp.id} className={styles.card}>
-          <Avatar name={sp.name} size="md" />
+          <Avatar name={sp.name} src={sp.avatarUrl} size="md" />
           <div className={styles.info}>
             <span className={styles.name}>{sp.name}</span>
             <span className={styles.specialty}>{sp.specialty?.replace('_', ' ')}</span>

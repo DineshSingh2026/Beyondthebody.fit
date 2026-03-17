@@ -8,6 +8,7 @@ import styles from './SessionCard.module.css';
 interface SessionCardProps {
   clientName: string;
   specialistName: string;
+  specialistAvatarUrl?: string | null;
   type: string;
   time: string;
   date?: string;
@@ -28,6 +29,7 @@ const statusVariant: Record<SessionStatus, 'gold' | 'green' | 'muted'> = {
 
 export default function SessionCard({
   specialistName,
+  specialistAvatarUrl,
   type,
   time,
   date,
@@ -51,7 +53,7 @@ export default function SessionCard({
   return (
     <div className={styles.card}>
       <div className={styles.header}>
-        <Avatar name={specialistName} size="md" />
+        <Avatar name={specialistName} src={specialistAvatarUrl} size="md" />
         <div className={styles.meta}>
           <span className={styles.specialist}>{specialistName}</span>
           <span className={styles.type}>{type}</span>

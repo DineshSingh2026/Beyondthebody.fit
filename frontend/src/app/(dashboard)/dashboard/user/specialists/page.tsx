@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api, browseSpecialists } from '@/lib/api';
 import type { SpecialistBrowse, SpecialistProfile } from '@/lib/api';
 import { useIsMobile } from '@/hooks/useMediaQuery';
+import Avatar from '@/components/ui/Avatar';
 import styles from './page.module.css';
 
 const roleLabel: Record<string, string> = {
@@ -29,10 +30,6 @@ const roleDesc: Record<string, string> = {
 };
 
 const SESSION_TYPES = ['Consultation', '1:1 Therapy', 'Coaching', 'Hypnosis', 'Mindfulness', 'Follow-up'];
-
-function Initials({ name }: { name: string }) {
-  return <>{name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</>;
-}
 
 export default function UserSpecialistsPage() {
   const router = useRouter();
@@ -201,10 +198,7 @@ export default function UserSpecialistsPage() {
                   <div className={styles.cardTop}>
                     <div className={styles.avatarWrap}>
                       <div className={styles.avatarRing} />
-                      {sp.avatarUrl
-                        ? <img src={sp.avatarUrl} alt={sp.name} className={styles.avatarImg} />
-                        : <div className={styles.avatarInitials}><Initials name={sp.name} /></div>
-                      }
+                      <Avatar name={sp.name} src={sp.avatarUrl} size="lg" className={styles.avatarImg} />
                     </div>
                     <div className={styles.cardInfo}>
                       <h3 className={styles.name}>{sp.name}</h3>
@@ -280,10 +274,7 @@ export default function UserSpecialistsPage() {
             <div className={styles.modalHeader}>
               <div className={styles.modalAvatarWrap}>
                 <div className={styles.modalAvatarRing} />
-                {(viewProfile?.avatarUrl || viewSp.avatarUrl)
-                  ? <img src={viewProfile?.avatarUrl || viewSp.avatarUrl!} alt={viewSp.name} className={styles.modalAvatarImg} />
-                  : <div className={styles.modalAvatarInitials}><Initials name={viewSp.name} /></div>
-                }
+                <Avatar name={viewSp.name} src={viewProfile?.avatarUrl ?? viewSp.avatarUrl} size="lg" className={styles.modalAvatarImg} />
               </div>
               <h2 className={styles.modalName}>{viewSp.name}</h2>
               <div className={styles.modalRoleRow}>

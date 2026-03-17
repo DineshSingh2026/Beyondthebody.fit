@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import styles from './Avatar.module.css';
 
 interface AvatarProps {
@@ -19,11 +20,23 @@ function getInitials(name: string): string {
 }
 
 export default function Avatar({ name, src, size = 'md', className = '' }: AvatarProps) {
+  const [imgError, setImgError] = useState(false);
   const initials = getInitials(name);
+  const showImg = src && !imgError;
+
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
+
   return (
     <div className={`${styles.avatar} ${styles[size]} ${className}`.trim()}>
-      {src ? (
-        <img src={src} alt={name} className={styles.img} />
+      {showImg ? (
+        <img
+          src={src!}
+          alt={name}
+          className={styles.img}
+          onError={() => setImgError(true)}
+        />
       ) : (
         <span className={styles.initials}>{initials}</span>
       )}

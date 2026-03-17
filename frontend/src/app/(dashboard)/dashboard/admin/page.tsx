@@ -32,7 +32,7 @@ export default function AdminDashboardPage() {
   const [applications, setApplications] = useState(emptyApplications);
   const [sessions, setSessions] = useState(emptyAdminSessions);
   const [bookingRequests, setBookingRequests] = useState<any[]>([]);
-  const [assignmentRequests, setAssignmentRequests] = useState<{ id: string; clientName: string; clientEmail: string; specialistName: string; specialistRole: string; consultationCount: number; createdAt: string }[]>([]);
+  const [assignmentRequests, setAssignmentRequests] = useState<{ id: string; clientName: string; clientEmail: string; clientAvatarUrl?: string | null; specialistName: string; specialistRole: string; specialistAvatarUrl?: string | null; consultationCount: number; createdAt: string }[]>([]);
   const [assignActionId, setAssignActionId] = useState<string | null>(null);
   const [roster, setRoster] = useState(emptySpecialistRoster);
   const [activityLog, setActivityLog] = useState(emptyActivityLog);
@@ -80,7 +80,7 @@ export default function AdminDashboardPage() {
       api.getAdminApplications().then(setApplications).catch(() => {});
       api.getAdminPlatformStats().then(setStats).catch(() => {});
       if (status === 'APPROVED' && res.newUser) {
-        setApprovedAlert({ name: res.newUser.name, email: res.newUser.email, role: res.newUser.role, tempPassword: res.newUser.tempPassword });
+        setApprovedAlert({ name: res.newUser.name, email: res.newUser.email, role: res.newUser.role, tempPassword: res.newUser.tempPassword ?? '' });
       }
     }).catch(() => {});
   };
@@ -209,7 +209,7 @@ export default function AdminDashboardPage() {
                     <tr key={ar.id}>
                       <td>
                         <div className={styles.tableUser}>
-                          <Avatar name={ar.clientName} size="sm" />
+                          <Avatar name={ar.clientName} src={ar.clientAvatarUrl} size="sm" />
                           <div>
                             <span>{ar.clientName}</span>
                             <span className={styles.muted} style={{ display: 'block', fontSize: 11 }}>{ar.clientEmail}</span>
@@ -218,7 +218,7 @@ export default function AdminDashboardPage() {
                       </td>
                       <td>
                         <div className={styles.tableUser}>
-                          <Avatar name={ar.specialistName} size="sm" />
+                          <Avatar name={ar.specialistName} src={ar.specialistAvatarUrl} size="sm" />
                           <div>
                             <span>{ar.specialistName}</span>
                             <Badge variant={ar.specialistRole === 'THERAPIST' ? 'green' : ar.specialistRole === 'LIFE_COACH' ? 'gold' : 'purple'}>
@@ -355,7 +355,7 @@ export default function AdminDashboardPage() {
             <div className={styles.rosterList}>
               {roster.map((sp) => (
                 <div key={sp.id} className={styles.rosterItem}>
-                  <Avatar name={sp.name} size="sm" />
+                  <Avatar name={sp.name} src={sp.avatarUrl} size="sm" />
                   <div>
                     <span className={styles.rosterName}>{sp.name}</span>
                     <Badge variant={sp.specialty === 'LIFE_COACH' ? 'gold' : sp.specialty === 'THERAPIST' ? 'green' : sp.specialty === 'HYPNOTHERAPIST' ? 'purple' : 'teal'}>{sp.specialty.replace('_', ' ')}</Badge>

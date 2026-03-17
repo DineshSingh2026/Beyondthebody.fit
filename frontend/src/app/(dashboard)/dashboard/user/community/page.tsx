@@ -16,6 +16,7 @@ export default function UserCommunityPage() {
   const [loading, setLoading]     = useState(true);
   const [myId, setMyId]           = useState<string | null>(null);
   const [myName, setMyName]       = useState('');
+  const [myAvatarUrl, setMyAvatarUrl] = useState<string | null>(null);
   const [draft, setDraft]         = useState('');
   const [posting, setPosting]     = useState(false);
   const [postError, setPostError] = useState('');
@@ -36,6 +37,7 @@ export default function UserCommunityPage() {
         if (SPECIALIST_ROLES.includes(me.role)) { router.replace('/dashboard/therapist'); return; }
         setMyId(me.id);
         setMyName(me.name);
+        setMyAvatarUrl(me.avatarUrl ?? null);
         await refreshFeed();
       } catch {
         setFeed([]);
@@ -102,7 +104,7 @@ export default function UserCommunityPage() {
 
       {/* Compose box */}
       <div className={styles.composeBox}>
-        <Avatar name={myName || 'You'} size="md" />
+        <Avatar name={myName || 'You'} src={myAvatarUrl} size="md" />
         <div className={styles.composeRight}>
           <textarea
             ref={textareaRef}
@@ -142,7 +144,7 @@ export default function UserCommunityPage() {
         <div className={styles.feed}>
           {feed.map(post => (
             <article key={post.id} className={styles.post}>
-              <Avatar name={post.authorName} size="md" />
+              <Avatar name={post.authorName} src={post.authorAvatar} size="md" />
               <div className={styles.postBody}>
                 <div className={styles.postMeta}>
                   <span className={styles.postAuthor}>{post.authorName}</span>

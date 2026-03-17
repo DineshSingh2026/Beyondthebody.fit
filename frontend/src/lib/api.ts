@@ -198,7 +198,7 @@ export const api = {
   },
 
   async getConversationPartners(userId: string) {
-    return fetchWithAuth<{ id: string; name: string; type: string }[]>(`${API_BASE}/api/users/${userId}/conversation-partners`);
+    return fetchWithAuth<{ id: string; name: string; type: string; avatarUrl?: string | null }[]>(`${API_BASE}/api/users/${userId}/conversation-partners`);
   },
 
   async getMoodLog(userId: string) {
@@ -252,7 +252,7 @@ export const api = {
     id: string,
     status: string,
     credentials?: { email: string; password: string }
-  ): Promise<{ success: boolean; newUser?: { id: string; name: string; email: string; role: string } | null }> {
+  ): Promise<{ success: boolean; newUser?: { id: string; name: string; email: string; role: string; tempPassword?: string } | null }> {
     const body: { status: string; email?: string; password?: string } = { status };
     if (status === 'APPROVED' && credentials) {
       body.email = credentials.email.trim();

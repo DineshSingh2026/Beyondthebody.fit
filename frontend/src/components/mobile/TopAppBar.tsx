@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { UserRole } from '@/lib/dashboard-types';
 import { clearToken } from '@/lib/api';
 import NotificationPanel from '@/components/dashboard/NotificationPanel';
+import Avatar from '@/components/ui/Avatar';
 import styles from './TopAppBar.module.css';
 
 const WHATSAPP_NUMBER = '919502575669';
@@ -55,12 +56,14 @@ interface TopAppBarProps {
   title?: string;
   role?: UserRole;
   userName?: string;
+  avatarUrl?: string | null;
 }
 
 export default function TopAppBar({
   title,
   role = 'USER',
   userName = '',
+  avatarUrl,
 }: TopAppBarProps) {
   const router = useRouter();
   const pathname = usePathname() ?? '';
@@ -73,10 +76,6 @@ export default function TopAppBar({
   const canBack = showBack(pathname);
   const isAdmin = role === 'ADMIN';
   const showWhatsApp = !isAdmin;
-
-  const initials = userName
-    ? userName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-    : '?';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -176,7 +175,7 @@ export default function TopAppBar({
             aria-label="Account menu"
             aria-expanded={menuOpen}
           >
-            {initials}
+            <Avatar name={userName || 'User'} src={avatarUrl} size="md" className={styles.avatarInner} />
           </button>
 
           {menuOpen && (

@@ -16,6 +16,7 @@ const pathSubtitles: Record<string, string> = {
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
   const [userName, setUserName] = useState<string>('');
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
   const [role, setRole] = useState<UserRole>('USER');
   const [healingScore, setHealingScore] = useState(0);
 
@@ -23,6 +24,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     api.getMe()
       .then((me) => {
         setUserName(me.name);
+        setUserAvatarUrl(me.avatarUrl ?? null);
         setRole(me.role as UserRole);
         setHealingScore(0);
       })
@@ -41,6 +43,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <TopBar
           role={role}
           userName={userName}
+          userAvatarUrl={userAvatarUrl}
           subtitle={subtitle}
           nextSessionIn={role !== 'USER' && role !== 'ADMIN' ? '42 min' : undefined}
         />

@@ -15,6 +15,7 @@ interface PendingRequest {
   userId: string;
   clientName: string;
   clientEmail?: string;
+  clientAvatar?: string;
   proposedTime: string;
   sessionType: string;
   message?: string;
@@ -135,7 +136,7 @@ export default function TherapistSchedulePage() {
             {todaySchedule.map((s) => (
               <div key={s.id} className={styles.card}>
                 <span className={styles.time}>{s.time}</span>
-                <Avatar name={s.clientName} size="md" />
+                <Avatar name={s.clientName} src={s.clientAvatarUrl} size="md" />
                 <div className={styles.info}>
                   <span className={styles.name}>{s.clientName}</span>
                   <Badge variant="gold">{s.type}</Badge>
@@ -155,7 +156,7 @@ export default function TherapistSchedulePage() {
             {pendingRequests.map((r) => (
               <div key={r.id} className={styles.requestCard}>
                 <div className={styles.requestHeader} onClick={() => setViewRequestId(viewRequestId === r.id ? null : r.id)}>
-                  <Avatar name={r.clientName} size="md" />
+                  <Avatar name={r.clientName} src={r.clientAvatar} size="md" />
                   <div className={styles.info}>
                     <span className={styles.name}>{r.clientName}</span>
                     <span className={styles.meta}>{r.proposedTime} · {r.sessionType}</span>

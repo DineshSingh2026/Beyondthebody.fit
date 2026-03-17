@@ -31,6 +31,7 @@ const roleBadgeVariant: Record<string, 'gold' | 'green' | 'purple' | 'teal' | 'm
 interface TopBarProps {
   role: UserRole;
   userName: string;
+  userAvatarUrl?: string | null;
   subtitle?: string;
   showPulse?: boolean;
   nextSessionIn?: string;
@@ -39,6 +40,7 @@ interface TopBarProps {
 export default function TopBar({
   role,
   userName,
+  userAvatarUrl,
   subtitle,
   showPulse = true,
   nextSessionIn,
@@ -109,7 +111,7 @@ export default function TopBar({
         <NotificationPanel role={role} direction="down" />
 
         <div className={styles.user}>
-          <Avatar name={userName} size="md" />
+          <Avatar name={userName} src={userAvatarUrl} size="md" />
           <div className={styles.userMeta}>
             <span className={styles.userName}>{userName}</span>
             <Badge variant={roleBadgeVariant[role] || 'muted'}>{roleLabel[role] || role}</Badge>

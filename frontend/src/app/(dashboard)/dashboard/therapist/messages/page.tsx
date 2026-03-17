@@ -136,7 +136,7 @@ export default function TherapistMessagesPage() {
                 className={`${styles.clientRow} ${selectedUserId === c.id ? styles.clientRowActive : ''}`}
                 onClick={() => selectClient(c.id)}
               >
-                <Avatar name={c.name} size="sm" />
+                <Avatar name={c.name} src={c.avatar} size="sm" />
                 <div className={styles.clientInfo}>
                   <span className={styles.clientName}>{c.name}</span>
                   <span className={styles.clientMeta}>Tap to message</span>
@@ -165,7 +165,7 @@ export default function TherapistMessagesPage() {
                 >
                   ←
                 </button>
-                <Avatar name={selectedClient?.name || 'Client'} size="sm" />
+                <Avatar name={selectedClient?.name || 'Client'} src={selectedClient?.avatar} size="sm" />
                 <div className={styles.threadMeta}>
                   <span className={styles.threadTitle}>{selectedClient?.name || 'Client'}</span>
                   <span className={styles.threadSub}>Client</span>

@@ -41,7 +41,7 @@ export default function TherapistClientsPage() {
   ) : (
     clients.map((c) => (
       <div key={c.id} className={styles.card}>
-        <Avatar name={c.name} size="md" />
+        <Avatar name={c.name} src={c.avatar} size="md" />
         <div className={styles.info}>
           <span className={styles.name}>{c.name}</span>
           <span className={styles.meta}>{c.sessionCount} sessions · Last {c.lastSessionDate}</span>

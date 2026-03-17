@@ -332,8 +332,10 @@ const formatSession = (row, userRow, specialistRow) => {
   return {
     id: String(row.id),
     clientName: userRow ? (userRow.name || 'Client').split(' ')[0] : 'Client',
+    clientAvatarUrl: userRow && userRow.avatar_url ? userRow.avatar_url : null,
     specialistName: specialistRow ? specialistRow.name : '',
     specialistType: specialistRow ? specialistRow.role : 'THERAPIST',
+    specialistAvatarUrl: specialistRow && specialistRow.avatar_url ? specialistRow.avatar_url : null,
     type: row.type,
     time: timeLabel,
     date: dateLabel,
@@ -474,7 +476,7 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
       db.query('SELECT title, description, category, icon FROM brain_tips ORDER BY RANDOM() LIMIT 1'),
       db.query('SELECT title, description, category FROM brain_tips ORDER BY RANDOM() LIMIT 1'),
       db.query(
-        `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role
+        `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role, sp.avatar_url as specialist_avatar_url
          FROM sessions s
          JOIN dashboard_users u ON u.id = s.user_id
          JOIN dashboard_users sp ON sp.id = s.specialist_id
@@ -483,7 +485,7 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
         [userId]
       ),
       db.query(
-        `SELECT sp.id, sp.name, sp.role,
+        `SELECT sp.id, sp.name, sp.role, sp.avatar_url,
           (SELECT COUNT(*) FROM sessions WHERE specialist_id = sp.id AND status = 'COMPLETED') as session_count,
           (SELECT ROUND(AVG(rating)::numeric, 1) FROM sessions WHERE specialist_id = sp.id AND rating IS NOT NULL) as avg_rating
          FROM dashboard_users sp
@@ -498,7 +500,7 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
         [userId]
       ),
       db.query(
-        `SELECT p.id, u.name as author_name, p.content, p.likes, p.comments, p.created_at
+        `SELECT p.id, u.name as author_name, u.avatar_url as author_avatar, p.content, p.likes, p.comments, p.created_at
          FROM community_posts p JOIN dashboard_users u ON u.id = p.user_id ORDER BY p.created_at DESC LIMIT 10`
       ),
     ]);
@@ -537,11 +539,12 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
       streak = parseInt(streakR.rows[0]?.streak || 0, 10);
     } catch { streak = 0; }
 
-    const upcomingSessions = upcomingR.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role }));
+    const upcomingSessions = upcomingR.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role, avatar_url: row.specialist_avatar_url }));
     const specialists = specialistsR.rows.map(r => ({
       id: String(r.id),
       name: r.name,
       type: r.role,
+      avatarUrl: r.avatar_url || null,
       rating: parseFloat(r.avg_rating || 0) || 0,
       sessionCount: parseInt(r.session_count || 0, 10),
     }));
@@ -550,6 +553,7 @@ app.get('/api/users/:id/dashboard', async (req, res) => {
     const communityFeed = feedR.rows.map(r => ({
       id: String(r.id),
       authorName: r.author_name,
+      authorAvatar: r.author_avatar || null,
       content: r.content,
       timestamp: r.created_at ? (() => { const d = new Date(r.created_at); const h = Math.round((Date.now() - d) / 3600000); return h < 1 ? 'Just now' : h < 24 ? h + 'h ago' : Math.floor(h / 24) + ' days ago'; })() : '',
       likes: r.likes || 0,
@@ -589,14 +593,14 @@ app.get('/api/users/:id/sessions', async (req, res) => {
        WHERE user_id = $1 AND (meeting_link IS NULL OR meeting_link = '')`, [uid]
     ).catch(() => {});
     const r = await db.query(
-      `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role
+      `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role, sp.avatar_url as specialist_avatar_url
        FROM sessions s JOIN dashboard_users u ON u.id = s.user_id JOIN dashboard_users sp ON sp.id = s.specialist_id
        WHERE s.user_id = $1
          AND (s.status IN ('UPCOMING', 'IN_PROGRESS') OR (s.status = 'COMPLETED' AND s.scheduled_at >= NOW() - INTERVAL '1 year'))
        ORDER BY (s.status = 'COMPLETED') ASC, (CASE WHEN s.status = 'COMPLETED' THEN s.scheduled_at END) DESC NULLS LAST, (CASE WHEN s.status IN ('UPCOMING','IN_PROGRESS') THEN s.scheduled_at END) ASC NULLS LAST`,
       [uid]
     );
-    res.json(r.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role })));
+    res.json(r.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role, avatar_url: row.specialist_avatar_url })));
   } catch (err) {
     console.error('GET /api/users/:id/sessions', err);
     res.json([]);
@@ -616,12 +620,12 @@ app.get('/api/users/:id/sessions/upcoming', async (req, res) => {
        WHERE user_id = $1 AND (meeting_link IS NULL OR meeting_link = '')`, [uid]
     ).catch(() => {});
     const r = await db.query(
-      `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role
+      `SELECT s.*, u.name as user_name, sp.name as specialist_name, sp.role as specialist_role, sp.avatar_url as specialist_avatar_url
        FROM sessions s JOIN dashboard_users u ON u.id = s.user_id JOIN dashboard_users sp ON sp.id = s.specialist_id
        WHERE s.user_id = $1 AND s.scheduled_at >= NOW() - INTERVAL '48 hours' AND s.status IN ('UPCOMING', 'IN_PROGRESS') ORDER BY s.scheduled_at ASC`,
       [uid]
     );
-    res.json(r.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role })));
+    res.json(r.rows.map(row => formatSession(row, { name: row.user_name }, { name: row.specialist_name, role: row.specialist_role, avatar_url: row.specialist_avatar_url })));
   } catch (err) {
     console.error('GET /api/users/:id/sessions/upcoming', err);
     res.json([]);
@@ -632,13 +636,13 @@ app.get('/api/users/:id/specialists', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query(
-      `SELECT sp.id, sp.name, sp.role,
+      `SELECT sp.id, sp.name, sp.role, sp.avatar_url,
         (SELECT COUNT(*) FROM sessions WHERE specialist_id = sp.id AND status = 'COMPLETED') as session_count,
         (SELECT ROUND(AVG(rating)::numeric, 1) FROM sessions WHERE specialist_id = sp.id AND rating IS NOT NULL) as avg_rating
        FROM dashboard_users sp JOIN user_specialists us ON us.specialist_id = sp.id WHERE us.user_id = $1`,
       [req.params.id]
     );
-    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, type: rr.role, rating: parseFloat(rr.avg_rating || 0) || 0, sessionCount: parseInt(rr.session_count || 0, 10) })));
+    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, type: rr.role, avatarUrl: rr.avatar_url || null, rating: parseFloat(rr.avg_rating || 0) || 0, sessionCount: parseInt(rr.session_count || 0, 10) })));
   } catch (err) {
     console.error('GET /api/users/:id/specialists', err);
     res.json([]);
@@ -655,7 +659,7 @@ app.get('/api/users/:id/conversation-partners', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query(
-      `SELECT DISTINCT u.id, u.name, u.role FROM dashboard_users u
+      `SELECT DISTINCT u.id, u.name, u.role, u.avatar_url FROM dashboard_users u
        WHERE u.id IN (
          SELECT specialist_id FROM user_specialists WHERE user_id = $1
          UNION
@@ -666,7 +670,7 @@ app.get('/api/users/:id/conversation-partners', async (req, res) => {
        ORDER BY u.name`,
       [req.params.id]
     );
-    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, type: rr.role })));
+    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, type: rr.role, avatarUrl: rr.avatar_url || null })));
   } catch (err) {
     console.error('GET /api/users/:id/conversation-partners', err);
     res.json([]);
@@ -1282,8 +1286,8 @@ app.get('/api/admin/assignment-requests', async (req, res) => {
   try {
     const r = await db.query(
       `SELECT ar.id, ar.user_id, ar.specialist_id, ar.status, ar.created_at,
-        u.name as client_name, u.email as client_email,
-        sp.name as specialist_name, sp.role as specialist_role,
+        u.name as client_name, u.email as client_email, u.avatar_url as client_avatar_url,
+        sp.name as specialist_name, sp.role as specialist_role, sp.avatar_url as specialist_avatar_url,
         (SELECT COUNT(*) FROM booking_requests br
           WHERE br.user_id = ar.user_id AND br.specialist_id = ar.specialist_id
           AND br.status IN ('ACCEPTED','COMPLETED')) as consultation_count
@@ -1299,8 +1303,10 @@ app.get('/api/admin/assignment-requests', async (req, res) => {
       specialistId: String(rr.specialist_id),
       clientName: rr.client_name,
       clientEmail: rr.client_email,
+      clientAvatarUrl: rr.client_avatar_url || null,
       specialistName: rr.specialist_name,
       specialistRole: rr.specialist_role,
+      specialistAvatarUrl: rr.specialist_avatar_url || null,
       consultationCount: parseInt(rr.consultation_count || '0', 10),
       createdAt: rr.created_at,
     })));
@@ -1380,8 +1386,8 @@ app.get('/api/admin/users', async (req, res) => {
   if (requireAdmin(req, res) === undefined) return;
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
-    const r = await db.query("SELECT id, name, email, role, COALESCE(suspended, false) as suspended FROM dashboard_users WHERE role = 'USER' ORDER BY id");
-    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, email: rr.email, role: rr.role, suspended: !!rr.suspended })));
+    const r = await db.query("SELECT id, name, email, role, COALESCE(suspended, false) as suspended, avatar_url FROM dashboard_users WHERE role = 'USER' ORDER BY id");
+    res.json(r.rows.map(rr => ({ id: String(rr.id), name: rr.name, email: rr.email, role: rr.role, suspended: !!rr.suspended, avatarUrl: rr.avatar_url || null })));
   } catch (err) {
     console.error('GET /api/admin/users', err);
     res.json([]);
@@ -1411,7 +1417,7 @@ app.get('/api/admin/specialists', async (req, res) => {
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query(
-      `SELECT id, name, email, role, COALESCE(suspended, false) as suspended,
+      `SELECT id, name, email, role, COALESCE(suspended, false) as suspended, avatar_url,
         (SELECT COUNT(*) FROM sessions WHERE specialist_id = dashboard_users.id AND status = 'COMPLETED') as session_count,
         (SELECT ROUND(AVG(rating)::numeric, 1) FROM sessions WHERE specialist_id = dashboard_users.id AND rating IS NOT NULL) as avg_rating
        FROM dashboard_users WHERE role IN ('THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR') ORDER BY name`
@@ -1423,6 +1429,7 @@ app.get('/api/admin/specialists', async (req, res) => {
       specialty: rr.role,
       active: !rr.suspended,
       suspended: !!rr.suspended,
+      avatarUrl: rr.avatar_url || null,
       sessionCount: parseInt(rr.session_count || 0, 10),
       rating: parseFloat(rr.avg_rating || 0) || 0,
     })));
@@ -1713,7 +1720,7 @@ app.get('/api/specialists/:id/dashboard', async (req, res) => {
       // All upcoming + today sessions (next 30 days), not just today
       db.query(
         `SELECT s.id, s.type, s.scheduled_at, s.duration_minutes, s.status, s.rating,
-                s.meeting_link, u.name as user_name
+                s.meeting_link, u.name as user_name, u.avatar_url as user_avatar_url
          FROM sessions s JOIN dashboard_users u ON u.id = s.user_id
          WHERE s.specialist_id = $1 AND s.scheduled_at >= NOW() - INTERVAL '2 hours'
          ORDER BY s.scheduled_at ASC LIMIT 50`,
@@ -1721,13 +1728,13 @@ app.get('/api/specialists/:id/dashboard', async (req, res) => {
       ),
       // All clients who ever had a session (any status)
       db.query(
-        `SELECT u.id, u.name,
+        `SELECT u.id, u.name, u.avatar_url,
            COUNT(s.id) as session_count,
            COUNT(s.id) FILTER (WHERE s.status = 'COMPLETED') as completed_count,
            MAX(s.scheduled_at)::date as last_date
          FROM sessions s JOIN dashboard_users u ON u.id = s.user_id
          WHERE s.specialist_id = $1
-         GROUP BY u.id, u.name`,
+         GROUP BY u.id, u.name, u.avatar_url`,
         [id]
       ),
       // Session notes
@@ -1740,7 +1747,7 @@ app.get('/api/specialists/:id/dashboard', async (req, res) => {
       // Pending booking requests — no message column (fetched separately by mobile)
       db.query(
         `SELECT br.id, br.user_id, br.proposed_at, br.session_type, br.created_at,
-                u.name as client_name, u.email as client_email
+                u.name as client_name, u.email as client_email, u.avatar_url as client_avatar
          FROM booking_requests br
          JOIN dashboard_users u ON u.id = br.user_id
          WHERE br.specialist_id = $1 AND br.status = 'PENDING'
@@ -1785,11 +1792,12 @@ app.get('/api/specialists/:id/dashboard', async (req, res) => {
     const weekCount      = parseInt(weekRows[0]?.cnt || 0, 10);
     const rate = 75;
 
-    const todaySchedule = scheduleRows.map(row => formatSession(row, { name: row.user_name }, sp));
+    const todaySchedule = scheduleRows.map(row => formatSession(row, { name: row.user_name, avatar_url: row.user_avatar_url }, sp));
 
     const clients = clientRows.map(r => ({
       id: String(r.id),
       name: r.name,
+      avatar: r.avatar_url || null,
       sessionCount: parseInt(r.session_count || 0, 10),
       completedCount: parseInt(r.completed_count || 0, 10),
       lastSessionDate: r.last_date,
@@ -1811,6 +1819,7 @@ app.get('/api/specialists/:id/dashboard', async (req, res) => {
       id: String(r.id),
       userId: String(r.user_id),
       clientName: r.client_name,
+      clientAvatar: r.client_avatar || null,
       clientEmail: r.client_email || '',
       requestedAt: r.created_at ? new Date(r.created_at).toISOString() : '',
       proposedTime: r.proposed_at ? new Date(r.proposed_at).toLocaleString() : '',

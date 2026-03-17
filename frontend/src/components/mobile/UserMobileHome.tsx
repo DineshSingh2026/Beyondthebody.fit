@@ -180,7 +180,7 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
         <div className={styles.specialistScroll}>
           {d.specialists.map((sp) => (
             <div key={sp.id} className={styles.specialistCard}>
-              <Avatar name={sp.name} size="md" />
+              <Avatar name={sp.name} src={sp.avatarUrl ?? sp.avatar} size="md" />
               <span className={styles.specialistName}>{sp.name}</span>
               <Badge variant={sp.type === 'THERAPIST' ? 'green' : sp.type === 'LIFE_COACH' ? 'gold' : 'purple'}>
                 {sp.type.replace('_', ' ')}
@@ -206,7 +206,7 @@ export default function UserMobileHome({ userId, userName }: { userId: string; u
         ) : (
           d.upcomingSessions.map((s) => (
             <div key={s.id} className={styles.sessionItem}>
-              <Avatar name={s.specialistName} size="sm" />
+              <Avatar name={s.specialistName} src={s.specialistAvatarUrl} size="sm" />
               <div className={styles.sessionMeta}>
                 <div className={styles.specialistName}>{s.specialistName}</div>
                 <div className={styles.sessionType}>{s.type}</div>

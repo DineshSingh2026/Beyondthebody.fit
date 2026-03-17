@@ -25,6 +25,7 @@ interface SpecialistRow {
   id: string;
   name: string;
   specialty: string;
+  avatarUrl?: string | null;
   sessionCount: number;
   rating: number;
   suspended?: boolean;
@@ -59,7 +60,7 @@ export default function AdminMobileHome() {
       api.getAdminApplications().then(setApps).catch(() => {});
       api.getAdminPlatformStats().then(setS).catch(() => {});
       if (status === 'APPROVED' && res.newUser) {
-        setApprovedAlert({ name: res.newUser.name, email: res.newUser.email, tempPassword: res.newUser.tempPassword });
+        setApprovedAlert({ name: res.newUser.name, email: res.newUser.email, tempPassword: res.newUser.tempPassword ?? '' });
       }
     }).catch(() => {});
   };
@@ -284,7 +285,7 @@ export default function AdminMobileHome() {
         ) : (
           specialists.map((sp) => (
             <div key={sp.id} className={styles.rosterCard}>
-              <Avatar name={sp.name} size="sm" />
+              <Avatar name={sp.name} src={sp.avatarUrl} size="sm" />
               <div className={styles.rosterMeta}>
                 <span className={styles.rosterName}>{sp.name}</span>
                 <Badge variant={specialtyVariant[sp.specialty] ?? 'muted'}>{sp.specialty?.replace('_', ' ')}</Badge>

@@ -24,6 +24,7 @@ interface PendingRequest {
   id: string;
   clientName: string;
   clientEmail?: string;
+  clientAvatar?: string;
   proposedTime: string;
   sessionType: string;
   message?: string;
@@ -34,7 +35,7 @@ export default function TherapistDashboardPage() {
   const isMobile = useIsMobile();
   const [specialistId, setSpecialistId] = useState<string | null>(null);
   const [role, setRole] = useState<SpecialistType>('THERAPIST');
-  const [joinModal, setJoinModal] = useState<{ clientName: string } | null>(null);
+  const [joinModal, setJoinModal] = useState<{ clientName: string; clientAvatarUrl?: string | null } | null>(null);
   const [d, setD] = useState<TherapistDashboardData>(() => emptyTherapistDashboard('THERAPIST'));
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -144,7 +145,7 @@ export default function TherapistDashboardPage() {
                       status={s.status}
                       meetingLink={s.meetingLink}
                       completing={completingId === s.id}
-                      onJoin={() => setJoinModal({ clientName: s.clientName })}
+                      onJoin={() => setJoinModal({ clientName: s.clientName, clientAvatarUrl: s.clientAvatarUrl })}
                       onComplete={async () => {
                         if (!specialistId) return;
                         setCompletingId(s.id);
@@ -166,7 +167,7 @@ export default function TherapistDashboardPage() {
             <div className={styles.clientGrid}>
               {d.clients.map((c) => (
                 <div key={c.id} className={styles.clientCard}>
-                  <Avatar name={c.name} size="md" />
+                  <Avatar name={c.name} src={c.avatar} size="md" />
                   <span className={styles.clientName}>{c.name}</span>
                   <span className={styles.muted}>{c.sessionCount} sessions · Last {c.lastSessionDate}</span>
                   <ProgressRing value={c.progressScore} size={48} strokeWidth={4} />
@@ -217,7 +218,7 @@ export default function TherapistDashboardPage() {
             ) : (
               pendingRequests.map((r) => (
                 <div key={r.id} className={styles.requestItem}>
-                  <Avatar name={r.clientName} size="sm" />
+                  <Avatar name={r.clientName} src={r.clientAvatar} size="sm" />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <span className={styles.requestName}>{r.clientName}</span>
                     {r.clientEmail && (
@@ -296,7 +297,7 @@ export default function TherapistDashboardPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className={styles.modalHeader}>
-                <Avatar name={joinModal.clientName} size="lg" />
+                <Avatar name={joinModal.clientName} src={joinModal.clientAvatarUrl} size="lg" />
                 <h3>{joinModal.clientName}</h3>
               </div>
               <ul className={styles.checklist}>

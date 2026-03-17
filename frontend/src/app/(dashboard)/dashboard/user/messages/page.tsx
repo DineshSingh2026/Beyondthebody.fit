@@ -20,6 +20,7 @@ interface SpecialistOption {
   id: string;
   name: string;
   type?: string;
+  avatarUrl?: string | null;
 }
 
 export default function UserMessagesPage() {
@@ -51,7 +52,7 @@ export default function UserMessagesPage() {
         if (me.role !== 'USER') { router.replace(me.role === 'ADMIN' ? '/dashboard/admin' : '/dashboard/therapist'); return; }
         setUserId(me.id);
         const list = await api.getConversationPartners(me.id).catch(() => []);
-        setSpecialists(Array.isArray(list) ? list.map((s) => ({ id: s.id, name: s.name, type: s.type })) : []);
+        setSpecialists(Array.isArray(list) ? list.map((s) => ({ id: s.id, name: s.name, type: s.type, avatarUrl: s.avatarUrl ?? null })) : []);
       } catch {
         setSpecialists([]);
       } finally {
@@ -127,7 +128,7 @@ export default function UserMessagesPage() {
                 className={`${styles.clientRow} ${selectedId === s.id ? styles.clientRowActive : ''}`}
                 onClick={() => selectSpecialist(s.id)}
               >
-                <Avatar name={s.name} size="sm" />
+                <Avatar name={s.name} src={s.avatarUrl} size="sm" />
                 <div className={styles.clientInfo}>
                   <span className={styles.clientName}>{s.name}</span>
                   <span className={styles.clientMeta}>{s.type?.replace('_', ' ') || 'Specialist'}</span>
@@ -156,7 +157,7 @@ export default function UserMessagesPage() {
                 >
                   ←
                 </button>
-                <Avatar name={selected?.name || 'Specialist'} size="sm" />
+                <Avatar name={selected?.name || 'Specialist'} src={selected?.avatarUrl} size="sm" />
                 <div className={styles.threadMeta}>
                   <span className={styles.threadTitle}>{selected?.name || 'Specialist'}</span>
                   <span className={styles.threadSub}>{selected?.type?.replace('_', ' ') || 'Specialist'}</span>

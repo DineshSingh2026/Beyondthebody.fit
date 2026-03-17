@@ -43,8 +43,10 @@ export interface UserDashboardData {
 export interface SessionSummary {
   id: string;
   clientName: string;
+  clientAvatarUrl?: string | null;
   specialistName: string;
   specialistType: SpecialistType;
+  specialistAvatarUrl?: string | null;
   type: string;
   time: string;
   date?: string;
@@ -60,6 +62,7 @@ export interface SpecialistSummary {
   name: string;
   type: SpecialistType;
   avatar?: string;
+  avatarUrl?: string | null;
   rating: number;
   sessionCount?: number;
 }
@@ -158,6 +161,7 @@ export interface SpecialistRosterEntry {
   id: string;
   name: string;
   avatar?: string;
+  avatarUrl?: string | null;
   specialty: SpecialistType;
   active: boolean;
   sessionCount: number;

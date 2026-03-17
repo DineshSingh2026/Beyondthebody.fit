@@ -62,7 +62,7 @@ export default function UserSessionsPage() {
           >
             <div className={styles.sessionRow}>
               <span className={styles.time}>{s.time}</span>
-              <Avatar name={s.specialistName} size="md" />
+              <Avatar name={s.specialistName} src={s.specialistAvatarUrl} size="md" />
               <div className={styles.meta}>
                 <span className={styles.name}>{s.specialistName}</span>
                 <Badge variant="gold">{s.type}</Badge>

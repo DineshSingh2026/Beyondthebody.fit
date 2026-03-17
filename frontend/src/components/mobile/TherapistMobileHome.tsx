@@ -17,6 +17,7 @@ interface PendingRequest {
   userId: string;
   clientName: string;
   clientEmail?: string;
+  clientAvatar?: string;
   proposedTime: string;
   sessionType: string;
   message?: string;
@@ -132,7 +133,7 @@ export default function TherapistMobileHome({ specialistId }: { specialistId: st
                     {s.date && <span className={styles.scheduleDate}>{s.date}</span>}
                     <span className={styles.time}>{s.time}</span>
                   </div>
-                  <Avatar name={s.clientName} size="sm" />
+                  <Avatar name={s.clientName} src={s.clientAvatarUrl} size="sm" />
                   <span className={styles.type}>{s.type}</span>
                   <Badge variant={s.status === 'IN_PROGRESS' ? 'green' : s.status === 'COMPLETED' ? 'muted' : 'gold'}>
                     {s.status.replace('_', ' ')}
@@ -175,7 +176,7 @@ export default function TherapistMobileHome({ specialistId }: { specialistId: st
           <h3 className={styles.sectionTitle}>Next Session</h3>
           <MobileCard accent="gold">
             <div className={styles.nextRow}>
-              <Avatar name={nextSession.clientName} size="md" />
+              <Avatar name={nextSession.clientName} src={nextSession.clientAvatarUrl} size="md" />
               <div>
                 <div className={styles.clientName}>{nextSession.clientName}</div>
                 <div className={styles.nextTime}>
@@ -228,7 +229,7 @@ export default function TherapistMobileHome({ specialistId }: { specialistId: st
         ) : (
           pendingRequests.map((r) => (
             <div key={r.id} className={styles.requestCard}>
-              <Avatar name={r.clientName} size="sm" />
+              <Avatar name={r.clientName} src={r.clientAvatar} size="sm" />
               <div className={styles.requestMeta}>
                 <span className={styles.requestName}>{r.clientName}</span>
                 {r.clientEmail && (
@@ -270,7 +271,7 @@ export default function TherapistMobileHome({ specialistId }: { specialistId: st
           <div className={styles.clientScroll}>
             {d.clients.map((c) => (
               <div key={c.id} className={styles.clientCard}>
-                <Avatar name={c.name} size="md" />
+                <Avatar name={c.name} src={c.avatar} size="md" />
                 <span className={styles.clientName}>{c.name}</span>
                 <span className={styles.muted}>{c.sessionCount} sessions</span>
                 <Link href={`/dashboard/therapist/messages?with=${c.id}`} className={styles.msgLink}>

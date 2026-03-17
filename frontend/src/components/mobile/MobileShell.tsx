@@ -21,11 +21,13 @@ export default function MobileShell({ children }: { children: React.ReactNode })
 
   const [role, setRole] = useState<UserRole>(pathRole);
   const [userName, setUserName] = useState('');
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     api.getMe()
       .then((me) => {
         setUserName(me.name);
+        setUserAvatarUrl(me.avatarUrl ?? null);
         if (me.role === 'ADMIN') setRole('ADMIN');
         else if (['THERAPIST', 'LIFE_COACH', 'HYPNOTHERAPIST', 'MUSIC_TUTOR'].includes(me.role)) {
           setRole(me.role as UserRole);
@@ -50,7 +52,7 @@ export default function MobileShell({ children }: { children: React.ReactNode })
 
   return (
     <div className={styles.wrap}>
-      <TopAppBar role={role} userName={userName} />
+      <TopAppBar role={role} userName={userName} avatarUrl={userAvatarUrl} />
       <main className={styles.main}>
         <div className={styles.content}>{children}</div>
       </main>

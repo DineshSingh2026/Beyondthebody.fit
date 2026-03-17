@@ -115,21 +115,28 @@
 .avatar {
   width: 36px;
   height: 36px;
+  padding: 0;
   border-radius: 50%;
   background: var(--card2);
   border: 2px solid var(--green);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--green);
+  overflow: hidden;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   /* ensure 44×44 tap target */
   min-width: 44px;
   min-height: 44px;
+}
+
+.avatarInner {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  min-height: 0;
+  font-size: 12px;
 }
 
 /* Dropdown menu */
