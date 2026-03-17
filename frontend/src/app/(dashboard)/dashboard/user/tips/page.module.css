@@ -162,6 +162,14 @@
   flex: 1;
 }
 
+/* Card actions row */
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 /* Practice button */
 .practiceBtn {
   align-self: flex-start;
@@ -187,6 +195,28 @@
   background: rgba(74,222,128,0.12);
   border-color: rgba(74,222,128,0.4);
   color: #4ade80;
+}
+
+/* Try it Now button — only shown on Box Breathing card */
+.tryNowBtn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(74,222,128,0.35);
+  background: rgba(74,222,128,0.1);
+  color: #4ade80;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  min-height: 36px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.tryNowBtn:hover {
+  background: rgba(74,222,128,0.2);
+  border-color: rgba(74,222,128,0.6);
 }
 
 /* ── Breathing section ───────────────────────────────────────── */

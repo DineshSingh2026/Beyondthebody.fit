@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/lib/api';
 import styles from './page.module.css';
 
@@ -46,12 +46,14 @@ export default function TipsPage() {
   const [scoreFlash, setScoreFlash] = useState<number | null>(null);
 
   // Breathing
+  const [breathOpen, setBreathOpen]       = useState(false);
   const [breathActive, setBreathActive]   = useState(false);
   const [breathText, setBreathText]       = useState('Press Start');
   const [breathPhaseClass, setBreathPhaseClass] = useState('');
   const [activeStep, setActiveStep]       = useState('');
-  const breathRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const activeRef  = useRef(false);
+  const breathRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeRef     = useRef(false);
+  const breathSectRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setPracticed(loadPracticed()); }, []);
 
@@ -127,6 +129,14 @@ export default function TipsPage() {
 
   useEffect(() => () => { if (breathRef.current) clearTimeout(breathRef.current); }, []);
 
+  const openBreathing = useCallback(() => {
+    setBreathOpen(true);
+    // Small delay so the section renders before we scroll to it
+    setTimeout(() => {
+      breathSectRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
+  }, []);
+
   const breathBtnLabel = breathActive
     ? 'Stop'
     : breathText === 'Well done! 🌿' ? 'Try Again' : 'Start Breathing';
@@ -171,21 +181,32 @@ export default function TipsPage() {
                 </div>
                 <h3 className={styles.tipTitle}>{tip.title}</h3>
                 <p className={styles.desc}>{tip.description}</p>
-                <button
-                  type="button"
-                  className={`${styles.practiceBtn} ${done ? styles.practiceBtnDone : ''}`}
-                  onClick={() => togglePracticed(tip.title)}
-                >
-                  {done ? '✓ Practiced' : 'Mark as Practiced'}
-                </button>
+                <div className={styles.cardActions}>
+                  <button
+                    type="button"
+                    className={`${styles.practiceBtn} ${done ? styles.practiceBtnDone : ''}`}
+                    onClick={() => togglePracticed(tip.title)}
+                  >
+                    {done ? '✓ Practiced' : 'Mark as Practiced'}
+                  </button>
+                  {tip.title === 'Box Breathing' && (
+                    <button
+                      type="button"
+                      className={styles.tryNowBtn}
+                      onClick={openBreathing}
+                    >
+                      Try it Now →
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* ── Breathing exercise — website-style ── */}
-      <div className={styles.breathSection}>
+      {/* ── Breathing exercise — opens when user clicks "Try it Now" on Box Breathing ── */}
+      {breathOpen && <div ref={breathSectRef} className={styles.breathSection}>
         <h2 className={styles.breathTitle}>Try it Now: Box Breathing</h2>
         <div className={styles.breathVisual}>
           {/* Animated circle */}
@@ -215,7 +236,7 @@ export default function TipsPage() {
             {breathBtnLabel}
           </button>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
