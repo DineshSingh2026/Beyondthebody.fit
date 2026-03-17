@@ -1,10 +1,9 @@
-const CACHE_NAME = 'btb-v2'
+const CACHE_NAME = 'btb-v3'
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
   '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  '/img/btb-logo-app.png',
 ]
 
 self.addEventListener('install', event => {
