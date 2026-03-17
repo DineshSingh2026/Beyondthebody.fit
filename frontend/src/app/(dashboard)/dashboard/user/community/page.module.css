@@ -1,66 +1,225 @@
-.desktop {
-  padding: 24px 32px;
-  max-width: 640px;
-}
-
-.desktopTitle {
-  font-size: 1.5rem;
-  margin: 0 0 8px;
-  color: var(--text);
-}
-
-.desktopSub {
-  color: var(--muted);
-  margin: 0 0 24px;
-  font-size: 14px;
-}
-
-.feedGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.empty, .muted {
-  color: var(--muted);
-  padding: 24px 0;
-  font-size: 14px;
-}
-
+/* ── Page ─────────────────────────────────────────────────────── */
 .page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  padding: 24px 16px 60px;
+  max-width: 680px;
+  margin: 0 auto;
 }
 
-.post {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  padding: 16px;
+@media (min-width: 768px) {
+  .page { padding: 40px 32px 80px; }
+}
+
+/* ── Header ───────────────────────────────────────────────────── */
+.header {
+  margin-bottom: 24px;
+}
+.title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--cream);
+  margin: 0 0 6px;
+}
+.sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* ── Compose box ──────────────────────────────────────────────── */
+.composeBox {
   display: flex;
   gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 24px;
+  align-items: flex-start;
 }
 
-.body {
+.composeRight {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.author {
-  font-weight: 500;
+.composeInput {
+  width: 100%;
+  background: var(--bg-inner, #0f1f14);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
   color: var(--text);
   font-size: 14px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: none;
+  overflow: hidden;
+  min-height: 60px;
+  transition: border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
 }
-
-.content {
-  font-size: 14px;
-  color: var(--muted);
-  line-height: 1.5;
-  margin: 8px 0 4px;
+.composeInput:focus {
+  outline: none;
+  border-color: rgba(74, 222, 128, 0.4);
 }
+.composeInput::placeholder { color: var(--hint, #6b7a6e); }
+.composeInput:disabled { opacity: 0.6; }
 
-.meta {
+.postError {
   font-size: 12px;
-  color: var(--dim);
+  color: #f87171;
+  margin: 0;
+}
+
+.composeFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.charCount {
+  font-size: 11px;
+  color: var(--hint, #6b7a6e);
+}
+.charCountWarn {
+  color: #fb923c;
+}
+
+.postBtn {
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: none;
+  background: #4ade80;
+  color: #0a1a0f;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  min-height: 36px;
+  min-width: 72px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.2s, opacity 0.2s;
+}
+.postBtn:hover { background: #86efac; }
+.postBtn:disabled { opacity: 0.45; cursor: default; }
+
+/* ── Loading / Empty ──────────────────────────────────────────── */
+.loadWrap {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid #4ade80;
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+.empty span { font-size: 32px; }
+
+/* ── Feed ─────────────────────────────────────────────────────── */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Post card ────────────────────────────────────────────────── */
+.post {
+  display: flex;
+  gap: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 16px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.post:hover {
+  background: rgba(74,222,128,0.04);
+  border-color: rgba(74,222,128,0.15);
+}
+
+.postBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.postMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.postAuthor {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cream);
+}
+.postTime {
+  font-size: 11px;
+  color: var(--hint, #6b7a6e);
+}
+
+.postContent {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.65;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Actions ─────────────────────────────────────────────────── */
+.postActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.likeBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 32px;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+.likeBtn:hover { background: rgba(255,255,255,0.06); }
+.likeBtnActive { color: #f87171; }
+
+.commentCount {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 4px 8px;
 }

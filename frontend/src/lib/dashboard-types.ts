@@ -81,11 +81,13 @@ export interface Milestone {
 export interface CommunityPost {
   id: string;
   authorName: string;
+  authorId?: string;
   authorAvatar?: string;
   content: string;
   timestamp: string;
   likes: number;
   comments: number;
+  liked?: boolean;
 }
 
 export interface AdminPlatformStats {

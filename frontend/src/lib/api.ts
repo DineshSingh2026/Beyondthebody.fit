@@ -201,7 +201,20 @@ export const api = {
   },
 
   async getCommunityFeed() {
-    return fetchWithAuth(`${API_BASE}/api/community/feed`);
+    return fetchWithAuth<import('@/lib/dashboard-types').CommunityPost[]>(`${API_BASE}/api/community/feed`);
+  },
+
+  async postCommunityPost(content: string) {
+    return fetchWithAuth<import('@/lib/dashboard-types').CommunityPost>(`${API_BASE}/api/community/post`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  },
+
+  async likeCommunityPost(postId: string) {
+    return fetchWithAuth<{ liked: boolean; likes: number }>(`${API_BASE}/api/community/posts/${postId}/like`, {
+      method: 'PATCH',
+    });
   },
 
   async getAdminPlatformStats() {

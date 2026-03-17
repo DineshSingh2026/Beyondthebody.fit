@@ -847,23 +847,105 @@ app.post('/api/users/:id/mood-log', async (req, res) => {
   }
 });
 
+const fmtTs = (d) => { const h = Math.round((Date.now() - new Date(d)) / 3600000); return h < 1 ? 'Just now' : h < 24 ? h + 'h ago' : Math.floor(h / 24) + ' days ago'; };
+
 app.get('/api/community/feed', async (req, res) => {
+  const payload = requireAuth(req);
   if (!db.connected || !(await hasDashboard())) return res.json([]);
   try {
     const r = await db.query(
-      `SELECT p.id, u.name as author_name, p.content, p.likes, p.comments, p.created_at FROM community_posts p JOIN dashboard_users u ON u.id = p.user_id ORDER BY p.created_at DESC LIMIT 20`
+      `SELECT p.id, p.user_id, u.name as author_name, p.content, p.likes, p.comments, p.created_at
+       FROM community_posts p JOIN dashboard_users u ON u.id = p.user_id
+       ORDER BY p.created_at DESC LIMIT 30`
     );
+    const viewerId = payload?.id ? String(payload.id) : null;
+    // fetch which posts the viewer has liked
+    let likedSet = new Set();
+    if (viewerId) {
+      const lR = await db.query('SELECT post_id FROM community_post_likes WHERE user_id = $1', [viewerId]).catch(() => ({ rows: [] }));
+      likedSet = new Set(lR.rows.map(r => String(r.post_id)));
+    }
     res.json(r.rows.map(rr => ({
       id: String(rr.id),
       authorName: rr.author_name,
+      authorId: String(rr.user_id),
       content: rr.content,
-      timestamp: rr.created_at ? (() => { const d = new Date(rr.created_at); const h = Math.round((Date.now() - d) / 3600000); return h < 1 ? 'Just now' : h < 24 ? h + 'h ago' : Math.floor(h / 24) + ' days ago'; })() : '',
+      timestamp: rr.created_at ? fmtTs(rr.created_at) : '',
       likes: rr.likes || 0,
       comments: rr.comments || 0,
+      liked: likedSet.has(String(rr.id)),
     })));
   } catch (err) {
     console.error('GET /api/community/feed', err);
     res.json([]);
+  }
+});
+
+// Create a new community post
+app.post('/api/community/post', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  const { content } = req.body || {};
+  if (!content || !content.trim()) return res.status(400).json({ error: 'Content is required.' });
+  const text = content.trim().slice(0, 1000);
+  try {
+    const ins = await db.query(
+      `INSERT INTO community_posts (user_id, content, likes, comments) VALUES ($1, $2, 0, 0) RETURNING id, created_at`,
+      [payload.id, text]
+    );
+    const uR = await db.query('SELECT name FROM dashboard_users WHERE id = $1', [payload.id]);
+    const post = ins.rows[0];
+    res.status(201).json({
+      id: String(post.id),
+      authorName: uR.rows[0]?.name || 'User',
+      authorId: String(payload.id),
+      content: text,
+      timestamp: 'Just now',
+      likes: 0,
+      comments: 0,
+      liked: false,
+    });
+  } catch (err) {
+    console.error('POST /api/community/post', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Toggle like on a community post
+app.patch('/api/community/posts/:id/like', async (req, res) => {
+  const payload = requireAuth(req);
+  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  if (!db.connected || !(await hasDashboard())) return res.status(503).json({ error: 'Not configured' });
+  const postId = req.params.id;
+  try {
+    // Ensure community_post_likes table exists (lazy-create)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS community_post_likes (
+        user_id INT NOT NULL REFERENCES dashboard_users(id) ON DELETE CASCADE,
+        post_id INT NOT NULL REFERENCES community_posts(id) ON DELETE CASCADE,
+        PRIMARY KEY (user_id, post_id)
+      )
+    `).catch(() => {});
+    // Check if already liked
+    const existing = await db.query('SELECT 1 FROM community_post_likes WHERE user_id = $1 AND post_id = $2', [payload.id, postId]);
+    let liked;
+    if (existing.rows.length > 0) {
+      // Unlike
+      await db.query('DELETE FROM community_post_likes WHERE user_id = $1 AND post_id = $2', [payload.id, postId]);
+      await db.query('UPDATE community_posts SET likes = GREATEST(0, likes - 1) WHERE id = $1', [postId]);
+      liked = false;
+    } else {
+      // Like
+      await db.query('INSERT INTO community_post_likes (user_id, post_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [payload.id, postId]);
+      await db.query('UPDATE community_posts SET likes = likes + 1 WHERE id = $1', [postId]);
+      liked = true;
+    }
+    const pR = await db.query('SELECT likes FROM community_posts WHERE id = $1', [postId]);
+    res.json({ liked, likes: pR.rows[0]?.likes || 0 });
+  } catch (err) {
+    console.error('PATCH /api/community/posts/:id/like', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
