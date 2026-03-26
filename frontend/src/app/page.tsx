@@ -3,18 +3,18 @@ import Loader from '@/components/Loader';
 import Nav from '@/components/Nav';
 import DisclaimerBanner from '@/components/DisclaimerBanner';
 import Hero from '@/components/Hero';
-import PartnershipBanner from '@/components/PartnershipBanner';
 import About from '@/components/About';
 import Conditions from '@/components/Conditions';
 import Services from '@/components/Services';
-import MoodQuiz from '@/components/MoodQuiz';
+import PartnershipBanner from '@/components/PartnershipBanner';
 import BrainTips from '@/components/BrainTips';
-import Affirmations from '@/components/Affirmations';
 import Quotes from '@/components/Quotes';
+import Affirmations from '@/components/Affirmations';
 import SafeSpace from '@/components/SafeSpace';
 import JoinSection from '@/components/JoinSection';
 import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
+import WelcomeGateway from '@/components/WelcomeGateway';
 
 export default function HomePage() {
   const affirmations = AFFIRMATIONS;
@@ -28,17 +28,17 @@ export default function HomePage() {
       <div className="cursor" id="cursor" />
       <div className="cursor-follower" id="cursorFollower" />
       <Nav />
+      <WelcomeGateway />
       <main>
         <DisclaimerBanner />
         <Hero affirmations={affirmations} />
-        <PartnershipBanner />
         <About />
         <Conditions conditions={conditions} />
         <Services />
-        <MoodQuiz />
-        <BrainTips brainTips={brainTips} />
-        <Affirmations affirmations={affirmations} />
+        <PartnershipBanner />
+        <BrainTips brainTips={brainTips} hideBreathing />
         <Quotes quotes={quotes} />
+        <Affirmations affirmations={affirmations} />
         <SafeSpace />
         <JoinSection />
         <Contact />

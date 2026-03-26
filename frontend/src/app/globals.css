@@ -3830,6 +3830,206 @@ textarea.form-input {
 .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 600px) { .form-row-2 { grid-template-columns: 1fr; } }
 
+/* ============================================
+   WELCOME GATEWAY POPUP
+   ============================================ */
+.wg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s cubic-bezier(0.23, 1, 0.32, 1), visibility 0.5s;
+}
+
+.wg-overlay.wg-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.wg-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(7, 12, 10, 0.93);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  cursor: pointer;
+}
+
+.wg-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 56px 52px 48px;
+  width: 100%;
+  max-width: 560px;
+  position: relative;
+  z-index: 1;
+  box-shadow: var(--shadow), 0 0 100px rgba(91, 184, 154, 0.07);
+  animation: wg-card-in 0.55s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@keyframes wg-card-in {
+  from { transform: translateY(28px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Step progress bar */
+.wg-steps {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 36px;
+}
+
+.wg-step-dot {
+  width: 32px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.35s ease;
+}
+
+.wg-step-dot.active { background: var(--green); }
+.wg-step-dot.done   { background: rgba(91, 184, 154, 0.38); }
+
+/* Content wrapper */
+.wg-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Override section-tag alignment inside popup */
+.wg-tag {
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* Step 1 headline */
+.wg-title {
+  font-family: var(--font-luxury);
+  font-size: clamp(1.9rem, 4.5vw, 2.5rem);
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: 0.06em;
+  line-height: 1.18;
+  margin-bottom: 18px;
+}
+
+/* Step 2 / 3 headline */
+.wg-title-sm {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 300;
+  color: var(--text);
+  letter-spacing: var(--letter-tight);
+  line-height: 1.25;
+  margin-bottom: 12px;
+}
+
+.wg-title-sm em {
+  color: var(--green);
+  font-style: italic;
+}
+
+.wg-desc {
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.8;
+  max-width: 400px;
+  margin-bottom: 32px;
+}
+
+/* CTA row */
+.wg-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* Skip link */
+.wg-skip {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  padding: 8px 4px;
+  margin-top: 4px;
+  transition: color 0.2s ease;
+}
+
+.wg-skip:hover { color: var(--green); }
+
+/* Breathing area */
+.wg-breathing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  margin-bottom: 28px;
+  width: 100%;
+}
+
+/* Mood buttons inside popup */
+.wg-moods {
+  justify-content: center;
+  margin-bottom: 0;
+}
+
+/* Mood result card inside popup */
+.wg-mood-result {
+  width: 100%;
+  margin-top: 20px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .wg-card {
+    padding: 36px 24px 32px;
+    border-radius: 16px;
+  }
+
+  .wg-title {
+    font-size: 1.65rem;
+  }
+
+  .wg-title-sm {
+    font-size: 1.3rem;
+  }
+
+  .wg-desc {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .wg-breathing .breath-steps {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .wg-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wg-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .join-field-label { font-size: 13px; color: var(--muted); margin: 0; }
 
 .join-spec-grid {

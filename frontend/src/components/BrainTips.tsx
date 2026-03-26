@@ -5,6 +5,7 @@ import { BrainTip } from '@/lib/types';
 
 interface Props {
   brainTips: BrainTip[];
+  hideBreathing?: boolean;
 }
 
 const PHASES = [
@@ -14,7 +15,7 @@ const PHASES = [
   { label: 'Hold...', duration: 4000, className: '', step: 'hold2' },
 ];
 
-export default function BrainTips({ brainTips }: Props) {
+export default function BrainTips({ brainTips, hideBreathing = false }: Props) {
   const [breathActive, setBreathActive] = useState(false);
   const [breathText, setBreathText] = useState('Press Start');
   const [breathClass, setBreathClass] = useState('');
@@ -94,33 +95,35 @@ export default function BrainTips({ brainTips }: Props) {
             </div>
           ))}
         </div>
-        <div className="breathing-exercise">
-          <h3>Try it Now: Box Breathing</h3>
-          <div className="breathing-visual">
-            <div className={`breath-box${breathClass ? ` ${breathClass}` : ''}`} id="breathBox">
-              <div className="breath-text" id="breathText">
-                {breathText}
-              </div>
-              <div className="breath-progress" id="breathProgress" />
-            </div>
-            <div className="breath-steps">
-              {['inhale', 'hold1', 'exhale', 'hold2'].map((phase, i) => (
-                <div
-                  key={phase}
-                  className={`bs${activeStep === phase ? ' active' : ''}`}
-                  data-phase={phase}
-                >
-                  {['Inhale', 'Hold', 'Exhale', 'Hold'][i]}
-                  <br />
-                  <small>4s</small>
+        {!hideBreathing && (
+          <div className="breathing-exercise">
+            <h3>Try it Now: Box Breathing</h3>
+            <div className="breathing-visual">
+              <div className={`breath-box${breathClass ? ` ${breathClass}` : ''}`} id="breathBox">
+                <div className="breath-text" id="breathText">
+                  {breathText}
                 </div>
-              ))}
+                <div className="breath-progress" id="breathProgress" />
+              </div>
+              <div className="breath-steps">
+                {['inhale', 'hold1', 'exhale', 'hold2'].map((phase, i) => (
+                  <div
+                    key={phase}
+                    className={`bs${activeStep === phase ? ' active' : ''}`}
+                    data-phase={phase}
+                  >
+                    {['Inhale', 'Hold', 'Exhale', 'Hold'][i]}
+                    <br />
+                    <small>4s</small>
+                  </div>
+                ))}
+              </div>
+              <button className="btn btn-primary" id="breathStart" onClick={toggleBreathing}>
+                {breathActive ? 'Stop' : breathText === 'Well done! 🌿' ? 'Try Again' : 'Start Breathing'}
+              </button>
             </div>
-            <button className="btn btn-primary" id="breathStart" onClick={toggleBreathing}>
-              {breathActive ? 'Stop' : breathText === 'Well done! 🌿' ? 'Try Again' : 'Start Breathing'}
-            </button>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );
