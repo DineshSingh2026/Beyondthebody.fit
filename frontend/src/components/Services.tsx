@@ -1,7 +1,7 @@
 export default function Services() {
   const services = [
     { icon: '🪪', title: 'Licensed Therapists', items: ['Anxiety & Depression', 'Relationship Counseling', 'Life Transitions'], featured: false, delay: 0 },
-    { icon: '⚡', title: 'Specialized Experts', items: ['Eating Disorders', 'Workplace Stress', 'Family Therapy'], featured: true, badge: 'Most Popular', delay: 100 },
+    { icon: '⚡', title: 'Specialized Experts', items: ['Eating Disorders', 'Workplace Stress', 'Family Therapy'], featured: true, delay: 100 },
     { icon: '💚', title: 'Trauma Specialists', items: ['PTSD & Complex Trauma', 'Childhood Trauma Recovery', 'Crisis Intervention'], featured: false, delay: 200 },
     { icon: '🤝', title: 'Group Facilitators', items: ['Support Circles', 'Grief & Loss Groups', 'Addiction Recovery'], featured: false, delay: 300 },
   ];
