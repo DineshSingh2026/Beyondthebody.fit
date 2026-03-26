@@ -133,7 +133,7 @@ export default function JoinSection() {
           </div>
 
           <div className="join-form-card join-form-card--wide">
-            <h3>Practitioner Application</h3>
+            <h3>Apply to Join the Team</h3>
             <div className="join-privacy-note">
               <span>🔒</span>
               <span>Your application is confidential. We follow strict teletherapy and data privacy guidelines aligned with GDPR.</span>
