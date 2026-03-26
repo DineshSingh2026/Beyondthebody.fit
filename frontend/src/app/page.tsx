@@ -33,9 +33,9 @@ export default function HomePage() {
         <DisclaimerBanner />
         <Hero affirmations={affirmations} />
         <About />
+        <PartnershipBanner />
         <Conditions conditions={conditions} />
         <Services />
-        <PartnershipBanner />
         <BrainTips brainTips={brainTips} hideBreathing />
         <Quotes quotes={quotes} />
         <Affirmations affirmations={affirmations} />
