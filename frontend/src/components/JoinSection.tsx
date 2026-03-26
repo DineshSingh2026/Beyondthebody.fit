@@ -121,7 +121,7 @@ export default function JoinSection() {
       <div className="container">
         <div className="join-inner">
           <div className="join-content">
-            <div className="section-tag light">We&apos;re Hiring</div>
+            <div className="section-tag light" style={{ fontSize: '13px', letterSpacing: '0.32em', paddingBottom: '16px' }}>We&apos;re Hiring</div>
             <h2 className="section-title light">Join our revolution</h2>
             <p className="join-desc">
               We&apos;re building something extraordinary. Join a mental wellness platform that
@@ -133,7 +133,7 @@ export default function JoinSection() {
           </div>
 
           <div className="join-form-card join-form-card--wide">
-            <h3>Apply to Join the Team</h3>
+            <h3>Practitioner Application</h3>
             <div className="join-privacy-note">
               <span>🔒</span>
               <span>Your application is confidential. We follow strict teletherapy and data privacy guidelines aligned with GDPR.</span>
