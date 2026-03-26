@@ -23,6 +23,10 @@ export const BRAIN_TIPS = [
 ];
 
 export const QUOTES = [
+  { quote_text: 'The wound is the place where the light enters you.', author: 'Rumi' },
+  { quote_text: 'Faking to be strong is far worse than admitting to be weak.', author: 'Virat Kohli' },
   { quote_text: 'Your body needs to be depressed. It needs deep rest from the character that you\'ve been trying to play.', author: 'Jim Carrey' },
-  { quote_text: 'I think happiness is overrated. Satisfied, at peace — those would be more realistic goals.', author: 'Brad Pitt' },
+  { quote_text: 'I think happiness is overrated. Satisfied and at peace are more realistic goals.', author: 'Brad Pitt' },
+  { quote_text: 'Healing doesn\'t mean the damage never existed. It means the damage no longer controls your life.', author: 'Shah Rukh Khan' },
+  { quote_text: 'Emotional hygiene is as important as physical hygiene.', author: 'Aamir Khan' },
 ];

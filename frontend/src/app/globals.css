@@ -1870,18 +1870,49 @@ body:hover .cursor { opacity: 1; }
   padding: 120px 0;
 }
 
+.quotes-swipe-hint {
+  text-align: center;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+  opacity: 0.9;
+}
+
 .quotes-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr 1fr;
-  gap: 24px;
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 2px 10px;
+}
+
+.quotes-grid::-webkit-scrollbar {
+  height: 4px;
+}
+
+.quotes-grid::-webkit-scrollbar-thumb {
+  background: rgba(201, 169, 98, 0.35);
+  border-radius: 4px;
 }
 
 .quote-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 40px;
+  flex: 0 0 calc((100% - 18px) / 2);
+  min-width: 0;
+  scroll-snap-align: start;
+  background: linear-gradient(145deg, rgba(15, 24, 20, 0.95), rgba(20, 32, 25, 0.75));
+  border: 1px solid rgba(201, 169, 98, 0.18);
+  border-radius: 14px;
+  padding: 34px 30px;
   transition: var(--transition);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .quote-card:hover {
@@ -1890,24 +1921,48 @@ body:hover .cursor { opacity: 1; }
 }
 
 .quote-card.accent {
-  background: linear-gradient(135deg, rgba(76, 175, 138, 0.1), rgba(26, 191, 160, 0.05));
-  border-color: rgba(76, 175, 138, 0.25);
-  transform: scale(1.02);
+  background: linear-gradient(140deg, rgba(76, 175, 138, 0.12), rgba(26, 191, 160, 0.04), rgba(201, 169, 98, 0.06));
+  border-color: rgba(76, 175, 138, 0.32);
+  transform: none;
 }
 
 .qc-quote {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-style: italic;
-  color: var(--text);
-  line-height: 1.6;
-  margin-bottom: 24px;
+  color: var(--gold-soft);
+  line-height: 1.7;
+  margin-bottom: 20px;
 }
 
 .qc-author {
-  font-size: 13px;
+  font-size: 12px;
   font-family: var(--font-mono);
-  color: var(--green);
+  color: var(--green-light);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .quotes-swipe-hint {
+    font-size: 9px;
+    margin-bottom: 10px;
+  }
+
+  .quotes-grid {
+    gap: 12px;
+  }
+
+  .quote-card {
+    flex: 0 0 88%;
+    padding: 24px 18px;
+    min-height: 190px;
+  }
+
+  .qc-quote {
+    font-size: 1rem;
+    margin-bottom: 14px;
+  }
 }
 
 /* ===================== JOIN SECTION ===================== */

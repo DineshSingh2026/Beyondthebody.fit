@@ -12,12 +12,13 @@ export default function Quotes({ quotes }: Props) {
           <div className="section-tag">Words of Wisdom</div>
           <h2 className="section-title">Let these words guide you</h2>
         </div>
-        <div className="quotes-grid">
+        <div className="quotes-swipe-hint">Swipe to explore</div>
+        <div className="quotes-grid" role="region" aria-label="Quotes carousel">
           {quotes.map((q, i) => (
-            <div key={i} className={`quote-card${i === 1 ? ' accent' : ''}`}>
+            <article key={i} className={`quote-card${i === 1 ? ' accent' : ''}`}>
               <div className="qc-quote">&ldquo;{q.quote_text}&rdquo;</div>
-              <div className="qc-author">— {q.author}</div>
-            </div>
+              <div className="qc-author">- {q.author}</div>
+            </article>
           ))}
         </div>
       </div>
