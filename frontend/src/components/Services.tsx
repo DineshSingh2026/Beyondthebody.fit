@@ -22,8 +22,8 @@ export default function Services() {
             Specialists seeking <em>you</em>
           </h2>
           <p className="section-desc">
-            We match you with the perfect professional for your unique journey — no guesswork, no
-            generic care.
+            We match you with the perfect professional for your unique journey. No guesswork,
+            no generic care.
           </p>
         </div>
         <div className="services-grid">

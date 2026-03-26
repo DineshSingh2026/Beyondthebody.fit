@@ -10,7 +10,7 @@ export default function About() {
                   <path d="M0 30V18.3C0 10.1 5.2 3.7 15.6 0l2.4 3.9C12.1 6 9 9.8 8.4 14.9H16V30H0zm24 0V18.3C24 10.1 29.2 3.7 39.6 0L42 3.9c-5.9 2.1-9 5.9-9.6 11H40V30H24z" />
                 </svg>
                 <p>
-                  We had it backwards. Mental wellness should come FIRST — physical transformation
+                  We had it backwards. Mental wellness should come first. Physical transformation
                   follows naturally.
                 </p>
                 <cite>— Body Bank Founder</cite>
@@ -33,7 +33,7 @@ export default function About() {
             <p className="about-text">
               Beyond The Body is a safe, judgment-free space where heart, soul and mind come
               together. Real change begins from within. When the mind heals, the body transforms
-              — and that is what we are here for.
+              That is what we are here for.
             </p>
             <div className="about-pillars">
               <div className="pillar">
@@ -54,7 +54,7 @@ export default function About() {
                 <div className="pillar-icon">🤝</div>
                 <div>
                   <h4>Community Support</h4>
-                  <p>You&apos;re never alone — connecting you with those who truly understand</p>
+                  <p>You are never alone. We connect you with those who truly understand.</p>
                 </div>
               </div>
             </div>

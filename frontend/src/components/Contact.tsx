@@ -46,7 +46,7 @@ export default function Contact() {
             <div className="ci-card">
               <span className="ci-icon">⭐</span>
               <h4>Free 15-min Consult</h4>
-              <p>Get matched with the right specialist — no cost, no strings attached.</p>
+              <p>Get matched with the right specialist at no cost, with no strings attached.</p>
             </div>
             <div className="ci-card">
               <span className="ci-icon">🔒</span>

@@ -21,8 +21,8 @@ export default function PartnershipBanner() {
           <h3>Mind heals first. Body follows.</h3>
           <p>The only platform where mental therapy and physical transformation work as one.</p>
           <p className="banner-promise">
-            Every therapy client receives <strong>FREE</strong> Body Bank Lifestyle Management —
-            nutrition, fitness & recovery support included.
+            Every therapy client receives <strong>FREE</strong> Body Bank Lifestyle Management:
+            nutrition, fitness and recovery support, included.
           </p>
           <div className="banner-badges">
             <span className="banner-badge">✓ RCI Compliant</span>
