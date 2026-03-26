@@ -23,6 +23,6 @@ export const BRAIN_TIPS = [
 ];
 
 export const QUOTES = [
-  { quote_text: 'Healing is not linear.', author: 'Unknown' },
-  { quote_text: 'The wound is the place where the light enters you.', author: 'Rumi' },
+  { quote_text: 'Your body needs to be depressed. It needs deep rest from the character that you\'ve been trying to play.', author: 'Jim Carrey' },
+  { quote_text: 'I think happiness is overrated. Satisfied, at peace — those would be more realistic goals.', author: 'Brad Pitt' },
 ];
