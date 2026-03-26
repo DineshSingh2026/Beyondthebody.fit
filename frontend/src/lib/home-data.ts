@@ -18,8 +18,8 @@ export const CONDITIONS = [
 
 export const BRAIN_TIPS = [
   { title: 'Box Breathing', description: 'Inhale 4s, hold 4s, exhale 4s.', category: 'Breathing', icon: '🫁' },
-  { title: '5-4-3-2-1 Grounding', description: 'Name 5 things you see, 4 you touch, 3 you hear.', category: 'Grounding', icon: '🌿' },
-  { title: 'Body Scan', description: 'Notice sensations from head to toe.', category: 'Mindfulness', icon: '✨' },
+  { title: '5-4-3-2-1 Grounding', description: 'Name 5 things you see, 4 you touch, 3 you hear, 2 you smell, 1 you taste.', category: 'Grounding', icon: '🌿' },
+  { title: 'Body Scan', description: 'Notice sensations from head to toe.', category: 'Mindfulness', icon: '🔎' },
 ];
 
 export const QUOTES = [
