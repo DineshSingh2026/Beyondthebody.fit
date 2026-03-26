@@ -3070,11 +3070,10 @@ textarea.form-input {
 
   .platform-brand {
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     text-align: center;
     flex: 1;
     min-width: 0;
-    max-width: 110px;
   }
 
   .platform-dot {
@@ -3082,18 +3081,19 @@ textarea.form-input {
   }
 
   .platform-logo {
-    width: 52px;
-    height: 52px;
-    min-width: 52px;
-    min-height: 52px;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
     margin: 0 auto;
   }
 
   .platform-domain {
-    font-size: 11px;
+    font-size: 9.5px;
     text-align: center;
-    word-break: break-word;
-    overflow-wrap: break-word;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     line-height: 1.3;
   }
 
