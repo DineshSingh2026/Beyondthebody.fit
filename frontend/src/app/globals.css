@@ -4014,6 +4014,95 @@ textarea.form-input {
   margin-top: 20px;
 }
 
+/* ============================================
+   SERVICES — MOBILE COMPACT
+   ============================================ */
+@media (max-width: 600px) {
+  .services {
+    padding: 44px 0 !important;
+  }
+
+  .services .section-header {
+    margin-bottom: 28px;
+  }
+
+  /* 2-column card grid */
+  .services-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 24px !important;
+  }
+
+  .service-card {
+    padding: 18px 14px !important;
+  }
+
+  .service-icon {
+    font-size: 26px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .service-card h3 {
+    font-size: 0.95rem !important;
+    margin-bottom: 10px !important;
+  }
+
+  .service-badge {
+    font-size: 9px !important;
+    padding: 3px 8px !important;
+    top: 10px !important;
+    right: 10px !important;
+  }
+
+  .service-list {
+    gap: 6px !important;
+  }
+
+  .service-list li {
+    font-size: 12px !important;
+    padding-left: 12px !important;
+  }
+
+  /* Process steps — 2×2 grid, centred */
+  .services-process {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 14px !important;
+    padding: 20px 16px !important;
+  }
+
+  .process-step {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 6px !important;
+    align-items: center !important;
+  }
+
+  .process-num {
+    font-size: 1.3rem !important;
+  }
+
+  .process-text h4 {
+    font-size: 12px !important;
+  }
+
+  .process-text p {
+    font-size: 11px !important;
+  }
+
+  /* Affiliate strip */
+  .affiliate-strip {
+    margin-top: 20px !important;
+    padding: 14px 16px !important;
+    border-radius: 10px !important;
+  }
+
+  .affiliate-strip p {
+    font-size: 12px !important;
+    line-height: 1.6 !important;
+  }
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .wg-card {
