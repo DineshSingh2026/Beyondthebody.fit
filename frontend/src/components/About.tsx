@@ -31,9 +31,9 @@ export default function About() {
               We exist to break the stigma around mental wellness
             </h2>
             <p className="about-text">
-              Beyond The Body is a safe, judgment-free space where heart, soul, and mind unite. We
-              believe that true transformation goes <em>beyond the body</em> — it starts with
-              healing the mind first.
+              Beyond The Body is a safe, judgment-free space where heart, soul and mind come
+              together. Real change begins from within. When the mind heals, the body transforms
+              — and that is what we are here for.
             </p>
             <div className="about-pillars">
               <div className="pillar">
