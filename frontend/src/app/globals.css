@@ -488,14 +488,14 @@ body:hover .cursor { opacity: 1; }
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 10px;
+  font-size: 13px;
   font-family: var(--font-body);
   font-weight: 500;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
   color: var(--gold-soft);
   background: transparent;
-  padding: 12px 0;
+  padding: 14px 0;
   border: none;
   border-bottom: 1px solid rgba(201, 169, 98, 0.25);
   margin-bottom: 24px;
