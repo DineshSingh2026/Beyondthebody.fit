@@ -57,7 +57,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="platform-brand"
             >
-              <img src="/img/btb-logo.png" alt="Beyond The Body" className="platform-logo" />
+              <img src="/img/btb-partnership-logo.png" alt="Beyond The Body" className="platform-logo" />
               <span className="platform-domain">BeyondThebody.fit</span>
             </a>
             <span className="platform-dot">•</span>

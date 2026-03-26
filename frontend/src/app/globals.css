@@ -2346,10 +2346,10 @@ textarea.form-input {
 }
 
 .platform-logo {
-  width: 52px;
-  height: 52px;
-  min-width: 52px;
-  min-height: 52px;
+  width: 68px;
+  height: 68px;
+  min-width: 68px;
+  min-height: 68px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
@@ -3058,21 +3058,23 @@ textarea.form-input {
   }
 
   .platform-brands {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px 12px;
-    align-items: start;
-    justify-items: center;
-    padding: 0 12px;
-    max-width: 360px;
-    margin: 0 auto;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0 20px;
+    padding: 0 8px;
+    width: 100%;
   }
 
   .platform-brand {
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     text-align: center;
+    flex: 1;
     min-width: 0;
+    max-width: 110px;
   }
 
   .platform-dot {
@@ -3080,17 +3082,19 @@ textarea.form-input {
   }
 
   .platform-logo {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    min-height: 52px;
     margin: 0 auto;
   }
 
   .platform-domain {
-    font-size: 12px;
+    font-size: 11px;
     text-align: center;
-    word-break: break-all;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.3;
   }
 
   .platform-tagline {
@@ -3297,14 +3301,14 @@ textarea.form-input {
   }
 
   .platform-logo {
-    width: 38px;
-    height: 38px;
-    min-width: 38px;
-    min-height: 38px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .platform-domain {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .platform-tagline {
