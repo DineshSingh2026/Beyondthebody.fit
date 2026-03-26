@@ -1,5 +1,14 @@
 export default function Services() {
-  const services = [
+  type ServiceItem = {
+    icon: string;
+    title: string;
+    items: string[];
+    featured: boolean;
+    delay: number;
+    badge?: string;
+  };
+
+  const services: ServiceItem[] = [
     { icon: '🪪', title: 'Licensed Therapists', items: ['Anxiety & Depression', 'Relationship Counseling', 'Life Transitions'], featured: false, delay: 0 },
     { icon: '⚡', title: 'Specialized Experts', items: ['Eating Disorders', 'Workplace Stress', 'Family Therapy'], featured: true, delay: 100 },
     { icon: '💚', title: 'Trauma Specialists', items: ['PTSD & Complex Trauma', 'Childhood Trauma Recovery', 'Crisis Intervention'], featured: false, delay: 200 },
