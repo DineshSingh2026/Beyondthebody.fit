@@ -1034,6 +1034,13 @@ body:hover .cursor { opacity: 1; }
   vertical-align: middle;
 }
 
+.banner-logo-btb {
+  width: 120px;
+  height: 120px;
+  min-width: 120px;
+  min-height: 120px;
+}
+
 .banner-x {
   font-size: 38px;
   font-weight: 300;
@@ -2853,6 +2860,13 @@ textarea.form-input {
     min-height: 88px;
   }
 
+  .banner-logo-btb {
+    width: 88px;
+    height: 88px;
+    min-width: 88px;
+    min-height: 88px;
+  }
+
   .banner-x {
     font-size: 28px;
   }
@@ -3211,6 +3225,13 @@ textarea.form-input {
   }
 
   .banner-logo-img {
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
+    min-height: 72px;
+  }
+
+  .banner-logo-btb {
     width: 72px;
     height: 72px;
     min-width: 72px;
