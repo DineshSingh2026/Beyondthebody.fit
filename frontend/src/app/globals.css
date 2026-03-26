@@ -3101,10 +3101,29 @@ textarea.form-input {
   }
 
   .contact-form-card,
-  .join-form-card {
+  .join-form-card,
+  .join-form-card--wide {
     padding: 28px 20px;
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .join-form-nav {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .join-next-btn {
+    min-width: 0;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .join-back-btn {
+    width: 100%;
+    text-align: center;
   }
 
   .modal-content {
