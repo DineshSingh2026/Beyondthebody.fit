@@ -233,8 +233,51 @@ app.post('/api/consultation', async (req, res) => {
         [name.trim(), email.trim(), (phone || '').trim(), (concern || '').trim(), (message || '').trim()]
       );
     } catch (err) {
+      // Legacy DB fallback: some old schemas have consultations.id without default auto-increment.
+      if (err && err.code === '23502' && String(err.column || '').toLowerCase() === 'id') {
+        try {
+          const typeRes = await db.query(`
+            SELECT data_type
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'consultations'
+              AND column_name = 'id'
+            LIMIT 1
+          `);
+          const dataType = (typeRes.rows[0]?.data_type || '').toLowerCase();
+          const isNumericId = ['integer', 'bigint', 'smallint'].includes(dataType);
+          const isUuidId = dataType === 'uuid';
+          if (isNumericId) {
+            const nextIdRes = await db.query('SELECT COALESCE(MAX(id::bigint), 0) + 1 AS next_id FROM consultations');
+            const nextId = nextIdRes.rows[0]?.next_id || 1;
+            await db.query(
+              'INSERT INTO consultations (id, name, email, phone, concern, message) VALUES ($1, $2, $3, $4, $5, $6)',
+              [Number(nextId), name.trim(), email.trim(), (phone || '').trim(), (concern || '').trim(), (message || '').trim()]
+            );
+          } else if (isUuidId) {
+            await db.query(
+              'INSERT INTO consultations (id, name, email, phone, concern, message) VALUES ($1, $2, $3, $4, $5, $6)',
+              [crypto.randomUUID(), name.trim(), email.trim(), (phone || '').trim(), (concern || '').trim(), (message || '').trim()]
+            );
+          } else {
+            const nextIdRes = await db.query(`
+              SELECT COALESCE(MAX(NULLIF(regexp_replace(id::text, '[^0-9]', '', 'g'), '')::bigint), 0) + 1 AS next_id
+              FROM consultations
+            `);
+            const nextId = nextIdRes.rows[0]?.next_id || 1;
+            await db.query(
+              'INSERT INTO consultations (id, name, email, phone, concern, message) VALUES ($1, $2, $3, $4, $5, $6)',
+              [String(nextId), name.trim(), email.trim(), (phone || '').trim(), (concern || '').trim(), (message || '').trim()]
+            );
+          }
+        } catch (fallbackErr) {
+          console.error('POST /api/consultation fallback', fallbackErr);
+          return res.status(500).json({ success: false, message: 'Could not save. Please try again.' });
+        }
+      } else {
       console.error('POST /api/consultation', err);
       return res.status(500).json({ success: false, message: 'Could not save. Please try again.' });
+      }
     }
   } else {
     console.log('Free consultation request:', { name, email, phone, concern, message });
@@ -3013,6 +3056,41 @@ async function autoMigrate() {
       CREATE INDEX IF NOT EXISTS idx_dm_created         ON direct_messages(created_at DESC);
     `);
     console.log('autoMigrate: schema OK');
+
+    // 1a. Repair legacy form tables where id exists but has no auto-increment default.
+    // This keeps old databases compatible without manual SQL intervention.
+    try {
+      await db.query(`
+        DO $$
+        BEGIN
+          IF to_regclass('public.consultations') IS NOT NULL THEN
+            IF to_regclass('public.consultations_id_seq') IS NULL THEN
+              CREATE SEQUENCE consultations_id_seq;
+            END IF;
+            ALTER TABLE consultations ALTER COLUMN id SET DEFAULT nextval('consultations_id_seq');
+            PERFORM setval(
+              'consultations_id_seq',
+              COALESCE((SELECT MAX(id)::bigint FROM consultations), 0) + 1,
+              false
+            );
+          END IF;
+
+          IF to_regclass('public.join_applications') IS NOT NULL THEN
+            IF to_regclass('public.join_applications_id_seq') IS NULL THEN
+              CREATE SEQUENCE join_applications_id_seq;
+            END IF;
+            ALTER TABLE join_applications ALTER COLUMN id SET DEFAULT nextval('join_applications_id_seq');
+            PERFORM setval(
+              'join_applications_id_seq',
+              COALESCE((SELECT MAX(id)::bigint FROM join_applications), 0) + 1,
+              false
+            );
+          END IF;
+        END $$;
+      `);
+    } catch (e) {
+      console.warn('autoMigrate: form-id repair skipped:', e.message);
+    }
 
     // 1b. Add optional user profile columns if missing (safe for existing DBs)
     for (const col of ['mobile', 'country']) {

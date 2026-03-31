@@ -28,12 +28,12 @@ export default function HomePage() {
       <div className="cursor" id="cursor" />
       <div className="cursor-follower" id="cursorFollower" />
       <Nav />
-      <WelcomeGateway />
       <main>
         <DisclaimerBanner />
         <Hero affirmations={affirmations} />
-        <About />
         <PartnershipBanner />
+        <WelcomeGateway />
+        <About />
         <Conditions conditions={conditions} />
         <Services />
         <BrainTips brainTips={brainTips} hideBreathing />

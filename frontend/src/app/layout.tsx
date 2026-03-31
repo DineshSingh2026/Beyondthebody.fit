@@ -3,6 +3,7 @@ import './globals.css';
 import '@/styles/dashboard.css';
 import '@/styles/mobile.css';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
+import ZoomLock from '@/components/ZoomLock';
 
 export const metadata: Metadata = {
   title: 'Beyond The Body — Mental Wellness & Healing',
@@ -27,8 +28,9 @@ export const viewport: Viewport = {
   themeColor: '#0a1a0f',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
+  maximumScale: 1,
+  minimumScale: 1,
+  userScalable: false,
   viewportFit: 'cover',
 };
 
@@ -81,6 +83,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <ZoomLock />
         <ServiceWorkerRegistration />
         {children}
       </body>

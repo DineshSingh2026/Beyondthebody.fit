@@ -41,14 +41,21 @@ export default function WelcomeGateway() {
     currentStepRef.current = step;
   }, [step]);
 
-  // Trigger popup on first scroll
+  // Trigger popup when About section starts entering view
   useEffect(() => {
-    const handleScroll = () => {
+    const aboutSection = document.getElementById('about');
+    if (!aboutSection) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      const [entry] = entries;
+      if (!entry?.isIntersecting) return;
       setVisible(true);
       document.body.style.overflow = 'hidden';
-    };
-    window.addEventListener('scroll', handleScroll, { once: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
+    }, { threshold: 0.2 });
+
+    observer.observe(aboutSection);
+    return () => observer.disconnect();
   }, []);
 
   const runPhase = (phaseIndex: number, cycles: number) => {

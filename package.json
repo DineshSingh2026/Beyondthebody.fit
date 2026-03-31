@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "env:local": "node scripts/switch-env.js local",
+    "env:render": "node scripts/switch-env.js render",
+    "env:show": "node scripts/show-env.js",
     "db:init": "node scripts/init-db.js",
     "db:seed:passwords": "node scripts/set-dashboard-passwords.js",
     "check": "node scripts/check-api-db.js",

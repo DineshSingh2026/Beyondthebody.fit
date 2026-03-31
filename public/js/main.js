@@ -42,6 +42,23 @@ function runLoader() {
 
 window.addEventListener('load', runLoader);
 
+// ===================== ZOOM LOCK =====================
+window.addEventListener('wheel', (event) => {
+  if (event.ctrlKey) event.preventDefault();
+}, { passive: false });
+
+window.addEventListener('keydown', (event) => {
+  const ctrlOrMeta = event.ctrlKey || event.metaKey;
+  if (!ctrlOrMeta) return;
+  if (event.key === '+' || event.key === '-' || event.key === '=' || event.key === '_' || event.key === '0') {
+    event.preventDefault();
+  }
+});
+
+['gesturestart', 'gesturechange', 'gestureend'].forEach((gestureEvent) => {
+  window.addEventListener(gestureEvent, (event) => event.preventDefault());
+});
+
 // ===================== CUSTOM CURSOR (desktop only) =====================
 const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const cursor = document.getElementById('cursor');
