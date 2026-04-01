@@ -1,7 +1,5 @@
-const CACHE_NAME = 'btb-v3'
+const CACHE_NAME = 'btb-v4'
 const STATIC_ASSETS = [
-  '/',
-  '/dashboard',
   '/manifest.json',
   '/img/btb-logo-app.png',
 ]
@@ -30,6 +28,14 @@ self.addEventListener('fetch', event => {
 
   if (request.method !== 'GET' || url.origin !== location.origin) return
 
+  // Always fetch HTML/documents from network first to avoid stale Next.js shell/chunks.
+  if (request.mode === 'navigate' || request.destination === 'document') {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request))
+    )
+    return
+  }
+
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
@@ -40,9 +46,23 @@ self.addEventListener('fetch', event => {
         })
         .catch(() => caches.match(request))
     )
-  } else {
+  } else if (request.destination === 'image' || request.destination === 'font') {
     event.respondWith(
-      caches.match(request).then(cached => cached || fetch(request))
+      caches.match(request).then(cached => {
+        const networkFetch = fetch(request)
+          .then(res => {
+            const clone = res.clone()
+            caches.open(CACHE_NAME).then(c => c.put(request, clone))
+            return res
+          })
+          .catch(() => cached)
+        return cached || networkFetch
+      })
+    )
+  } else {
+    // For app scripts/styles/chunks: network first, cache fallback.
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request))
     )
   }
 })

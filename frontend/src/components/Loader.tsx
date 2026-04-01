@@ -38,7 +38,14 @@ export default function Loader() {
     <div className={`loader${hidden ? ' hidden' : ''}`} id="loader">
       <div className="loader-inner">
         <div className="loader-logo">
-          <img src="/img/btb-logo.png" alt="Beyond The Body" className="loader-logo-img" />
+          <img
+            src="/img/btb-logo.png"
+            alt="Beyond The Body"
+            className="loader-logo-img"
+            onError={(e) => {
+              e.currentTarget.src = '/img/btb-logo-app.png';
+            }}
+          />
         </div>
         <p className="loader-tagline">Healing begins within</p>
         <div className="loader-progress-wrap">

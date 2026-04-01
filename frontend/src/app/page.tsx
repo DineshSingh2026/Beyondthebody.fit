@@ -32,15 +32,15 @@ export default function HomePage() {
       <main>
         <DisclaimerBanner />
         <Hero affirmations={affirmations} />
-        <PartnershipBanner />
         <WelcomeGateway />
         <About />
+        <PartnershipBanner />
         <Conditions conditions={conditions} />
         <Services />
-        <Professionals />
-        <BrainTips brainTips={brainTips} hideBreathing />
+        <BrainTips brainTips={brainTips} />
         <Quotes quotes={quotes} />
         <Affirmations affirmations={affirmations} />
+        <Professionals />
         <SafeSpace />
         <JoinSection />
         <Contact />

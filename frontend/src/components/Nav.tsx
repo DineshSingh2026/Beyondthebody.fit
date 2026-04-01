@@ -43,6 +43,9 @@ export default function Nav() {
               src="/img/btb-logo.png"
               alt="Beyond The Body"
               className="nav-logo-img"
+              onError={(e) => {
+                e.currentTarget.src = '/img/btb-logo-app.png';
+              }}
             />
           </button>
           <ul className="nav-links">

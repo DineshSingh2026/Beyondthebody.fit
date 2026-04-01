@@ -26,31 +26,41 @@ const moodRecommendations: Record<number, string> = {
 };
 
 export default function WelcomeGateway() {
+  const SUPPRESS_KEY = 'btb_wg_suppress_until';
+  const SUPPRESS_MS = 24 * 60 * 60 * 1000; // 24 hours
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [breathText, setBreathText] = useState('Get ready...');
   const [breathClass, setBreathClass] = useState('');
   const [breathActiveStep, setBreathActiveStep] = useState('');
+  const [breathDone, setBreathDone] = useState(false);
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
 
   const breathTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const breathActiveRef = useRef(false);
-  const currentStepRef = useRef(step);
-
-  useEffect(() => {
-    currentStepRef.current = step;
-  }, [step]);
 
   // Trigger popup when About section starts entering view
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+
+    const suppressUntilRaw = window.localStorage.getItem(SUPPRESS_KEY);
+    const suppressUntil = suppressUntilRaw ? Number(suppressUntilRaw) : 0;
+    if (Number.isFinite(suppressUntil) && suppressUntil > Date.now()) {
+      return;
+    }
+
     const aboutSection = document.getElementById('about');
     if (!aboutSection) return;
 
     const observer = new IntersectionObserver((entries) => {
       const [entry] = entries;
       if (!entry?.isIntersecting) return;
-      setVisible(true);
-      document.body.style.overflow = 'hidden';
+      setTimeout(() => {
+        setVisible(true);
+        document.body.style.overflow = 'hidden';
+      }, 700);
       observer.disconnect();
     }, { threshold: 0.2 });
 
@@ -63,10 +73,8 @@ export default function WelcomeGateway() {
       setBreathText('Well done 🌿');
       setBreathClass('');
       setBreathActiveStep('');
+      setBreathDone(true);
       breathActiveRef.current = false;
-      if (currentStepRef.current === 2) {
-        breathTimerRef.current = setTimeout(() => setStep(3), 1400);
-      }
       return;
     }
     const phase = PHASES[phaseIndex];
@@ -84,6 +92,7 @@ export default function WelcomeGateway() {
   useEffect(() => {
     if (step !== 2) return;
     breathActiveRef.current = true;
+    setBreathDone(false);
     const countdown = setTimeout(() => runPhase(0, 0), 800);
     return () => {
       breathActiveRef.current = false;
@@ -100,6 +109,9 @@ export default function WelcomeGateway() {
 
   const close = () => {
     stopBreath();
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(SUPPRESS_KEY, String(Date.now() + SUPPRESS_MS));
+    }
     setVisible(false);
     document.body.style.overflow = '';
   };
@@ -177,6 +189,13 @@ export default function WelcomeGateway() {
             <button className="wg-skip" onClick={skipToMood}>
               Skip to mood check-in →
             </button>
+            {breathDone && (
+              <div className="wg-actions">
+                <button className="btn btn-primary" onClick={() => setStep(3)}>
+                  Continue to mood check-in
+                </button>
+              </div>
+            )}
           </div>
         )}
 

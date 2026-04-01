@@ -39,6 +39,10 @@ export default function Hero({ affirmations }: Props) {
   useEffect(() => {
     const el = statsRef.current;
     if (!el) return;
+    if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
+      setCounters({ r94: 94, m40: 40, m15: 15 });
+      return;
+    }
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !countersDone.current) {

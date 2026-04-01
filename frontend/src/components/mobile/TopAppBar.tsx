@@ -130,6 +130,9 @@ export default function TopAppBar({
             src="/img/btb-logo.png"
             alt="Beyond The Body"
             className={styles.logoImg}
+            onError={(e) => {
+              e.currentTarget.src = '/img/btb-logo-app.png';
+            }}
           />
         )}
       </div>
