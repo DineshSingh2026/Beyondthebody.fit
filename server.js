@@ -3358,8 +3358,9 @@ function startServer(port) {
   });
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.warn(`Port ${port} in use, trying ${port + 1}...`);
-      startServer(port + 1);
+      const nextPort = Number(port) + 1;
+      console.warn(`Port ${port} in use, trying ${nextPort}...`);
+      startServer(nextPort);
     } else {
       throw err;
     }

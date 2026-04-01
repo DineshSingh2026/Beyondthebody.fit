@@ -11,6 +11,7 @@ import BrainTips from '@/components/BrainTips';
 import Quotes from '@/components/Quotes';
 import Affirmations from '@/components/Affirmations';
 import SafeSpace from '@/components/SafeSpace';
+import Professionals from '@/components/Professionals';
 import JoinSection from '@/components/JoinSection';
 import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
@@ -36,6 +37,7 @@ export default function HomePage() {
         <About />
         <Conditions conditions={conditions} />
         <Services />
+        <Professionals />
         <BrainTips brainTips={brainTips} hideBreathing />
         <Quotes quotes={quotes} />
         <Affirmations affirmations={affirmations} />

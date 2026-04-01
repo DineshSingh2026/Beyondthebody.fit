@@ -7,6 +7,15 @@ interface Props {
   quotes: Quote[];
 }
 
+const AUTHOR_IMAGES: Record<string, string> = {
+  Rumi: '/img/quotes/rumi.jpg',
+  'Virat Kohli': '/img/quotes/virat-kohli.jpg',
+  'Jim Carrey': '/img/quotes/jim-carrey.jpg',
+  'Brad Pitt': '/img/quotes/brad-pitt.jpg',
+  'Shah Rukh Khan': '/img/quotes/shah-rukh-khan.jpg',
+  'Aamir Khan': '/img/quotes/aamir-khan.jpg',
+};
+
 export default function Quotes({ quotes }: Props) {
   const [index, setIndex] = useState(0);
   const touchStart = useRef(0);
@@ -21,7 +30,13 @@ export default function Quotes({ quotes }: Props) {
 
   return (
     <section className="quotes-section" id="quotes">
-      <div className="container">
+      <div className="quotes-ambient" aria-hidden="true">
+        <div className="quotes-orb quotes-orb-1" />
+        <div className="quotes-orb quotes-orb-2" />
+        <div className="quotes-orb quotes-orb-3" />
+        <div className="quotes-noise" />
+      </div>
+      <div className="container quotes-section-inner">
         <div className="section-header">
           <div className="section-tag">Words of Wisdom</div>
           <h2 className="section-title">Let these words guide you</h2>
@@ -53,8 +68,25 @@ export default function Quotes({ quotes }: Props) {
                   className={`quote-card${i === 1 ? ' accent' : ''}`}
                   style={{ width: `${slideWidth}%`, flexShrink: 0 }}
                 >
-                  <div className="qc-quote">&ldquo;{q.quote_text}&rdquo;</div>
-                  <div className="qc-author">- {q.author}</div>
+                  <div className="qc-glow" aria-hidden="true" />
+                  <div className="qc-hero-mark" aria-hidden="true">
+                    &ldquo;
+                  </div>
+                  <blockquote className="qc-quote">&ldquo;{q.quote_text}&rdquo;</blockquote>
+                  <div className="qc-top">
+                    <div className="qc-avatar-wrap">
+                      <img
+                        src={AUTHOR_IMAGES[q.author] ?? '/img/quotes/rumi.jpg'}
+                        alt=""
+                        className="qc-avatar"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="qc-author-block">
+                      <div className="qc-author-label">Featured voice</div>
+                      <div className="qc-author-name">{q.author}</div>
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
