@@ -75,6 +75,7 @@ export default function Services() {
         top: el.getBoundingClientRect().top + window.pageYOffset - 80,
         behavior: 'smooth',
       });
+      window.history.replaceState(null, '', '#contact');
     }
   };
 

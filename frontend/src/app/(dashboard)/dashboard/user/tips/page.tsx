@@ -154,7 +154,7 @@ export default function TipsPage() {
         <div className={styles.sectionTag}>Evidence-Based</div>
         <h1 className={styles.title}>✨ Brain Tips™</h1>
         <p className={styles.subtitle}>
-          60-second techniques, expert-backed strategies. When you&apos;re overwhelmed, we&apos;ve got you.
+          When you&apos;re overwhelmed, we&apos;ve got you. 60-second techniques, expert-backed strategies.
           {practiced.size > 0 && (
             <span className={styles.practicedCount}> {practiced.size} practiced today</span>
           )}

@@ -33,9 +33,9 @@ export default function HomePage() {
         <WelcomeGateway />
         <About />
         <PartnershipBanner />
+        <BrainTips brainTips={brainTips} />
         <Conditions conditions={conditions} />
         <Services />
-        <BrainTips brainTips={brainTips} />
         <Quotes quotes={quotes} />
         <Affirmations affirmations={affirmations} />
         <Professionals />

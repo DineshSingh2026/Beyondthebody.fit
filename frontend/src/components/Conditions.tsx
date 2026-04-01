@@ -18,7 +18,10 @@ export default function Conditions({ conditions }: Props) {
   const scrollToContact = () => {
     setModalCond(null);
     const el = document.getElementById('contact');
-    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 80, behavior: 'smooth' });
+    if (el) {
+      window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 80, behavior: 'smooth' });
+      window.history.replaceState(null, '', '#contact');
+    }
   };
 
   return (
