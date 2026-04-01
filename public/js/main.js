@@ -499,9 +499,9 @@ let breathTimeout;
 
 const phases = [
   { label: 'Inhale...', duration: 4000, class: 'inhale', step: 'inhale' },
-  { label: 'Hold...', duration: 4000, class: '', step: 'hold1' },
+  { label: 'Hold...', duration: 4000, class: 'hold-inhale', step: 'hold1' },
   { label: 'Exhale...', duration: 4000, class: 'exhale', step: 'exhale' },
-  { label: 'Hold...', duration: 4000, class: '', step: 'hold2' }
+  { label: 'Hold...', duration: 4000, class: 'hold-exhale', step: 'hold2' }
 ];
 
 function runBreathing(phaseIndex = 0, cycles = 0) {

@@ -10,9 +10,9 @@ interface Props {
 
 const PHASES = [
   { label: 'Inhale...', duration: 4000, className: 'inhale', step: 'inhale' },
-  { label: 'Hold...', duration: 4000, className: '', step: 'hold1' },
+  { label: 'Hold...', duration: 4000, className: 'hold-inhale', step: 'hold1' },
   { label: 'Exhale...', duration: 4000, className: 'exhale', step: 'exhale' },
-  { label: 'Hold...', duration: 4000, className: '', step: 'hold2' },
+  { label: 'Hold...', duration: 4000, className: 'hold-exhale', step: 'hold2' },
 ];
 
 export default function BrainTips({ brainTips, hideBreathing = false }: Props) {
@@ -20,8 +20,10 @@ export default function BrainTips({ brainTips, hideBreathing = false }: Props) {
   const [breathText, setBreathText] = useState('Press Start');
   const [breathClass, setBreathClass] = useState('');
   const [activeStep, setActiveStep] = useState('');
+  const [showBreathPopup, setShowBreathPopup] = useState(false);
   const breathRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRef = useRef(false);
+  const hasStartedRef = useRef(false);
 
   const stopBreathing = () => {
     activeRef.current = false;
@@ -30,6 +32,14 @@ export default function BrainTips({ brainTips, hideBreathing = false }: Props) {
     setBreathText('Press Start');
     setBreathClass('');
     setActiveStep('');
+  };
+
+  const restartBreathing = () => {
+    setShowBreathPopup(false);
+    activeRef.current = true;
+    hasStartedRef.current = true;
+    setBreathActive(true);
+    runPhase(0, 0);
   };
 
   const runPhase = (phaseIndex: number, cycles: number) => {
@@ -55,8 +65,10 @@ export default function BrainTips({ brainTips, hideBreathing = false }: Props) {
   const toggleBreathing = () => {
     if (breathActive) {
       stopBreathing();
+      if (hasStartedRef.current) setShowBreathPopup(true);
     } else {
       activeRef.current = true;
+      hasStartedRef.current = true;
       setBreathActive(true);
       runPhase(0, 0);
     }
@@ -124,6 +136,28 @@ export default function BrainTips({ brainTips, hideBreathing = false }: Props) {
             </div>
           </div>
         )}
+      </div>
+
+      <div className={`modal${showBreathPopup ? ' open' : ''}`} aria-hidden={!showBreathPopup}>
+        <div className="modal-overlay" onClick={() => setShowBreathPopup(false)} />
+        <div className="modal-content breath-finish-modal">
+          <button className="modal-close" onClick={() => setShowBreathPopup(false)}>
+            ✕
+          </button>
+          <div className="breath-finish-badge">Breathing Complete</div>
+          <h3 className="breath-finish-title">Great progress. Your breathing session is complete.</h3>
+          <p className="breath-finish-desc">
+            Even one conscious cycle helps your mind reset. Continue your healing journey or repeat the exercise anytime.
+          </p>
+          <div className="breath-finish-actions">
+            <button className="btn btn-secondary" onClick={restartBreathing}>
+              Redo Exercise
+            </button>
+            <button className="btn btn-primary" onClick={() => setShowBreathPopup(false)}>
+              Okay, Continue to Site
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );

@@ -33,9 +33,9 @@ const savePracticed = (s: Set<string>) => {
 
 const PHASES = [
   { label: 'Inhale…',  step: 'inhale', cls: 'inhale', dur: 4000 },
-  { label: 'Hold…',    step: 'hold1',  cls: '',        dur: 4000 },
+  { label: 'Hold…',    step: 'hold1',  cls: 'hold-inhale', dur: 4000 },
   { label: 'Exhale…',  step: 'exhale', cls: 'exhale',  dur: 4000 },
-  { label: 'Hold…',    step: 'hold2',  cls: '',        dur: 4000 },
+  { label: 'Hold…',    step: 'hold2',  cls: 'hold-exhale', dur: 4000 },
 ];
 
 export default function TipsPage() {

@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 
 const PHASES = [
   { label: 'Inhale...', duration: 4000, className: 'inhale', step: 'inhale' },
-  { label: 'Hold...', duration: 4000, className: '', step: 'hold1' },
+  { label: 'Hold...', duration: 4000, className: 'hold-inhale', step: 'hold1' },
   { label: 'Exhale...', duration: 4000, className: 'exhale', step: 'exhale' },
-  { label: 'Hold...', duration: 4000, className: '', step: 'hold2' },
+  { label: 'Hold...', duration: 4000, className: 'hold-exhale', step: 'hold2' },
 ];
 
 const moods = [

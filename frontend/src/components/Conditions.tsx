@@ -32,7 +32,6 @@ export default function Conditions({ conditions }: Props) {
               Mental health conditions affect millions. Understanding creates connection and hope.
               Breaking stigma through knowledge.
             </p>
-            <p className="conditions-hint">Tap any card to view signs, treatments, and guidance.</p>
           </div>
           <div className="conditions-grid" id="conditionsGrid">
             {conditions.map((cond, i) => (

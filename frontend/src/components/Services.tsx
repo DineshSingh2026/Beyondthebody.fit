@@ -9,6 +9,7 @@ export default function Services() {
     items: string[];
     featured: boolean;
     delay: number;
+    color: string;
     badge?: string;
   };
 
@@ -19,6 +20,7 @@ export default function Services() {
       items: ['Anxiety & Depression', 'Relationship Counseling', 'Life Transitions'],
       featured: false,
       delay: 0,
+      color: '44 168 143',
     },
     {
       icon: '⚡',
@@ -26,6 +28,7 @@ export default function Services() {
       items: ['Eating Disorders', 'Workplace Stress', 'Family Therapy'],
       featured: false,
       delay: 100,
+      color: '82 159 245',
     },
     {
       icon: '💚',
@@ -33,6 +36,7 @@ export default function Services() {
       items: ['PTSD & Complex Trauma', 'Childhood Trauma Recovery', 'Crisis Intervention'],
       featured: false,
       delay: 200,
+      color: '76 191 115',
     },
     {
       icon: '🧠',
@@ -44,6 +48,7 @@ export default function Services() {
       ],
       featured: false,
       delay: 300,
+      color: '176 108 214',
     },
     {
       icon: '🤝',
@@ -51,6 +56,7 @@ export default function Services() {
       items: ['Support Circles', 'Grief & Loss Groups', 'Addiction Recovery'],
       featured: false,
       delay: 400,
+      color: '219 178 78',
     },
   ];
   const [activeService, setActiveService] = useState<ServiceItem | null>(null);
@@ -98,6 +104,7 @@ export default function Services() {
               type="button"
               className={`service-card${svc.featured ? ' featured' : ''}`}
               onClick={() => setActiveService(svc)}
+              style={{ '--service-color': svc.color } as React.CSSProperties}
             >
               {svc.badge && <div className="service-badge">{svc.badge}</div>}
               <h3 className="service-title">
@@ -130,7 +137,8 @@ export default function Services() {
           <div className="affiliate-strip-inner">
             <img src="/img/bodybank-logo.png" alt="Body Bank Lifestyle Management" className="affiliate-strip-logo" />
             <p>
-              <strong>After your session,</strong> unlock Body Bank Lifestyle Management support for nutrition, fitness, and recovery.{' '}
+              <strong>After your session,</strong> unlock Body Bank Lifestyle Management support for nutrition, fitness, and recovery.
+              <br />
               <a
                 href="https://bodybank.fit"
                 target="_blank"
