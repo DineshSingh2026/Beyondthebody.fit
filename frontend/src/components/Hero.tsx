@@ -11,7 +11,7 @@ export default function Hero({ affirmations }: Props) {
   const [affText, setAffText] = useState(affirmations[0] || '');
   const [affVisible, setAffVisible] = useState(true);
   const statsRef = useRef<HTMLDivElement>(null);
-  const [counters, setCounters] = useState({ r94: 0, m40: 0, m15: 0 });
+  const [counters, setCounters] = useState({ r94: 0, k4: 0, m15: 0 });
   const countersDone = useRef(false);
 
   const scrollTo = (id: string) => {
@@ -40,7 +40,7 @@ export default function Hero({ affirmations }: Props) {
     const el = statsRef.current;
     if (!el) return;
     if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
-      setCounters({ r94: 94, m40: 40, m15: 15 });
+      setCounters({ r94: 94, k4: 4, m15: 15 });
       return;
     }
     const observer = new IntersectionObserver(
@@ -48,7 +48,7 @@ export default function Hero({ affirmations }: Props) {
         if (entry.isIntersecting && !countersDone.current) {
           countersDone.current = true;
           animateCount(94, (v) => setCounters((c) => ({ ...c, r94: v })));
-          animateCount(40, (v) => setCounters((c) => ({ ...c, m40: v })));
+          animateCount(4, (v) => setCounters((c) => ({ ...c, k4: v })));
           animateCount(15, (v) => setCounters((c) => ({ ...c, m15: v })));
         }
       },
@@ -84,13 +84,17 @@ export default function Hero({ affirmations }: Props) {
         <h1 className="hero-title">
           <span className="hero-title-top">Your safe space to</span>
           <span className="hero-title-main">
-            <em>Heal</em> beyond
+            <em className="hero-heal">Heal</em>
+            <span className="hero-beyond">Beyond</span>
           </span>
-          <span className="hero-title-sub">the body</span>
+          <span className="hero-title-sub">The Body</span>
         </h1>
         <p className="hero-desc">
-          Where mental wellness leads physical transformation. Evidence-based therapy, expert
-          support, and a community that understands your journey.
+          Mental wellness leads the way,
+          <br />
+          Physical transformation follows.
+          <br />
+          Your safe space for compassionate therapy and genuine community support.
         </p>
         <div className="hero-actions">
           <button className="btn btn-primary" onClick={() => scrollTo('contact')}>
@@ -114,8 +118,8 @@ export default function Hero({ affirmations }: Props) {
           <div className="stat-divider" />
           <div className="stat">
             <span className="stat-value">
-              <span className="stat-num">{counters.m40}</span>
-              <span className="stat-suffix">M+</span>
+              <span className="stat-num">{counters.k4}</span>
+              <span className="stat-suffix">K+</span>
             </span>
             <span className="stat-label">People Helped Annually</span>
           </div>

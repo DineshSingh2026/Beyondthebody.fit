@@ -9,6 +9,11 @@ interface Props {
 
 export default function Conditions({ conditions }: Props) {
   const [modalCond, setModalCond] = useState<Condition | null>(null);
+  const conditionEmoji: Record<string, string> = {
+    Anxiety: '💭',
+    Depression: '🌧️',
+    Stress: '🔥',
+  };
 
   const scrollToContact = () => {
     setModalCond(null);
@@ -27,6 +32,7 @@ export default function Conditions({ conditions }: Props) {
               Mental health conditions affect millions. Understanding creates connection and hope.
               Breaking stigma through knowledge.
             </p>
+            <p className="conditions-hint">Tap any card to view signs, treatments, and guidance.</p>
           </div>
           <div className="conditions-grid" id="conditionsGrid">
             {conditions.map((cond, i) => (
@@ -47,21 +53,15 @@ export default function Conditions({ conditions }: Props) {
                     {cond.treatment}
                   </span>
                 </div>
-                <p className="cc-fact">📊 {cond.fact}</p>
-                <p className="cc-learn">Learn more &amp; find support →</p>
+                <p className="cc-fact">{conditionEmoji[cond.name] ?? '🧠'} {cond.fact}</p>
+                <p className="cc-tap-hint">Tap for details</p>
               </div>
             ))}
           </div>
           <div className="conditions-cta">
-            <p>
-              Remember: information isn&apos;t diagnosis.{' '}
-              <button
-                onClick={scrollToContact}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', textDecoration: 'underline' }}
-              >
-                Talk to a specialist →
-              </button>
-            </p>
+            <button className="btn btn-primary" onClick={scrollToContact}>
+              Book Free Consultation →
+            </button>
           </div>
         </div>
       </section>
@@ -78,7 +78,7 @@ export default function Conditions({ conditions }: Props) {
               <div className="modal-cond-name" style={{ color: modalCond.color }}>
                 {modalCond.name}
               </div>
-              <p className="modal-cond-fact">📊 {modalCond.fact}</p>
+              <p className="modal-cond-fact">{conditionEmoji[modalCond.name] ?? '🧠'} {modalCond.fact}</p>
               <div className="modal-section">
                 <h4>Common Signs</h4>
                 <ul className="modal-list">

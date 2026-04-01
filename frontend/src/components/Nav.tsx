@@ -95,14 +95,14 @@ export default function Nav() {
               <button
                 className="mobile-link"
                 onClick={() => scrollTo(l.id)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%' }}
               >
                 {l.label}
               </button>
             </li>
           ))}
           <li>
-            <Link href="/login" className="mobile-link" style={{ display: 'block', padding: '12px 16px' }}>
+            <Link href="/login" className="mobile-link">
               Sign in
             </Link>
           </li>
@@ -110,7 +110,7 @@ export default function Nav() {
             <button
               className="mobile-link"
               onClick={() => scrollTo('contact')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%' }}
             >
               Free Consult
             </button>

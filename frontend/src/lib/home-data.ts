@@ -12,7 +12,7 @@ export const AFFIRMATIONS = [
 
 export const CONDITIONS = [
   { name: 'Anxiety', fact: 'Anxiety is treatable.', treatment: 'Therapy and lifestyle.', signs: ['Worry', 'Restlessness'], treatments: ['Therapy', 'Breathing'], color: '#5BB89A' },
-  { name: 'Depression', fact: 'Depression affects how you feel, think, and function.', treatment: 'Talk therapy and evidence-based approaches.', signs: ['Low mood', 'Loss of interest'], treatments: ['Therapy', 'Movement'], color: '#7BA4D4' },
+  { name: 'Depression', fact: 'Depression affects how you feel, think, and function.', treatment: 'Evidence-based approaches.', signs: ['Low mood', 'Loss of interest'], treatments: ['Therapy', 'Movement'], color: '#7BA4D4' },
   { name: 'Stress', fact: 'Chronic stress impacts mind and body.', treatment: 'Stress management and boundaries.', signs: ['Tension', 'Irritability'], treatments: ['Therapy', 'Relaxation'], color: '#C9A227' },
 ];
 

@@ -1,3 +1,7 @@
+ 'use client';
+
+import { useState } from 'react';
+
 export default function Services() {
   type ServiceItem = {
     icon: string;
@@ -9,17 +13,70 @@ export default function Services() {
   };
 
   const services: ServiceItem[] = [
-    { icon: '🪪', title: 'Licensed Therapists', items: ['Anxiety & Depression', 'Relationship Counseling', 'Life Transitions'], featured: false, delay: 0 },
-    { icon: '⚡', title: 'Specialized Experts', items: ['Eating Disorders', 'Workplace Stress', 'Family Therapy'], featured: true, delay: 100 },
-    { icon: '💚', title: 'Trauma Specialists', items: ['PTSD & Complex Trauma', 'Childhood Trauma Recovery', 'Crisis Intervention'], featured: false, delay: 200 },
-    { icon: '🤝', title: 'Group Facilitators', items: ['Support Circles', 'Grief & Loss Groups', 'Addiction Recovery'], featured: false, delay: 300 },
+    {
+      icon: '🪪',
+      title: 'Licensed Therapists',
+      items: ['Anxiety & Depression', 'Relationship Counseling', 'Life Transitions'],
+      featured: false,
+      delay: 0,
+    },
+    {
+      icon: '⚡',
+      title: 'Specialized Experts',
+      items: ['Eating Disorders', 'Workplace Stress', 'Family Therapy'],
+      featured: false,
+      delay: 100,
+    },
+    {
+      icon: '💚',
+      title: 'Trauma Specialists',
+      items: ['PTSD & Complex Trauma', 'Childhood Trauma Recovery', 'Crisis Intervention'],
+      featured: false,
+      delay: 200,
+    },
+    {
+      icon: '🧠',
+      title: 'Neuroplasticity Boosters',
+      items: [
+        'Music Tutors - Learn an instrument or singing to rewire your brain for better mood, memory & emotional resilience',
+        'Language Tutors - Master a new language to sharpen focus, cognitive flexibility & confidence',
+        'Creative Brain Sessions - Guided drawing, writing & mindfulness to unlock lasting mental growth',
+      ],
+      featured: false,
+      delay: 300,
+    },
+    {
+      icon: '🤝',
+      title: 'Group Facilitators',
+      items: ['Support Circles', 'Grief & Loss Groups', 'Addiction Recovery'],
+      featured: false,
+      delay: 400,
+    },
   ];
+  const [activeService, setActiveService] = useState<ServiceItem | null>(null);
+  const [showAllServices, setShowAllServices] = useState(false);
+
+  const closeServicesModal = () => {
+    setActiveService(null);
+    setShowAllServices(false);
+  };
+
+  const scrollToContact = () => {
+    closeServicesModal();
+    const el = document.getElementById('contact');
+    if (el) {
+      window.scrollTo({
+        top: el.getBoundingClientRect().top + window.pageYOffset - 80,
+        behavior: 'smooth',
+      });
+    }
+  };
 
   const steps = [
-    { num: '01', title: 'Free 15-min Consult', desc: 'We listen to understand your needs' },
-    { num: '02', title: 'Expert Matching', desc: 'Get paired with your ideal specialist' },
-    { num: '03', title: 'Begin Healing', desc: 'Your transformation starts here' },
-    { num: '04', title: 'Thrive', desc: 'Mind heals, body follows naturally' },
+    { num: '01', title: 'Free 15-min Consult', desc: 'Share your needs' },
+    { num: '02', title: 'Expert Matching', desc: 'Get the right specialist' },
+    { num: '03', title: 'Begin Healing', desc: 'Start your sessions' },
+    { num: '04', title: 'Thrive', desc: 'Mind first, body follows' },
   ];
 
   return (
@@ -31,48 +88,49 @@ export default function Services() {
             Specialists seeking <em>you</em>
           </h2>
           <p className="section-desc">
-            We match you with the perfect professional for your unique journey. No guesswork,
-            no generic care.
+            Expert matching, clear next steps, and integrated support.
           </p>
         </div>
         <div className="services-grid">
           {services.map((svc) => (
-            <div
+            <button
               key={svc.title}
+              type="button"
               className={`service-card${svc.featured ? ' featured' : ''}`}
-              style={{ transitionDelay: `${svc.delay}ms` } as React.CSSProperties}
+              onClick={() => setActiveService(svc)}
             >
               {svc.badge && <div className="service-badge">{svc.badge}</div>}
-              <div className="service-icon">{svc.icon}</div>
-              <h3>{svc.title}</h3>
-              <ul className="service-list">
-                {svc.items.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
+              <h3 className="service-title">
+                <span className="service-icon-inline" aria-hidden="true">
+                  {svc.icon}
+                </span>
+                <span>{svc.title}</span>
+              </h3>
               <div className="service-glow" />
-            </div>
+            </button>
           ))}
         </div>
+        <div className="services-tap-wrap">
+          <button type="button" className="services-tap-btn" onClick={() => setShowAllServices(true)}>
+            Tap to view Details
+          </button>
+        </div>
         <div className="services-process">
-          {steps.map((step, i) => (
-            <div key={step.num} style={{ display: 'contents' }}>
-              <div className="process-step">
-                <div className="process-num">{step.num}</div>
-                <div className="process-text">
-                  <h4>{step.title}</h4>
-                  <p>{step.desc}</p>
-                </div>
+          {steps.map((step) => (
+            <div key={step.num} className="process-step">
+              <div className="process-num">{step.num}</div>
+              <div className="process-text">
+                <h4>{step.title}</h4>
+                <p>{step.desc}</p>
               </div>
-              {i < steps.length - 1 && <div className="process-arrow">→</div>}
             </div>
           ))}
         </div>
         <div className="affiliate-strip">
           <div className="affiliate-strip-inner">
-            <span className="affiliate-strip-icon">💡</span>
+            <img src="/img/bodybank-logo.png" alt="Body Bank Lifestyle Management" className="affiliate-strip-logo" />
             <p>
-              <strong>After your session,</strong> explore Body Bank&apos;s personalised nutrition &amp; recovery programmes for sustained energy and holistic results.{' '}
+              <strong>After your session,</strong> unlock Body Bank Lifestyle Management support for nutrition, fitness, and recovery.{' '}
               <a
                 href="https://bodybank.fit"
                 target="_blank"
@@ -83,6 +141,56 @@ export default function Services() {
               </a>
             </p>
           </div>
+        </div>
+      </div>
+
+      <div className={`modal${activeService || showAllServices ? ' open' : ''}`} aria-hidden={!(activeService || showAllServices)}>
+        <div className="modal-overlay" onClick={closeServicesModal} />
+        <div className="modal-content">
+          <button className="modal-close" onClick={closeServicesModal}>
+            ✕
+          </button>
+          {showAllServices && (
+            <div className="all-services-view">
+              <div className="modal-cond-name">All Services</div>
+              {services.map((svc) => (
+                <div className="modal-section" key={svc.title}>
+                  <h4>
+                    <span aria-hidden="true">{svc.icon}</span> {svc.title}
+                  </h4>
+                  <ul className="modal-list">
+                    {svc.items.map((item) => (
+                      <li key={`${svc.title}-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              <div className="modal-cta">
+                <button className="btn btn-primary" onClick={scrollToContact}>
+                  Book Free Consultation →
+                </button>
+              </div>
+            </div>
+          )}
+          {activeService && (
+            <div>
+              <div className="modal-cond-name">{activeService.title}</div>
+              <p className="modal-cond-fact">Explore support options in this category.</p>
+              <div className="modal-section">
+                <h4>Specialized Support</h4>
+                <ul className="modal-list">
+                  {activeService.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="modal-cta">
+                <button className="btn btn-primary" onClick={scrollToContact}>
+                  Book Free Consultation →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>

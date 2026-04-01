@@ -1386,18 +1386,32 @@ body:hover .cursor { opacity: 1; }
 }
 
 .service-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 32px;
+  appearance: none;
+  background: rgba(76, 175, 138, 0.12);
+  border: 1px solid rgba(76, 175, 138, 0.14);
+  border-radius: 18px;
+  padding: 18px 22px;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  box-shadow: none;
   transition: var(--transition);
+  cursor: pointer;
+}
+
+.service-card::before {
+  display: none;
 }
 
 .service-card:hover {
-  border-color: rgba(76, 175, 138, 0.3);
-  transform: translateY(-6px);
+  border-color: rgba(76, 175, 138, 0.32);
+  background: rgba(76, 175, 138, 0.16);
+  transform: translateY(-1px);
 }
 
 .service-card.featured {
@@ -1418,53 +1432,49 @@ body:hover .cursor { opacity: 1; }
   border-radius: 12px;
 }
 
-.service-icon {
-  font-size: 40px;
-  margin-bottom: 20px;
-  display: block;
+.service-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--green-light);
+  margin-bottom: 0;
+  letter-spacing: 0.01em;
 }
 
-.service-card h3 {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 16px;
+.service-icon-inline {
+  font-size: 1.22rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 10px rgba(201, 169, 98, 0.28));
 }
 
-.service-list {
-  list-style: none;
+.services-tap-wrap {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  justify-content: center;
+  margin: -10px 0 30px;
 }
 
-.service-list li {
-  font-size: 14px;
-  color: var(--text-muted);
-  padding-left: 16px;
-  position: relative;
-}
-
-.service-list li::before {
-  content: '→';
-  position: absolute;
-  left: 0;
-  color: var(--green);
-  font-size: 12px;
+.services-tap-btn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 42px;
+  line-height: 1.3;
+  color: var(--green-light);
+  background: rgba(76, 175, 138, 0.12);
+  border: 1px solid rgba(76, 175, 138, 0.28);
 }
 
 .service-glow {
-  position: absolute;
-  bottom: -40px;
-  right: -40px;
-  width: 120px;
-  height: 120px;
-  background: var(--green);
-  border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  display: none;
 }
 
 .service-card:hover .service-glow {
@@ -1472,15 +1482,38 @@ body:hover .cursor { opacity: 1; }
 }
 
 .services-process {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  padding: 40px;
+  gap: 24px;
+  padding: 48px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   flex-wrap: wrap;
+}
+
+.services-process::before {
+  content: '';
+  position: absolute;
+  left: 56px;
+  right: 56px;
+  top: 56px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201, 169, 98, 0.25), rgba(76, 175, 138, 0.35), rgba(201, 169, 98, 0.25));
+}
+
+.services-process::after {
+  content: '';
+  position: absolute;
+  left: 56px;
+  top: 56px;
+  height: 2px;
+  width: calc(100% - 112px);
+  background: linear-gradient(90deg, rgba(76, 175, 138, 0.85), rgba(201, 169, 98, 0.75));
+  transform-origin: left center;
+  animation: processFlowLine 12s linear infinite;
 }
 
 .process-step {
@@ -1488,27 +1521,85 @@ body:hover .cursor { opacity: 1; }
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 8px;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+  opacity: 0.55;
+  animation: processStepPulse 12s ease-in-out infinite;
 }
 
 .process-num {
   font-family: var(--font-mono);
-  font-size: 2rem;
+  font-size: 1.18rem;
   font-weight: 700;
-  color: var(--green);
-  opacity: 0.4;
+  color: var(--gold-soft);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 24, 20, 0.95);
+  border: 1px solid rgba(201, 169, 98, 0.45);
+  box-shadow: 0 0 0 3px rgba(15, 24, 20, 0.92);
+  transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
 }
 
 .process-text h4 {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--text);
   margin-bottom: 2px;
 }
 
 .process-text p {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.process-step:nth-child(1) { animation-delay: 0s; }
+.process-step:nth-child(2) { animation-delay: 3s; }
+.process-step:nth-child(3) { animation-delay: 6s; }
+.process-step:nth-child(4) { animation-delay: 9s; }
+
+.process-step:nth-child(1) .process-num { animation: processNumPulse 12s ease-in-out infinite; animation-delay: 0s; }
+.process-step:nth-child(2) .process-num { animation: processNumPulse 12s ease-in-out infinite; animation-delay: 3s; }
+.process-step:nth-child(3) .process-num { animation: processNumPulse 12s ease-in-out infinite; animation-delay: 6s; }
+.process-step:nth-child(4) .process-num { animation: processNumPulse 12s ease-in-out infinite; animation-delay: 9s; }
+
+@keyframes processFlowLine {
+  0% { transform: scaleX(0.06); opacity: 0.2; }
+  12% { transform: scaleX(0.25); opacity: 0.85; }
+  37% { transform: scaleX(0.5); opacity: 0.9; }
+  62% { transform: scaleX(0.75); opacity: 0.92; }
+  87% { transform: scaleX(1); opacity: 0.95; }
+  100% { transform: scaleX(0.06); opacity: 0.2; }
+}
+
+@keyframes processStepPulse {
+  0%, 100% { opacity: 0.55; transform: translateY(0); }
+  8%, 22% { opacity: 1; transform: translateY(-2px); }
+  30% { opacity: 0.6; transform: translateY(0); }
+}
+
+@keyframes processNumPulse {
+  0%, 100% {
+    transform: scale(1);
+    border-color: rgba(201, 169, 98, 0.45);
+    box-shadow: 0 0 0 3px rgba(15, 24, 20, 0.92);
+  }
+  10%, 22% {
+    transform: scale(1.08);
+    border-color: rgba(76, 175, 138, 0.8);
+    box-shadow: 0 0 0 3px rgba(15, 24, 20, 0.92), 0 0 14px rgba(76, 175, 138, 0.38);
+  }
+  30% {
+    transform: scale(1);
+    border-color: rgba(201, 169, 98, 0.45);
+    box-shadow: 0 0 0 3px rgba(15, 24, 20, 0.92);
+  }
 }
 
 .process-arrow {
@@ -2675,6 +2766,37 @@ textarea.form-input {
   margin-bottom: 16px;
 }
 
+.all-services-view .modal-cond-name {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.all-services-view .modal-cond-fact {
+  font-size: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+}
+
+.all-services-view .modal-section {
+  margin-bottom: 18px;
+}
+
+.all-services-view .modal-section h4 {
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  margin-bottom: 8px;
+}
+
+.all-services-view .modal-list {
+  gap: 6px;
+}
+
+.all-services-view .modal-list li {
+  font-size: 12px;
+  line-height: 1.35;
+  padding-left: 14px;
+}
+
 /* ===================== ANIMATIONS ===================== */
 .fade-in {
   opacity: 0;
@@ -3141,10 +3263,31 @@ textarea.form-input {
   }
 
   .services-process {
+    display: flex;
     flex-direction: column;
     padding: 24px 20px;
     gap: 24px;
     align-items: stretch;
+  }
+
+  .services-process::before {
+    left: 36px;
+    right: auto;
+    top: 36px;
+    bottom: 36px;
+    width: 1px;
+    height: auto;
+    background: linear-gradient(180deg, rgba(201, 169, 98, 0.25), rgba(76, 175, 138, 0.35), rgba(201, 169, 98, 0.25));
+  }
+
+  .services-process::after {
+    left: 35px;
+    top: 36px;
+    width: 2px;
+    height: calc(100% - 72px);
+    transform-origin: center top;
+    background: linear-gradient(180deg, rgba(76, 175, 138, 0.85), rgba(201, 169, 98, 0.75));
+    animation-name: processFlowLineVertical;
   }
 
   .process-step {
@@ -3156,6 +3299,15 @@ textarea.form-input {
 
   .process-num {
     font-size: 1.5rem;
+  }
+
+  @keyframes processFlowLineVertical {
+    0% { transform: scaleY(0.06); opacity: 0.2; }
+    12% { transform: scaleY(0.25); opacity: 0.85; }
+    37% { transform: scaleY(0.5); opacity: 0.9; }
+    62% { transform: scaleY(0.75); opacity: 0.92; }
+    87% { transform: scaleY(1); opacity: 0.95; }
+    100% { transform: scaleY(0.06); opacity: 0.2; }
   }
 
   .bt-grid {

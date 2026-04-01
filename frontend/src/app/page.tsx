@@ -1,7 +1,6 @@
 import { AFFIRMATIONS, BRAIN_TIPS, CONDITIONS, QUOTES } from '@/lib/home-data';
 import Loader from '@/components/Loader';
 import Nav from '@/components/Nav';
-import DisclaimerBanner from '@/components/DisclaimerBanner';
 import Hero from '@/components/Hero';
 import About from '@/components/About';
 import Conditions from '@/components/Conditions';
@@ -30,7 +29,6 @@ export default function HomePage() {
       <div className="cursor-follower" id="cursorFollower" />
       <Nav />
       <main>
-        <DisclaimerBanner />
         <Hero affirmations={affirmations} />
         <WelcomeGateway />
         <About />

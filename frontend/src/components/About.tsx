@@ -27,43 +27,36 @@ export default function About() {
           </div>
           <div className="about-content">
             <div className="section-tag">Our Mission</div>
-            <h2 className="section-title">
-              We exist to break the stigma around mental wellness
-            </h2>
+            <h2 className="section-title">Our Mission</h2>
             <p className="about-text">
-              Beyond The Body is a safe, judgment-free space where heart, soul and mind come
-              together. Real change begins from within. When the mind heals, the body transforms
-              That is what we are here for.
+              We exist to break the stigma around mental wellness.
+              <br />
+              Beyond The Body is your judgment-free safe space where heart, mind, and body heal as one.
+              <br />
+              Therapy first → Mental clarity → Physical transformation.
             </p>
             <div className="about-pillars">
               <div className="pillar">
                 <div className="pillar-icon">🌱</div>
                 <div>
                   <h4>Normalize Mental Wellness</h4>
-                  <p>Making mental health as accepted and celebrated as physical fitness</p>
+                  <p>Mental health should feel as normal as physical fitness.</p>
                 </div>
               </div>
               <div className="pillar">
                 <div className="pillar-icon">🔬</div>
                 <div>
                   <h4>Evidence-Based Approach</h4>
-                  <p>Every technique backed by science, every therapist carefully vetted</p>
+                  <p>Science-backed methods from carefully vetted professionals.</p>
                 </div>
               </div>
               <div className="pillar">
                 <div className="pillar-icon">🤝</div>
                 <div>
                   <h4>Community Support</h4>
-                  <p>You are never alone. We connect you with those who truly understand.</p>
+                  <p>You are not alone. Heal with a real, caring community.</p>
                 </div>
               </div>
-            </div>
-            <div className="about-disclaimer">
-              <span>⚠️</span>
-              <p>
-                Our content is educational, not diagnostic. Always consult licensed professionals.
-                We complement, never replace, your doctor.
-              </p>
             </div>
           </div>
         </div>

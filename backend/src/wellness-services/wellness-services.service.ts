@@ -26,10 +26,21 @@ const FALLBACK: WellnessService[] = [
   },
   {
     title: 'Trauma Specialists',
-    icon: '💜',
+    icon: '💚',
     badge: null,
     is_featured: false,
     items: ['PTSD & Complex Trauma', 'Childhood Trauma Recovery', 'Crisis Intervention'],
+  },
+  {
+    title: 'Neuroplasticity Boosters',
+    icon: '🧠',
+    badge: null,
+    is_featured: false,
+    items: [
+      'Music Tutors - Learn an instrument or singing to rewire your brain for better mood, memory & emotional resilience',
+      'Language Tutors - Master a new language to sharpen focus, cognitive flexibility & confidence',
+      'Creative Brain Sessions - Guided drawing, writing & mindfulness to unlock lasting mental growth',
+    ],
   },
   {
     title: 'Group Facilitators',

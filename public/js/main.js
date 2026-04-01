@@ -391,6 +391,74 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeModal();
 });
 
+// ===================== SERVICES MODAL =====================
+document.querySelectorAll('.service-card').forEach((card) => {
+  card.addEventListener('click', () => {
+    const title = card.dataset.title || 'Specialized Support';
+    const items = (card.dataset.items || '')
+      .split('|')
+      .map((v) => v.trim())
+      .filter(Boolean);
+
+    if (!items.length) return;
+
+    modalBody.innerHTML = `
+      <div class="modal-cond-name">${title}</div>
+      <p class="modal-cond-fact">Explore support options in this category.</p>
+
+      <div class="modal-section">
+        <h4>Specialized Support</h4>
+        <ul class="modal-list">
+          ${items.map((item) => `<li>${item}</li>`).join('')}
+        </ul>
+      </div>
+
+      <div class="modal-cta">
+        <a href="#contact" class="btn btn-primary" onclick="closeModal()">Book Free Consultation →</a>
+      </div>
+    `;
+
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  });
+});
+
+const servicesOverviewBtn = document.getElementById('servicesOverviewBtn');
+if (servicesOverviewBtn) {
+  servicesOverviewBtn.addEventListener('click', () => {
+    const serviceCards = Array.from(document.querySelectorAll('.service-card'));
+    const sectionsHtml = serviceCards.map((card) => {
+      const title = card.dataset.title || '';
+      const icon = card.querySelector('.service-icon-inline')?.textContent?.trim() || '';
+      const items = (card.dataset.items || '')
+        .split('|')
+        .map((v) => v.trim())
+        .filter(Boolean);
+      return `
+        <div class="modal-section">
+          <h4>${icon} ${title}</h4>
+          <ul class="modal-list">
+            ${items.map((item) => `<li>${item}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }).join('');
+
+    modalBody.innerHTML = `
+      <div class="all-services-view">
+        <div class="modal-cond-name">All Services</div>
+        ${sectionsHtml}
+        <div class="modal-cta">
+          <a href="#contact" class="btn btn-primary" onclick="closeModal()">Book Free Consultation →</a>
+        </div>
+      </div>
+    `;
+
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  });
+}
+
 // ===================== BRAIN TIPS =====================
 const brainTips = [
   { title: "Box Breathing", description: "Inhale 4s → Hold 4s → Exhale 4s → Hold 4s. Repeat for instant calm.", category: "Anxiety Relief", icon: "🫁" },
