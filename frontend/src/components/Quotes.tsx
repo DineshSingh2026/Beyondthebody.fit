@@ -12,7 +12,7 @@ const AUTHOR_IMAGES: Record<string, string> = {
   'Virat Kohli': '/img/quotes/virat-kohli.jpg',
   'Jim Carrey': '/img/quotes/jim-carrey.jpg',
   'Brad Pitt': '/img/quotes/brad-pitt.jpg',
-  'Shah Rukh Khan': '/img/quotes/shah-rukh-khan.jpg',
+  'Shah Rukh Khan': '/img/quotes/shah-rukh-khan-latest.png',
   'Aamir Khan': '/img/quotes/aamir-khan.jpg',
 };
 

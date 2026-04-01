@@ -21,7 +21,7 @@
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-luxury: 'Italiana', serif;
   --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --font-mono: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   --radius: 8px;
   --radius-sm: 4px;
   --shadow: 0 24px 64px rgba(0,0,0,0.45);
@@ -51,8 +51,6 @@ button, a, [role="button"] {
 /* Smooth momentum scrolling on iOS */
 .scroll-smooth-ios {
   -webkit-overflow-scrolling: touch;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 /* Full height that works on iOS Safari with address bar */
@@ -2265,12 +2263,12 @@ body:hover .cursor { opacity: 1; }
   -webkit-backdrop-filter: blur(22px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  padding: 20px 22px 18px;
+  padding: 24px 26px 22px;
   transition: transform 0.55s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.45s ease, box-shadow 0.55s ease;
   box-shadow:
     0 14px 30px rgba(0, 0, 0, 0.34),
     0 0 0 1px rgba(201, 169, 98, 0.06) inset;
-  min-height: 178px;
+  min-height: 206px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -2335,11 +2333,15 @@ body:hover .cursor { opacity: 1; }
 .quote-card.accent {
   background: linear-gradient(155deg, rgba(76, 175, 138, 0.14), rgba(12, 22, 18, 0.5), rgba(201, 169, 98, 0.06));
   border-color: rgba(76, 175, 138, 0.2);
-  transform: none;
+  transform: scale(1.015);
+  box-shadow:
+    0 22px 46px rgba(0, 0, 0, 0.42),
+    0 0 36px rgba(91, 184, 154, 0.12),
+    0 0 0 1px rgba(201, 169, 98, 0.16) inset;
 }
 
 .quote-card.accent:hover {
-  transform: translateY(-4px);
+  transform: scale(1.02) translateY(-3px);
 }
 
 .qc-quote {
@@ -2349,17 +2351,17 @@ body:hover .cursor { opacity: 1; }
   padding: 0 0 2px;
   border: none;
   font-family: var(--font-display);
-  font-size: clamp(1.02rem, 2.2vw, 1.35rem);
+  font-size: clamp(1.08rem, 2.25vw, 1.4rem);
   font-weight: 300;
   font-style: italic;
   color: rgba(248, 250, 249, 0.96);
-  line-height: 1.52;
+  line-height: 1.58;
   letter-spacing: -0.01em;
   text-shadow: 0 1px 24px rgba(0, 0, 0, 0.25);
   flex: 1;
   display: flex;
   align-items: center;
-  min-height: 3.8em;
+  min-height: 4.6em;
 }
 
 .qc-top {
@@ -2367,15 +2369,15 @@ body:hover .cursor { opacity: 1; }
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid rgba(201, 169, 98, 0.12);
+  padding-top: 14px;
+  border-top: 1px solid rgba(201, 169, 98, 0.18);
 }
 
 .qc-avatar-wrap {
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   padding: 2px;
   background: linear-gradient(145deg, rgba(201, 169, 98, 0.95), rgba(91, 184, 154, 0.88));
@@ -2400,7 +2402,7 @@ body:hover .cursor { opacity: 1; }
 }
 
 .qc-author-label {
-  font-size: 9px;
+  font-size: 10px;
   font-family: var(--font-mono);
   color: var(--green-light);
   letter-spacing: 0.14em;
@@ -2409,11 +2411,11 @@ body:hover .cursor { opacity: 1; }
 }
 
 .qc-author-name {
-  font-size: 12px;
+  font-size: 15px;
   font-family: var(--font-display);
-  color: var(--gold-soft);
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  color: rgba(245, 236, 206, 0.98);
+  font-weight: 600;
+  letter-spacing: 0.015em;
 }
 
 .quotes-nav {
@@ -2488,13 +2490,13 @@ body:hover .cursor { opacity: 1; }
   }
 
   .quote-card {
-    padding: 16px 14px 14px;
-    min-height: 164px;
+    padding: 20px 16px 16px;
+    min-height: 188px;
   }
 
   .qc-quote {
-    font-size: 0.98rem;
-    min-height: 3.2em;
+    font-size: 1.02rem;
+    min-height: 4em;
   }
 
   .qc-hero-mark {
@@ -2503,12 +2505,12 @@ body:hover .cursor { opacity: 1; }
   }
 
   .qc-avatar-wrap {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
 
   .qc-author-name {
-    font-size: 11px;
+    font-size: 13px;
   }
 
   .quotes-btn {
@@ -2579,8 +2581,57 @@ body:hover .cursor { opacity: 1; }
 }
 
 .prof-grid--single {
-  grid-template-columns: 1fr;
-  max-width: 320px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 760px;
+}
+
+.prof-swipe-hint {
+  display: none;
+  margin: 8px auto 18px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--green-light);
+}
+
+.prof-carousel-nav {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.prof-nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 20, 17, 0.45);
+  color: var(--gold-soft);
+  cursor: pointer;
+}
+
+.prof-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prof-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.prof-dot.active {
+  width: 20px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--green), var(--teal));
 }
 
 .prof-card {
@@ -2667,14 +2718,15 @@ body:hover .cursor { opacity: 1; }
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--dark);
-  background: var(--gold);
+  color: #eafff8;
+  background: linear-gradient(135deg, #1f9f86 0%, #2b77c4 100%);
+  border: 1px solid rgba(91, 184, 154, 0.45);
   padding: 6px 14px;
   z-index: 3;
   border-radius: 4px;
   text-align: center;
   white-space: nowrap;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), 0 0 18px rgba(43, 119, 196, 0.18);
 }
 
 .prof-info {
@@ -3819,9 +3871,33 @@ textarea.form-input {
   }
 
   .prof-grid {
-    grid-template-columns: 1fr;
-    gap: 56px;
-    max-width: 340px;
+    display: flex;
+    gap: 20px;
+    max-width: none;
+    width: max-content;
+    margin-top: 0;
+  }
+
+  .prof-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 -8px;
+    padding: 0 8px 4px;
+  }
+
+  .prof-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .prof-card {
+    width: min(82vw, 320px);
+    flex: 0 0 auto;
+  }
+
+  .prof-carousel-nav {
+    display: flex;
   }
 
   .professionals {

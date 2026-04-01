@@ -1,4 +1,56 @@
+ 'use client';
+
+import { useEffect, useRef, useState } from 'react';
+
+const PROFILES = [
+  {
+    name: 'Soumya Prakash',
+    image: '/img/Soumya half.jpeg',
+    badge: 'Board Member',
+    role: 'Board Member & Healthcare Strategist',
+    quote: '“Advocating for healing that honors the mind and body as one whole conversation.”',
+  },
+  {
+    name: 'Idris Kurnooli',
+    image: '/img/Founder.jpeg',
+    badge: 'Founder',
+    role: 'Founder',
+    quote: '“Let\'s connect mental and physical wellness the way they were always meant to be.”',
+  },
+];
+
 export default function Professionals() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToCard = (index: number) => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const cards = container.querySelectorAll('.prof-card');
+    const clamped = Math.max(0, Math.min(index, cards.length - 1));
+    const target = cards[clamped] as HTMLElement | undefined;
+    if (!target) return;
+    container.scrollTo({ left: target.offsetLeft - container.offsetLeft, behavior: 'smooth' });
+    setActiveIndex(clamped);
+  };
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const onScroll = () => {
+      const cards = Array.from(container.querySelectorAll('.prof-card')) as HTMLElement[];
+      if (!cards.length) return;
+      const left = container.scrollLeft;
+      const nearest = cards.reduce((best, card, i) => {
+        const delta = Math.abs(card.offsetLeft - container.offsetLeft - left);
+        return delta < best.delta ? { i, delta } : best;
+      }, { i: 0, delta: Number.POSITIVE_INFINITY });
+      setActiveIndex(nearest.i);
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => container.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <section className="professionals" id="professionals">
       <div className="prof-bg" aria-hidden="true">
@@ -16,27 +68,54 @@ export default function Professionals() {
             expertise, empathy, and unwavering commitment to evidence-based care.
           </p>
         </div>
-        <div className="prof-grid prof-grid--single">
-          <div className="prof-card">
-            <div className="prof-image-wrap">
-              <div className="prof-image-frame">
-                <img
-                  src="/img/Soumya half.jpeg"
-                  alt="Soumya Prakash"
-                  className="prof-img"
-                />
+        <div className="prof-scroll" ref={scrollRef}>
+          <div className="prof-grid prof-grid--single">
+            {PROFILES.map((profile) => (
+              <div className="prof-card" key={profile.name}>
+                <div className="prof-image-wrap">
+                  <div className="prof-image-frame">
+                    <img src={profile.image} alt={profile.name} className="prof-img" />
+                  </div>
+                  <span className="prof-badge">{profile.badge}</span>
+                </div>
+                <div className="prof-info">
+                  <div className="prof-gold-line" />
+                  <h3 className="prof-name">{profile.name}</h3>
+                  <p className="prof-role">{profile.role}</p>
+                  <p className="prof-credentials">{profile.quote}</p>
+                </div>
               </div>
-              <span className="prof-badge">Board Member</span>
-            </div>
-            <div className="prof-info">
-              <div className="prof-gold-line" />
-              <h3 className="prof-name">Soumya Prakash</h3>
-              <p className="prof-role">Board Member &amp; Healthcare Strategist</p>
-              <p className="prof-credentials">
-                MSc Healthcare Management &nbsp;·&nbsp; BSc (Hons) Neuroscience
-              </p>
-            </div>
+            ))}
           </div>
+        </div>
+        <div className="prof-carousel-nav" aria-label="Profiles navigation">
+          <button
+            className="prof-nav-btn"
+            type="button"
+            onClick={() => scrollToCard(activeIndex - 1)}
+            aria-label="Previous profile"
+          >
+            ←
+          </button>
+          <div className="prof-dots">
+            {PROFILES.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`prof-dot${i === activeIndex ? ' active' : ''}`}
+                onClick={() => scrollToCard(i)}
+                aria-label={`Go to profile ${i + 1}`}
+              />
+            ))}
+          </div>
+          <button
+            className="prof-nav-btn"
+            type="button"
+            onClick={() => scrollToCard(activeIndex + 1)}
+            aria-label="Next profile"
+          >
+            →
+          </button>
         </div>
       </div>
     </section>

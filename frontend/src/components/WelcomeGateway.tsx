@@ -59,7 +59,6 @@ export default function WelcomeGateway() {
       if (!entry?.isIntersecting) return;
       setTimeout(() => {
         setVisible(true);
-        document.body.style.overflow = 'hidden';
       }, 700);
       observer.disconnect();
     }, { threshold: 0.2 });
@@ -67,6 +66,16 @@ export default function WelcomeGateway() {
     observer.observe(aboutSection);
     return () => observer.disconnect();
   }, []);
+
+  // Fail-safe body scroll lock handling.
+  useEffect(() => {
+    if (!visible) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow || '';
+    };
+  }, [visible]);
 
   const runPhase = (phaseIndex: number, cycles: number) => {
     if (!breathActiveRef.current || cycles >= 4) {
@@ -113,7 +122,6 @@ export default function WelcomeGateway() {
       window.localStorage.setItem(SUPPRESS_KEY, String(Date.now() + SUPPRESS_MS));
     }
     setVisible(false);
-    document.body.style.overflow = '';
   };
 
   const skipToMood = () => {
