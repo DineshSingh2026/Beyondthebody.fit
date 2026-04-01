@@ -8,7 +8,7 @@ interface Props {
 }
 
 const AUTHOR_IMAGES: Record<string, string> = {
-  Rumi: '/img/quotes/rumi.jpg',
+  Rumi: '/img/Rumi.png',
   'Virat Kohli': '/img/quotes/virat-kohli.jpg',
   'Jim Carrey': '/img/quotes/jim-carrey.jpg',
   'Brad Pitt': '/img/quotes/brad-pitt.jpg',
@@ -76,7 +76,7 @@ export default function Quotes({ quotes }: Props) {
                   <div className="qc-top">
                     <div className="qc-avatar-wrap">
                       <img
-                        src={AUTHOR_IMAGES[q.author] ?? '/img/quotes/rumi.jpg'}
+                        src={AUTHOR_IMAGES[q.author] ?? '/img/Rumi.png'}
                         alt=""
                         className="qc-avatar"
                         loading="lazy"
