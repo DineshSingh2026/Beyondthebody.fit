@@ -2239,7 +2239,7 @@ body:hover .cursor { opacity: 1; }
   width: 100%;
   overflow: hidden;
   margin-bottom: 0;
-  touch-action: pan-y pinch-zoom;
+  touch-action: pan-y;
 }
 
 .aff-track {

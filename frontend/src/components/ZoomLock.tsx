@@ -4,6 +4,22 @@ import { useEffect } from 'react';
 
 export default function ZoomLock() {
   useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlTouchAction = html.style.touchAction;
+    const previousBodyTouchAction = body.style.touchAction;
+
+    const enforceViewport = () => {
+      let viewport = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
+      if (!viewport) {
+        viewport = document.createElement('meta');
+        viewport.name = 'viewport';
+        document.head.appendChild(viewport);
+      }
+      viewport.content =
+        'width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover';
+    };
+
     const onWheel = (event: WheelEvent) => {
       if (event.ctrlKey) event.preventDefault();
     };
@@ -24,6 +40,14 @@ export default function ZoomLock() {
     const onTouchStart = (event: TouchEvent) => {
       if (event.touches.length > 1) event.preventDefault();
     };
+    const onResize = () => {
+      enforceViewport();
+    };
+
+    // Disallow pinch gestures on the document root across supported engines.
+    html.style.touchAction = 'pan-x pan-y';
+    body.style.touchAction = 'pan-x pan-y';
+    enforceViewport();
 
     // Lock browser zoom shortcuts and pinch across modern browsers.
     window.addEventListener('wheel', onWheel, { passive: false, capture: true });
@@ -35,8 +59,14 @@ export default function ZoomLock() {
     window.addEventListener('gestureend', onGesture, { passive: false });
     window.addEventListener('touchstart', onTouchStart, { passive: false, capture: true });
     window.addEventListener('touchmove', onTouchMove, { passive: false, capture: true });
+    window.addEventListener('resize', onResize, { capture: true });
+    window.addEventListener('orientationchange', onResize, { capture: true });
+    window.addEventListener('pageshow', onResize, { capture: true });
+    document.addEventListener('visibilitychange', onResize, { capture: true });
 
     return () => {
+      html.style.touchAction = previousHtmlTouchAction;
+      body.style.touchAction = previousBodyTouchAction;
       window.removeEventListener('wheel', onWheel, true);
       document.removeEventListener('wheel', onWheel, true);
       window.removeEventListener('keydown', onKeyDown, true);
@@ -46,6 +76,10 @@ export default function ZoomLock() {
       window.removeEventListener('gestureend', onGesture);
       window.removeEventListener('touchstart', onTouchStart, true);
       window.removeEventListener('touchmove', onTouchMove, true);
+      window.removeEventListener('resize', onResize, true);
+      window.removeEventListener('orientationchange', onResize, true);
+      window.removeEventListener('pageshow', onResize, true);
+      document.removeEventListener('visibilitychange', onResize, true);
     };
   }, []);
 
