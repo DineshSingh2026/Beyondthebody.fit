@@ -688,9 +688,9 @@ body:hover .cursor { opacity: 1; }
 }
 
 .hero-title-main em {
-  font-family: var(--font-luxury);
+  font-family: 'Asul', var(--font-display);
   color: var(--green-light);
-  font-style: italic;
+  font-style: normal;
   display: block;
   letter-spacing: 0.04em;
   font-size: 0.78em;
