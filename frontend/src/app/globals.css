@@ -263,9 +263,9 @@ body:hover .cursor { opacity: 1; }
 }
 
 .nav-logo-img {
-  height: 62px;
+  height: 68px;
   width: auto;
-  max-width: 220px;
+  max-width: 240px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
@@ -3858,9 +3858,9 @@ textarea.form-input {
   }
 
   .nav-logo-img {
-    height: 56px;
+    height: 60px;
     width: auto;
-    max-width: 180px;
+    max-width: 192px;
     flex-shrink: 0;
   }
 
@@ -4450,9 +4450,9 @@ textarea.form-input {
   }
 
   .nav-logo-img {
-    height: 50px;
+    height: 54px;
     width: auto;
-    max-width: 160px;
+    max-width: 172px;
   }
 
   .logo-text {
