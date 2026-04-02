@@ -3392,10 +3392,10 @@ textarea.form-input {
 }
 
 .platform-logo {
-  width: 68px;
-  height: 68px;
-  min-width: 68px;
-  min-height: 68px;
+  width: 102px;
+  height: 102px;
+  min-width: 102px;
+  min-height: 102px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
@@ -4242,7 +4242,7 @@ textarea.form-input {
     flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
-    gap: 0 20px;
+    gap: 0 14px;
     padding: 0 8px;
     width: 100%;
   }
@@ -4260,10 +4260,10 @@ textarea.form-input {
   }
 
   .platform-logo {
-    width: 48px;
-    height: 48px;
-    min-width: 48px;
-    min-height: 48px;
+    width: 70px;
+    height: 70px;
+    min-width: 70px;
+    min-height: 70px;
     margin: 0 auto;
   }
 
@@ -4475,16 +4475,16 @@ textarea.form-input {
   }
 
   .platform-brands {
-    gap: 12px 8px;
-    max-width: 320px;
+    gap: 8px 6px;
+    max-width: 360px;
     padding: 0 8px;
   }
 
   .platform-logo {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    min-height: 64px;
   }
 
   .platform-domain {

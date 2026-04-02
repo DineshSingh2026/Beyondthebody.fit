@@ -15,6 +15,7 @@ import JoinSection from '@/components/JoinSection';
 import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
 import WelcomeGateway from '@/components/WelcomeGateway';
+import DisclaimerBanner from '@/components/DisclaimerBanner';
 
 export default function HomePage() {
   const affirmations = AFFIRMATIONS;
@@ -28,6 +29,7 @@ export default function HomePage() {
       <div className="cursor" id="cursor" />
       <div className="cursor-follower" id="cursorFollower" />
       <Nav />
+      <DisclaimerBanner />
       <main>
         <Hero affirmations={affirmations} />
         <WelcomeGateway />

@@ -27,7 +27,6 @@ export default function About() {
           </div>
           <div className="about-content">
             <div className="section-tag">Our Mission</div>
-            <h2 className="section-title">Our Mission</h2>
             <p className="about-text">
               We exist to break the stigma around mental wellness.
               <br />

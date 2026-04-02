@@ -44,7 +44,9 @@ export default function Footer() {
             Emergency situations require immediate medical care.
           </div>
           <div className="footer-copy">
-            © 2025 Beyond The Body. All rights reserved. Built with 💚 for healing.
+            © 2025 Beyond The Body. All rights reserved.
+            <br />
+            Built with 💚 for healing.
           </div>
         </div>
 
