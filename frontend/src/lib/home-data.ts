@@ -4,10 +4,13 @@
 
 export const AFFIRMATIONS = [
   'I am worthy of healing and growth.',
-  'Every step forward counts.',
   'I choose to prioritize my mental wellness.',
-  'Healing is not linear, and I honor every step.',
   'I deserve peace, joy, and a life that feels aligned.',
+  'I am allowed to rest without guilt.',
+  'Every small step I take is a powerful act of self-respect.',
+  'Healing is not linear, and I honor my pace.',
+  'My mind deserves the same care as my body.',
+  'My past may shape me, but it does not define me.',
 ];
 
 export const CONDITIONS = [

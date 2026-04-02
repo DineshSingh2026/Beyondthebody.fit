@@ -91,6 +91,7 @@ export default function Nav() {
       <div className={`mobile-menu${mobileOpen ? ' open' : ''}`} id="mobileMenu">
         <ul>
           {links.map((l) => (
+            l.id === 'team' ? null : (
             <li key={l.id}>
               <button
                 className="mobile-link"
@@ -100,7 +101,17 @@ export default function Nav() {
                 {l.label}
               </button>
             </li>
+            )
           ))}
+          <li>
+            <button
+              className="mobile-link"
+              onClick={() => scrollTo('team')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%' }}
+            >
+              Hiring
+            </button>
+          </li>
           <li>
             <Link href="/login" className="mobile-link">
               Sign in

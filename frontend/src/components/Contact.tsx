@@ -41,24 +41,7 @@ export default function Contact() {
             support for you.
           </p>
         </div>
-        <div className="contact-grid">
-          <div className="contact-info">
-            <div className="ci-card">
-              <span className="ci-icon">⭐</span>
-              <h4>Free 15-min Consult</h4>
-              <p>Get matched with the right specialist at no cost, with no strings attached.</p>
-            </div>
-            <div className="ci-card">
-              <span className="ci-icon">🔒</span>
-              <h4>Your Trust is Sacred</h4>
-              <p>We protect your information like our own. Total confidentiality guaranteed.</p>
-            </div>
-            <div className="ci-card">
-              <span className="ci-icon">🌱</span>
-              <h4>Begin Transformation</h4>
-              <p>Therapy first → Mental clarity → Physical capability. Proven approach.</p>
-            </div>
-          </div>
+        <div className="contact-grid contact-grid--single">
           <div className="contact-form-card">
             <h3>Book Your Free Consultation</h3>
             <form id="consultForm" className="form" onSubmit={handleSubmit}>

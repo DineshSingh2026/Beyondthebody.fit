@@ -43,11 +43,12 @@ export default function Affirmations({ affirmations }: Props) {
             <div
               className="aff-track"
               style={{
+                '--slide-count': affirmations.length,
                 width: `${affirmations.length * 100}%`,
                 transform: `translateX(-${offset}%)`,
                 transition: 'transform 0.4s ease',
                 display: 'flex',
-              }}
+              } as React.CSSProperties}
             >
               {affirmations.map((aff, i) => (
                 <div

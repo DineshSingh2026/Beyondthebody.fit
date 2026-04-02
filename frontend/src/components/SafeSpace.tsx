@@ -51,8 +51,7 @@ export default function SafeSpace() {
           <div className="section-tag">Community</div>
           <h2 className="section-title">Join Our <em>Safe Space</em></h2>
           <p className="section-desc">
-            A judgment-free community where healing is celebrated. Get weekly insights, live webinars,
-            and personal guidance delivered straight to your inbox.
+            Calm guidance, trusted specialists, and weekly support.
           </p>
         </div>
 
@@ -62,10 +61,9 @@ export default function SafeSpace() {
               <div className="ss-signup-icon">💌</div>
               <h3>Weekly Healing Insights</h3>
               <ul className="ss-benefits">
-                <li>✓ Expert mental wellness tips every week</li>
-                <li>✓ Live webinars with our specialists</li>
-                <li>✓ Real stories from our community</li>
-                <li>✓ Handling toxic relationships, family stress &amp; burnout</li>
+                <li>Expert tips from our clinical team</li>
+                <li>Live sessions and practical tools</li>
+                <li>Burnout, boundaries, and resilience support</li>
               </ul>
               {submitted ? (
                 <div className="ss-success">
@@ -94,7 +92,7 @@ export default function SafeSpace() {
           <div className="safe-space-experts">
             <h3 className="ss-experts-title">Meet Our Specialists</h3>
             <p className="ss-experts-sub">
-              Rigorously vetted. Ethically committed. Here to guide you.
+              Vetted experts. Compassionate care.
             </p>
             <div className="ss-expert-list">
               {experts.map((expert) => (

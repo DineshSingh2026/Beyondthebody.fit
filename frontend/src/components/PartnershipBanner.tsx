@@ -6,7 +6,11 @@ export default function PartnershipBanner() {
           <div className="banner-logos">
             <img src="/img/bodybank-logo.png" alt="Body Bank" className="banner-logo-img" />
             <span className="banner-x">×</span>
-            <img src="/img/btb-partnership-logo.png" alt="Beyond The Body" className="banner-logo-img banner-logo-btb" />
+            <img
+              src="/img/BeyondthebodyNBG.png"
+              alt="Beyond The Body"
+              className="banner-logo-img banner-logo-btb"
+            />
           </div>
           <div className="banner-lockup-label">
             <span className="banner-bodybank">Body Bank</span>

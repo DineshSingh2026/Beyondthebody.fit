@@ -154,7 +154,7 @@ export default function WelcomeGateway() {
               Centre Yourself<br />Before You Begin
             </h2>
             <p className="wg-desc">
-              A mindful pause before your journey. Take 60 seconds — your mind will thank you.
+              A mindful pause before your journey. Take 60 seconds, your mind will thank you.
             </p>
             <div className="wg-actions">
               <button className="btn btn-primary" onClick={() => setStep(2)}>

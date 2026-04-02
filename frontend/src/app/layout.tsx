@@ -49,7 +49,7 @@ export default function RootLayout({
           crossOrigin=""
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Italiana&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Asul:wght@700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Italiana&display=swap"
           rel="stylesheet"
         />
         <link rel="apple-touch-icon" href="/img/btb-logo-app.png" />
