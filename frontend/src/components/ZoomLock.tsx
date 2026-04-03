@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 
 export default function ZoomLock() {
   useEffect(() => {
+    try {
     const html = document.documentElement;
     const body = document.body;
     const previousHtmlTouchAction = html.style.touchAction;
@@ -81,6 +82,9 @@ export default function ZoomLock() {
       window.removeEventListener('pageshow', onResize, true);
       document.removeEventListener('visibilitychange', onResize, true);
     };
+    } catch {
+      /* Safari / strict environments: never block first paint */
+    }
   }, []);
 
   return null;

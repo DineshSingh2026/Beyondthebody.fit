@@ -4498,6 +4498,79 @@ textarea.form-input {
 }
 
 /* ============================================
+   SERVICE WORKER — UPDATE AVAILABLE (persistent)
+   ============================================ */
+.sw-update-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10050;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px 18px;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  background: rgba(10, 18, 14, 0.98);
+  border-top: 1px solid rgba(201, 169, 98, 0.35);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+}
+
+.sw-update-banner-text {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-light);
+  text-align: center;
+  margin: 0;
+  max-width: 36rem;
+  margin-inline: auto;
+}
+
+.sw-update-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.sw-update-banner-btn {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: var(--transition);
+}
+
+.sw-update-banner-btn-primary {
+  background: linear-gradient(135deg, var(--green-dark), var(--green));
+  color: var(--dark);
+  border-color: rgba(91, 184, 154, 0.5);
+}
+
+.sw-update-banner-btn-primary:hover {
+  filter: brightness(1.06);
+}
+
+.sw-update-banner-btn-muted {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: rgba(201, 169, 98, 0.25);
+}
+
+.sw-update-banner-btn-muted:hover {
+  color: var(--gold-soft);
+  border-color: rgba(201, 169, 98, 0.4);
+}
+
+/* ============================================
    DISCLAIMER STRIP
    ============================================ */
 .disclaimer-strip {
