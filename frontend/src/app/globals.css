@@ -4841,6 +4841,22 @@ textarea.form-input {
   font-weight: 600;
 }
 
+.ss-expert-avatar-photo {
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: 2px solid;
+  flex-shrink: 0;
+}
+
+.ss-expert-avatar-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
 .ss-expert-info {
   flex: 1;
   min-width: 0;

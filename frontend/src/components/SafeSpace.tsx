@@ -4,28 +4,36 @@ import { useState } from 'react';
 
 const experts = [
   {
-    name: 'Dr. Sarah Chen',
-    role: 'Licensed Therapist',
-    speciality: 'Anxiety, Trauma & PTSD',
-    bio: 'Over 12 years helping clients rebuild confidence after trauma. CBT-certified and passionate about destigmatising mental health.',
-    avatar: 'SC',
+    name: 'Dr. Elina Marquez',
+    role: 'Licensed Psychotherapist',
+    speciality: 'Anxiety, Trauma & Emotional Regulation',
+    bio: 'Elina brings over a decade of experience supporting individuals through anxiety, complex trauma, and emotional overwhelm. Her approach blends cognitive behavioral techniques with somatic awareness to help clients regain a sense of safety and control.',
+    photo: '/img/th1.png',
     color: '#5BB89A',
   },
   {
-    name: 'James Miller',
-    role: 'Life Coach',
-    speciality: 'Burnout & Life Transitions',
-    bio: 'Specialist in workplace stress and goal alignment. Helps professionals find clarity when everything feels overwhelming.',
-    avatar: 'JM',
+    name: 'Aaron Whitfield',
+    role: 'Life & Performance Coach',
+    speciality: 'Burnout, Career Clarity & Life Transitions',
+    bio: 'Aaron works with professionals navigating burnout, career pivots, and high pressure environments. His sessions focus on clarity, sustainable productivity, and aligning personal values with long term goals.',
+    photo: '/img/th2.png',
     color: '#C9A962',
   },
   {
-    name: 'Maya Foster',
-    role: 'Hypnotherapist',
-    speciality: 'Habit & Behaviour Change',
-    bio: 'Combines evidence-based hypnotherapy with mindfulness to help clients break patterns that hold them back.',
-    avatar: 'MF',
+    name: 'Noor Haddad',
+    role: 'Clinical Hypnotherapist',
+    speciality: 'Habit Change & Subconscious Repatterning',
+    bio: 'Noor specializes in helping clients break deeply rooted habits through hypnotherapy and guided visualization. Her work integrates mindfulness with subconscious conditioning for long lasting behavioral change.',
+    photo: '/img/th3.png',
     color: '#7B4FBE',
+  },
+  {
+    name: 'Daniel Kovacs',
+    role: 'Mindfulness Based Therapist',
+    speciality: 'Stress, Emotional Balance & Resilience',
+    bio: 'Daniel combines mindfulness based therapy with evidence informed practices to help clients manage stress and build emotional resilience. His style is grounded, practical, and deeply client centered.',
+    photo: '/img/th4.png',
+    color: '#1ABFA0',
   },
 ];
 
@@ -97,8 +105,11 @@ export default function SafeSpace() {
             <div className="ss-expert-list">
               {experts.map((expert) => (
                 <div key={expert.name} className="ss-expert-card">
-                  <div className="ss-expert-avatar" style={{ background: `${expert.color}20`, color: expert.color }}>
-                    {expert.avatar}
+                  <div
+                    className="ss-expert-avatar ss-expert-avatar-photo"
+                    style={{ borderColor: expert.color }}
+                  >
+                    <img src={expert.photo} alt={expert.name} width={52} height={52} loading="lazy" decoding="async" />
                   </div>
                   <div className="ss-expert-info">
                     <div className="ss-expert-header">
