@@ -1,4 +1,4 @@
- 'use client';
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
 
@@ -16,6 +16,13 @@ const PROFILES = [
     badge: 'Founder',
     role: 'Founder',
     quote: '“Let\'s connect mental and physical wellness the way they were always meant to be.”',
+  },
+  {
+    name: 'Krishna Mohan Meenavalli',
+    image: '/img/kittu.JPG',
+    badge: 'Co-founder',
+    role: 'Co-founder',
+    quote: '“Building a space where mental health care feels human, grounded, and within reach for everyone.”',
   },
 ];
 

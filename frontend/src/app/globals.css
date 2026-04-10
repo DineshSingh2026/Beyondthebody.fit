@@ -2758,8 +2758,9 @@ body:hover .cursor { opacity: 1; }
 }
 
 .prof-grid--single {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  max-width: 760px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 1080px;
+  gap: 48px;
 }
 
 .prof-swipe-hint {
