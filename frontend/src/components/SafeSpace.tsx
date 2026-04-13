@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+const showSpecialists = false;
+
 const experts = [
   {
     name: 'A. Meera I.',
@@ -63,7 +65,7 @@ export default function SafeSpace() {
           </p>
         </div>
 
-        <div className="safe-space-grid">
+        <div className={`safe-space-grid${showSpecialists ? '' : ' safe-space-grid-single'}`}>
           <div className="safe-space-signup">
             <div className="ss-signup-card">
               <div className="ss-signup-icon">💌</div>
@@ -97,7 +99,7 @@ export default function SafeSpace() {
             </div>
           </div>
 
-          <div className="safe-space-experts">
+          {showSpecialists && <div className="safe-space-experts">
             <h3 className="ss-experts-title">Meet Our Specialists</h3>
             <p className="ss-experts-sub">
               Vetted experts. Compassionate care.
@@ -122,7 +124,7 @@ export default function SafeSpace() {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
         </div>
       </div>
     </section>
