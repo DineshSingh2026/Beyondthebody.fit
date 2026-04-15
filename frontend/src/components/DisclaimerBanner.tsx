@@ -3,7 +3,7 @@ export default function DisclaimerBanner() {
     <div className="disclaimer-strip" role="note" aria-label="Educational disclaimer">
       <span className="disclaimer-strip-text">
         <span className="disclaimer-strip-icon">⚠️</span>{' '}
-        Content is educational, not diagnostic. Always consult qualified professionals.
+        Content is educational, not diagnostic. Always consult our team or any qualified professional.
       </span>
     </div>
   );

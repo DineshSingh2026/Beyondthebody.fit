@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+const showKrishnaProfile = false;
+
 const PROFILES = [
   {
     name: 'Soumya Prakash',
@@ -27,6 +29,9 @@ const PROFILES = [
 ];
 
 export default function Professionals() {
+  const visibleProfiles = showKrishnaProfile
+    ? PROFILES
+    : PROFILES.filter((profile) => profile.name !== 'Krishna Mohan Meenavalli');
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -77,7 +82,7 @@ export default function Professionals() {
         </div>
         <div className="prof-scroll" ref={scrollRef}>
           <div className="prof-grid prof-grid--single">
-            {PROFILES.map((profile) => (
+            {visibleProfiles.map((profile) => (
               <div className="prof-card" key={profile.name}>
                 <div className="prof-image-wrap">
                   <div className="prof-image-frame">
@@ -105,7 +110,7 @@ export default function Professionals() {
             ←
           </button>
           <div className="prof-dots">
-            {PROFILES.map((_, i) => (
+            {visibleProfiles.map((_, i) => (
               <button
                 key={i}
                 type="button"
