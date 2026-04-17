@@ -9,7 +9,13 @@ export const metadata: Metadata = {
   title: 'Beyond The Body — Mental Wellness & Healing',
   description:
     'Beyond The Body is a safe, judgment-free space where heart, soul, and mind unite. Evidence-based therapy, expert support, and a community that understands your journey.',
-  icons: { icon: '/img/btb-logo-app.png' },
+  icons: {
+    icon: [
+      { url: '/img/btb-logo-app-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/img/btb-logo-app-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/img/btb-logo-apple-touch-180.png', sizes: '180x180', type: 'image/png' }],
+  },
   applicationName: 'Beyond The Body',
   appleWebApp: {
     capable: true,
@@ -52,7 +58,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Asul:wght@700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Italiana&display=swap"
           rel="stylesheet"
         />
-        <link rel="apple-touch-icon" href="/img/btb-logo-app.png" />
+        <link rel="apple-touch-icon" href="/img/btb-logo-apple-touch-180.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Beyond TB" />

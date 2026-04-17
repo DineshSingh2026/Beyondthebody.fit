@@ -1,7 +1,12 @@
-const CACHE_NAME = 'btb-v5'
+const CACHE_NAME = 'btb-v6'
 const STATIC_ASSETS = [
   '/manifest.json',
-  '/img/btb-logo-app.png',
+  '/img/BTB%20Logo%20-%20app.png',
+  '/img/btb-logo-app-192.png',
+  '/img/btb-logo-app-512.png',
+  '/img/btb-logo-app-maskable-192.png',
+  '/img/btb-logo-app-maskable-512.png',
+  '/img/btb-logo-apple-touch-180.png',
 ]
 
 self.addEventListener('install', event => {
